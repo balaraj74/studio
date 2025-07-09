@@ -1,7 +1,8 @@
 
-import { initialCrops } from "@/lib/data";
+import { getCrops } from "@/lib/actions/crops";
 import CropsPageClient from "./CropsPageClient";
 
-export default function CropsPage() {
-    return <CropsPageClient initialCrops={initialCrops} />;
+export default async function CropsPage() {
+    const crops = await getCrops();
+    return <CropsPageClient crops={crops} />;
 }

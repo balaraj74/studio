@@ -1,7 +1,8 @@
 
-import { initialHarvests } from "@/lib/data";
+import { getHarvests } from "@/lib/actions/harvests";
 import HarvestPageClient from "./HarvestPageClient";
 
-export default function HarvestPage() {
-    return <HarvestPageClient initialHarvests={initialHarvests} />;
+export default async function HarvestPage() {
+    const harvests = await getHarvests();
+    return <HarvestPageClient harvests={harvests} />;
 }

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardHeader,
@@ -47,6 +47,8 @@ import { DollarSign, Plus, Pencil, Trash2, CalendarIcon, Receipt } from "lucide-
 import type { Expense, ExpenseCategory } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { addExpense, updateExpense, deleteExpense, type ExpenseFormInput } from "@/lib/actions/expenses";
 
 
 const categoryStyles: { [key in ExpenseCategory]: string } = {
@@ -57,10 +59,10 @@ const categoryStyles: { [key in ExpenseCategory]: string } = {
   Other: "bg-gray-100 text-gray-800",
 };
 
-export default function ExpensesPageClient({ initialExpenses }: { initialExpenses: Expense[] }) {
-  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+export default function ExpensesPageClient({ expenses }: { expenses: Expense[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const { toast } = useToast();
 
   const summary = useMemo(() => {
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -91,25 +93,17 @@ export default function ExpensesPageClient({ initialExpenses }: { initialExpense
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (expenseId: string) => {
-    setExpenses(expenses.filter((exp) => exp.id !== expenseId));
-  };
-
-  const handleSaveExpense = (expenseData: Omit<Expense, "id">) => {
-    if (editingExpense) {
-      setExpenses(
-        expenses.map((e) =>
-          e.id === editingExpense.id ? { ...e, ...expenseData } : e
-        )
-      );
+  const handleDelete = async (expenseId: string) => {
+    const result = await deleteExpense(expenseId);
+    if (result.success) {
+      toast({ title: "Expense deleted successfully." });
     } else {
-      const newExpense: Expense = {
-        id: (expenses.length + 1).toString(),
-        ...expenseData,
-      };
-      setExpenses([...expenses, newExpense]);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.error,
+      });
     }
-    setIsDialogOpen(false);
   };
 
   return (
@@ -245,7 +239,6 @@ export default function ExpensesPageClient({ initialExpenses }: { initialExpense
       <ExpenseFormDialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
-        onSave={handleSaveExpense}
         expense={editingExpense}
       />
     </div>
@@ -255,33 +248,56 @@ export default function ExpensesPageClient({ initialExpenses }: { initialExpense
 interface ExpenseFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (data: Omit<Expense, "id">) => void;
   expense: Expense | null;
 }
 
 function ExpenseFormDialog({
   isOpen,
   onOpenChange,
-  onSave,
   expense,
 }: ExpenseFormDialogProps) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("Other");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = () => {
-    if(!name || !amount || !date) return;
-    onSave({ name, category, amount: parseFloat(amount), date, notes });
+  const handleSubmit = async () => {
+    if(!name || !amount || !date) {
+        toast({ variant: "destructive", title: "Error", description: "Please fill all required fields." });
+        return;
+    };
+    
+    setIsLoading(true);
+
+    const expenseData: ExpenseFormInput = {
+        name,
+        category,
+        amount: parseFloat(amount),
+        date: date.toISOString(),
+        notes,
+    };
+
+    const result = expense?.id ? await updateExpense(expense.id, expenseData) : await addExpense(expenseData);
+
+    if (result.success) {
+        toast({ title: `Expense ${expense ? "updated" : "added"} successfully.` });
+        onOpenChange(false);
+    } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+
+    setIsLoading(false);
   };
   
-  useEffect(() => {
+  useState(() => {
     if (isOpen) {
       setName(expense?.name || "");
       setCategory(expense?.category || "Other");
       setAmount(expense?.amount.toString() || "");
-      setDate(expense?.date || new Date());
+      setDate(expense?.date ? new Date(expense.date) : new Date());
       setNotes(expense?.notes || "");
     }
   }, [isOpen, expense]);
@@ -308,6 +324,7 @@ function ExpenseFormDialog({
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
               placeholder="e.g. Urea fertilizer"
+              disabled={isLoading}
             />
           </div>
            <div className="grid grid-cols-4 items-center gap-4">
@@ -321,13 +338,14 @@ function ExpenseFormDialog({
               onChange={(e) => setAmount(e.target.value)}
               className="col-span-3"
               placeholder="e.g. 1500"
+              disabled={isLoading}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="category" className="text-right">
               Category
             </Label>
-            <Select onValueChange={(v) => setCategory(v as ExpenseCategory)} value={category}>
+            <Select onValueChange={(v) => setCategory(v as ExpenseCategory)} value={category} disabled={isLoading}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
@@ -352,6 +370,7 @@ function ExpenseFormDialog({
                     "w-[280px] justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
+                  disabled={isLoading}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {date ? format(date, "PPP") : <span>Pick a date</span>}
@@ -377,15 +396,16 @@ function ExpenseFormDialog({
               onChange={(e) => setNotes(e.target.value)}
               className="col-span-3"
               placeholder="Any additional notes..."
+              disabled={isLoading}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="submit" onClick={handleSubmit}>
-            Save Expense
+          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Expense"}
           </Button>
         </DialogFooter>
       </DialogContent>

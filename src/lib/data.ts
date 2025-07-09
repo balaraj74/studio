@@ -11,7 +11,7 @@ export const marketPrices: MarketPrice[] = [
 ];
 
 export const states = ["All", "Karnataka", "Maharashtra", "Punjab", "Uttar Pradesh", "Gujarat", "Madhya Pradesh", "Central"];
-export const crops = ["All", "Rice", "Wheat", "Maize", "Cotton", "Sugarcane", "Soybean"];
+export const crops = ["All", "Rice", "Wheat", "Maize", "Cotton", "Sugarcane", "Soybean", "Pomegranate"];
 
 export const schemes: Scheme[] = [
   {
@@ -57,39 +57,3 @@ export const schemes: Scheme[] = [
     link: "#",
   }
 ];
-
-export const initialCrops: Crop[] = [
-  {
-    id: "1",
-    name: "Pomegranate",
-    status: "Planned",
-    plantedDate: null,
-    harvestDate: null,
-    notes: "",
-  },
-  {
-    id: "2",
-    name: "Wheat",
-    status: "Growing",
-    plantedDate: new Date("2025-06-12"),
-    harvestDate: new Date("2025-09-12"),
-    notes: "Second batch of the season.",
-  },
-  {
-    id: "3",
-    name: "Cotton",
-    status: "Harvested",
-    plantedDate: new Date("2024-03-01"),
-    harvestDate: new Date("2024-08-15"),
-    notes: "Good yield this year.",
-  },
-];
-
-export const initialExpenses: Expense[] = [
-    { id: "1", name: "Urea Fertilizer", category: "Fertilizer", amount: 1500, date: new Date("2025-06-15") },
-    { id: "2", name: "Tractor Rental", category: "Equipment", amount: 3000, date: new Date("2025-06-10") },
-    { id: "3", name: "Wheat Seeds", category: "Seeds", amount: 2200, date: new Date("2025-06-05") },
-    { id: "4", name: "Daily Wages for 5 workers", category: "Labor", amount: 2500, date: new Date("2025-07-01") },
-];
-
-export const initialHarvests: Harvest[] = [];

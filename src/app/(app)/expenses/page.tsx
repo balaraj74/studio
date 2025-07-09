@@ -1,7 +1,8 @@
 
-import { initialExpenses } from "@/lib/data";
+import { getExpenses } from "@/lib/actions/expenses";
 import ExpensesPageClient from "./ExpensesPageClient";
 
-export default function ExpensesPage() {
-    return <ExpensesPageClient initialExpenses={initialExpenses} />;
+export default async function ExpensesPage() {
+    const expenses = await getExpenses();
+    return <ExpensesPageClient expenses={expenses} />;
 }
