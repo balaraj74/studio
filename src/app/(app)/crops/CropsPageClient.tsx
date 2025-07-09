@@ -94,7 +94,8 @@ export default function CropsPageClient() {
     const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
-      // No need to manually refetch, revalidatePath will trigger update
+      const fetchedCrops = await getCrops(user.uid);
+      setCrops(fetchedCrops);
     } else {
       toast({
         variant: "destructive",
@@ -103,6 +104,13 @@ export default function CropsPageClient() {
       });
     }
   };
+
+  const onFormSubmit = async () => {
+    if(user) {
+      const fetchedCrops = await getCrops(user.uid);
+      setCrops(fetchedCrops);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -214,6 +222,7 @@ export default function CropsPageClient() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         crop={editingCrop}
+        onFormSubmit={onFormSubmit}
       />
     </div>
   );
@@ -223,12 +232,14 @@ interface CropFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   crop: Crop | null;
+  onFormSubmit: () => void;
 }
 
 function CropFormDialog({
   isOpen,
   onOpenChange,
   crop,
+  onFormSubmit,
 }: CropFormDialogProps) {
   const { user } = useAuth();
   const [name, setName] = useState("");
@@ -274,6 +285,7 @@ function CropFormDialog({
     if (result.success) {
         toast({ title: `Crop ${crop ? "updated" : "added"} successfully.` });
         onOpenChange(false);
+        onFormSubmit();
     } else {
         toast({ variant: "destructive", title: "Error", description: result.error });
     }
@@ -402,3 +414,5 @@ function CropFormDialog({
     </Dialog>
   );
 }
+
+    

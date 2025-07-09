@@ -104,12 +104,21 @@ export default function HarvestPageClient() {
     const result = await deleteHarvest(user.uid, harvestId);
      if (result.success) {
       toast({ title: "Harvest record deleted successfully." });
+      const fetchedHarvests = await getHarvests(user.uid);
+      setHarvests(fetchedHarvests);
     } else {
       toast({
         variant: "destructive",
         title: "Error",
         description: result.error,
       });
+    }
+  };
+
+  const onFormSubmit = async () => {
+    if (user) {
+      const fetchedHarvests = await getHarvests(user.uid);
+      setHarvests(fetchedHarvests);
     }
   };
 
@@ -251,6 +260,7 @@ export default function HarvestPageClient() {
         onOpenChange={setIsDialogOpen}
         harvest={editingHarvest}
         availableCrops={availableCrops}
+        onFormSubmit={onFormSubmit}
       />
     </div>
   );
@@ -261,6 +271,7 @@ interface HarvestFormDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   harvest: Harvest | null;
   availableCrops: Crop[];
+  onFormSubmit: () => void;
 }
 
 function HarvestFormDialog({
@@ -268,6 +279,7 @@ function HarvestFormDialog({
   onOpenChange,
   harvest,
   availableCrops,
+  onFormSubmit,
 }: HarvestFormDialogProps) {
   const { user } = useAuth();
   const [cropId, setCropId] = useState("");
@@ -315,6 +327,7 @@ function HarvestFormDialog({
     if (result.success) {
         toast({ title: `Harvest ${harvest ? "updated" : "recorded"} successfully.` });
         onOpenChange(false);
+        onFormSubmit();
     } else {
         toast({ variant: "destructive", title: "Error", description: result.error });
     }
@@ -425,3 +438,5 @@ function HarvestFormDialog({
     </Dialog>
   );
 }
+
+    

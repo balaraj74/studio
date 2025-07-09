@@ -115,12 +115,21 @@ export default function ExpensesPageClient() {
     const result = await deleteExpense(user.uid, expenseId);
     if (result.success) {
       toast({ title: "Expense deleted successfully." });
+      const fetchedExpenses = await getExpenses(user.uid);
+      setExpenses(fetchedExpenses);
     } else {
       toast({
         variant: "destructive",
         title: "Error",
         description: result.error,
       });
+    }
+  };
+
+  const onFormSubmit = async () => {
+    if (user) {
+      const fetchedExpenses = await getExpenses(user.uid);
+      setExpenses(fetchedExpenses);
     }
   };
 
@@ -268,6 +277,7 @@ export default function ExpensesPageClient() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         expense={editingExpense}
+        onFormSubmit={onFormSubmit}
       />
     </div>
   );
@@ -277,12 +287,14 @@ interface ExpenseFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   expense: Expense | null;
+  onFormSubmit: () => void;
 }
 
 function ExpenseFormDialog({
   isOpen,
   onOpenChange,
   expense,
+  onFormSubmit,
 }: ExpenseFormDialogProps) {
   const { user } = useAuth();
   const [name, setName] = useState("");
@@ -328,6 +340,7 @@ function ExpenseFormDialog({
     if (result.success) {
         toast({ title: `Expense ${expense ? "updated" : "added"} successfully.` });
         onOpenChange(false);
+        onFormSubmit();
     } else {
         toast({ variant: "destructive", title: "Error", description: result.error });
     }
@@ -445,3 +458,5 @@ function ExpenseFormDialog({
     </Dialog>
   );
 }
+
+    

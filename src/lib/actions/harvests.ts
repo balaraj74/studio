@@ -67,7 +67,11 @@ export async function updateHarvest(userId: string, id: string, data: HarvestFor
             ...data,
             harvestDate: new Date(data.harvestDate),
         };
-        await updateDoc(harvestRef, harvestConverter.toFirestore(updatedHarvest));
+        const dataToUpdate = {
+            ...updatedHarvest,
+            harvestDate: Timestamp.fromDate(updatedHarvest.harvestDate),
+        }
+        await updateDoc(harvestRef, dataToUpdate);
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
@@ -87,3 +91,5 @@ export async function deleteHarvest(userId: string, id: string) {
         return { success: false, error: 'Failed to delete harvest.' };
     }
 }
+
+    

@@ -65,7 +65,11 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
             ...data,
             date: new Date(data.date),
         };
-        await updateDoc(expenseRef, expenseConverter.toFirestore(updatedExpense));
+        const dataToUpdate = {
+            ...updatedExpense,
+            date: Timestamp.fromDate(updatedExpense.date)
+        };
+        await updateDoc(expenseRef, dataToUpdate);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -85,3 +89,5 @@ export async function deleteExpense(userId: string, id: string) {
         return { success: false, error: 'Failed to delete expense.' };
     }
 }
+
+    

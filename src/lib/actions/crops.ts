@@ -78,7 +78,12 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
             plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
             harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
-        await updateDoc(cropRef, cropConverter.toFirestore(updatedCropData));
+        const dataToUpdate = {
+            ...updatedCropData,
+            plantedDate: updatedCropData.plantedDate ? Timestamp.fromDate(updatedCropData.plantedDate) : null,
+            harvestDate: updatedCropData.harvestDate ? Timestamp.fromDate(updatedCropData.harvestDate) : null,
+        }
+        await updateDoc(cropRef, dataToUpdate);
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
@@ -99,3 +104,5 @@ export async function deleteCrop(userId: string, id: string) {
         return { success: false, error: 'Failed to delete crop.' };
     }
 }
+
+    
