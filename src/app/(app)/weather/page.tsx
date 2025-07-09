@@ -36,6 +36,8 @@ type WeatherData = {
   }[];
 };
 
+const CloudSun = ({className}: {className?: string}) => <div className={className}><Cloud/><Sun className="absolute top-0 right-0"/></div>
+
 const weatherIcons: { [key: string]: React.ReactNode } = {
   "01d": <Sun className="h-6 w-6 text-yellow-500" />,
   "02d": <CloudSun className="h-6 w-6 text-yellow-600" />,
@@ -47,7 +49,6 @@ const weatherIcons: { [key: string]: React.ReactNode } = {
   "13d": <CloudSnow className="h-6 w-6 text-blue-300" />,
   "50d": <Cloud className="h-6 w-6 text-gray-400" />,
 };
-const CloudSun = ({className}: {className?: string}) => <div className={className}><Cloud/><Sun className="absolute top-0 right-0"/></div>
 
 export default function WeatherPage() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
