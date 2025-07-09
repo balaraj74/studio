@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -24,8 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUp, ArrowDown, LineChart, TrendingUp } from "lucide-react";
+import { ArrowUp, ArrowDown, LineChart, TrendingUp, Wand2, Search, Bot, Loader2 } from "lucide-react";
 import type { MarketPrice } from "@/types";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { marketPriceSearch } from "@/ai/flows/market-price-search";
+
 
 interface MarketPageClientProps {
   prices: MarketPrice[];
@@ -36,6 +42,10 @@ interface MarketPageClientProps {
 export default function MarketPageClient({ prices, states, crops }: MarketPageClientProps) {
   const [stateFilter, setStateFilter] = useState("All");
   const [cropFilter, setCropFilter] = useState("All");
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const { toast } = useToast();
 
   const filteredPrices = useMemo(() => {
     return prices.filter((price) => {
@@ -57,6 +67,28 @@ export default function MarketPageClient({ prices, states, crops }: MarketPageCl
 
     return { highestPrice, biggestGainer };
   }, [prices]);
+
+  const handleAiSearch = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!aiQuestion.trim() || isAiLoading) return;
+
+    setIsAiLoading(true);
+    setAiAnswer("");
+
+    try {
+      const result = await marketPriceSearch({ question: aiQuestion, prices });
+      setAiAnswer(result.answer);
+    } catch (error) {
+      console.error("AI search error:", error);
+      toast({
+        variant: "destructive",
+        title: "AI Search Failed",
+        description: "Could not get a response from the AI assistant. Please try again.",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
 
 
   return (
@@ -107,6 +139,53 @@ export default function MarketPageClient({ prices, states, crops }: MarketPageCl
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wand2 className="h-6 w-6 text-primary" />
+            AI Price Assistant
+          </CardTitle>
+          <CardDescription>
+            Ask a question about the market prices in plain language.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAiSearch} className="flex gap-2">
+            <Input
+              value={aiQuestion}
+              onChange={(e) => setAiQuestion(e.target.value)}
+              placeholder="e.g., What's the highest price for wheat?"
+              disabled={isAiLoading}
+            />
+            <Button type="submit" size="icon" disabled={isAiLoading || !aiQuestion.trim()} aria-label="Ask AI">
+              {isAiLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+        </CardContent>
+        {(isAiLoading || aiAnswer) && (
+          <CardFooter>
+            <div className="w-full space-y-4">
+              {isAiLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
+                  <Bot className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">AgriSence AI is thinking...</p>
+                </div>
+              )}
+              {aiAnswer && (
+                <div className="flex items-start gap-3 text-sm animate-in fade-in-50">
+                  <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="text-foreground whitespace-pre-wrap">{aiAnswer}</p>
+                </div>
+              )}
+            </div>
+          </CardFooter>
+        )}
+      </Card>
 
       <Card>
         <CardHeader>
