@@ -438,5 +438,3 @@ function HarvestFormDialog({
     </Dialog>
   );
 }
-
-    

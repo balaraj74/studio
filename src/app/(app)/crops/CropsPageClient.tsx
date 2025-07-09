@@ -414,5 +414,3 @@ function CropFormDialog({
     </Dialog>
   );
 }
-
-    
