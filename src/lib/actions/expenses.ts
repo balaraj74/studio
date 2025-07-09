@@ -27,11 +27,12 @@ const expenseConverter = {
     }
 };
 
-const expensesCollection = collection(db, 'expenses').withConverter(expenseConverter);
+const getExpensesCollection = (userId: string) => collection(db, 'users', userId, 'expenses').withConverter(expenseConverter);
 
-export async function getExpenses(): Promise<Expense[]> {
+export async function getExpenses(userId: string): Promise<Expense[]> {
+    if (!userId) return [];
     try {
-        const q = query(expensesCollection, orderBy("date", "desc"));
+        const q = query(getExpensesCollection(userId), orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => doc.data());
     } catch (error) {
@@ -40,13 +41,14 @@ export async function getExpenses(): Promise<Expense[]> {
     }
 }
 
-export async function addExpense(data: ExpenseFormInput) {
+export async function addExpense(userId: string, data: ExpenseFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const newExpense: Omit<Expense, 'id'> = {
             ...data,
             date: new Date(data.date),
         };
-        await addDoc(expensesCollection, newExpense);
+        await addDoc(getExpensesCollection(userId), newExpense);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -55,9 +57,10 @@ export async function addExpense(data: ExpenseFormInput) {
     }
 }
 
-export async function updateExpense(id: string, data: ExpenseFormInput) {
+export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const expenseRef = doc(db, 'expenses', id);
+        const expenseRef = doc(db, 'users', userId, 'expenses', id);
         const updatedExpense: Omit<Expense, 'id'> = {
             ...data,
             date: new Date(data.date),
@@ -71,9 +74,10 @@ export async function updateExpense(id: string, data: ExpenseFormInput) {
     }
 }
 
-export async function deleteExpense(id: string) {
+export async function deleteExpense(userId: string, id: string) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        await deleteDoc(doc(db, 'expenses', id));
+        await deleteDoc(doc(db, 'users', userId, 'expenses', id));
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {

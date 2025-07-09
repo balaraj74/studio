@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
   CardHeader,
@@ -48,7 +49,8 @@ import type { Crop, CropStatus } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { addCrop, updateCrop, deleteCrop, type CropFormInput } from "@/lib/actions/crops";
+import { getCrops, addCrop, updateCrop, deleteCrop, type CropFormInput } from "@/lib/actions/crops";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 const statusStyles: { [key in CropStatus]: string } = {
@@ -57,10 +59,25 @@ const statusStyles: { [key in CropStatus]: string } = {
   Harvested: "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200",
 };
 
-export default function CropsPageClient({ crops }: { crops: Crop[] }) {
+export default function CropsPageClient() {
+  const [crops, setCrops] = useState<Crop[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    async function fetchCrops() {
+      if (user) {
+        setIsLoading(true);
+        const fetchedCrops = await getCrops(user.uid);
+        setCrops(fetchedCrops);
+        setIsLoading(false);
+      }
+    }
+    fetchCrops();
+  }, [user]);
 
   const handleAddNew = () => {
     setEditingCrop(null);
@@ -73,9 +90,11 @@ export default function CropsPageClient({ crops }: { crops: Crop[] }) {
   };
 
   const handleDelete = async (cropId: string) => {
-    const result = await deleteCrop(cropId);
+    if (!user) return;
+    const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
+      // No need to manually refetch, revalidatePath will trigger update
     } else {
       toast({
         variant: "destructive",
@@ -123,7 +142,18 @@ export default function CropsPageClient({ crops }: { crops: Crop[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {crops.length > 0 ? (
+                {isLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : crops.length > 0 ? (
                   crops.map((crop) => (
                     <TableRow key={crop.id}>
                       <TableCell className="font-medium">{crop.name}</TableCell>
@@ -200,43 +230,16 @@ function CropFormDialog({
   onOpenChange,
   crop,
 }: CropFormDialogProps) {
+  const { user } = useAuth();
   const [name, setName] = useState("");
   const [status, setStatus] = useState<CropStatus>("Planned");
   const [plantedDate, setPlantedDate] = useState<Date | undefined>();
   const [harvestDate, setHarvestDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-
-  const handleSubmit = async () => {
-    if (!name) {
-        toast({ variant: "destructive", title: "Error", description: "Crop name is required." });
-        return;
-    }
-    
-    setIsLoading(true);
-
-    const cropData: CropFormInput = {
-        name,
-        status,
-        notes,
-        plantedDate: plantedDate ? plantedDate.toISOString() : null,
-        harvestDate: harvestDate ? harvestDate.toISOString() : null,
-    };
-
-    const result = crop?.id ? await updateCrop(crop.id, cropData) : await addCrop(cropData);
-
-    if (result.success) {
-        toast({ title: `Crop ${crop ? "updated" : "added"} successfully.` });
-        onOpenChange(false);
-    } else {
-        toast({ variant: "destructive", title: "Error", description: result.error });
-    }
-
-    setIsLoading(false);
-  };
   
-  useState(() => {
+  useEffect(() => {
     if (isOpen) {
       setName(crop?.name || "");
       setStatus(crop?.status || "Planned");
@@ -246,6 +249,38 @@ function CropFormDialog({
     }
   }, [isOpen, crop]);
 
+  const handleSubmit = async () => {
+    if (!name) {
+        toast({ variant: "destructive", title: "Error", description: "Crop name is required." });
+        return;
+    }
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "You must be logged in to perform this action."});
+        return;
+    }
+    
+    setIsSubmitting(true);
+
+    const cropData: CropFormInput = {
+        name,
+        status,
+        notes,
+        plantedDate: plantedDate ? plantedDate.toISOString() : null,
+        harvestDate: harvestDate ? harvestDate.toISOString() : null,
+    };
+
+    const result = crop?.id ? await updateCrop(user.uid, crop.id, cropData) : await addCrop(user.uid, cropData);
+
+    if (result.success) {
+        toast({ title: `Crop ${crop ? "updated" : "added"} successfully.` });
+        onOpenChange(false);
+    } else {
+        toast({ variant: "destructive", title: "Error", description: result.error });
+    }
+
+    setIsSubmitting(false);
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -267,14 +302,14 @@ function CropFormDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="status" className="text-right">
               Status
             </Label>
-            <Select onValueChange={(v) => setStatus(v as CropStatus)} value={status} disabled={isLoading}>
+            <Select onValueChange={(v) => setStatus(v as CropStatus)} value={status} disabled={isSubmitting}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a status" />
               </SelectTrigger>
@@ -297,7 +332,7 @@ function CropFormDialog({
                     "w-[280px] justify-start text-left font-normal",
                     !plantedDate && "text-muted-foreground"
                   )}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {plantedDate ? format(plantedDate, "PPP") : <span>Pick a date</span>}
@@ -325,7 +360,7 @@ function CropFormDialog({
                     "w-[280px] justify-start text-left font-normal",
                     !harvestDate && "text-muted-foreground"
                   )}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {harvestDate ? format(harvestDate, "PPP") : <span>Pick a date</span>}
@@ -351,16 +386,16 @@ function CropFormDialog({
               onChange={(e) => setNotes(e.target.value)}
               className="col-span-3"
               placeholder="Any additional notes..."
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Crop"}
+          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Crop"}
           </Button>
         </DialogFooter>
       </DialogContent>

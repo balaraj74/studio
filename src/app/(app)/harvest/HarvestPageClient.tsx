@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
   CardHeader,
@@ -43,24 +44,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Package, Plus, Pencil, Trash2, CalendarIcon, Scale } from "lucide-react";
-import type { Harvest, HarvestUnit } from "@/types";
+import type { Harvest, HarvestUnit, Crop } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { addHarvest, updateHarvest, deleteHarvest, type HarvestFormInput } from "@/lib/actions/harvests";
-import { crops as availableCropsList } from "@/lib/data";
+import { getHarvests, addHarvest, updateHarvest, deleteHarvest, type HarvestFormInput } from "@/lib/actions/harvests";
+import { getCrops } from "@/lib/actions/crops";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
-export default function HarvestPageClient({ harvests }: { harvests: Harvest[] }) {
+export default function HarvestPageClient() {
+  const [harvests, setHarvests] = useState<Harvest[]>([]);
+  const [availableCrops, setAvailableCrops] = useState<Crop[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHarvest, setEditingHarvest] = useState<Harvest | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    async function fetchData() {
+      if (user) {
+        setIsLoading(true);
+        const [fetchedHarvests, fetchedCrops] = await Promise.all([
+            getHarvests(user.uid),
+            getCrops(user.uid)
+        ]);
+        setHarvests(fetchedHarvests);
+        setAvailableCrops(fetchedCrops);
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [user]);
 
   const summary = useMemo(() => {
     const totalHarvests = harvests.length;
     const activeCrops = new Set(harvests.map(h => h.cropName)).size;
     const latestHarvest = harvests.length > 0
-      ? harvests.sort((a, b) => b.harvestDate.getTime() - a.harvestDate.getTime())[0]
+      ? harvests.sort((a, b) => new Date(b.harvestDate).getTime() - new Date(a.harvestDate).getTime())[0]
       : null;
 
     return { totalHarvests, activeCrops, latestHarvest };
@@ -78,7 +100,8 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
   };
 
   const handleDelete = async (harvestId: string) => {
-    const result = await deleteHarvest(harvestId);
+    if (!user) return;
+    const result = await deleteHarvest(user.uid, harvestId);
      if (result.success) {
       toast({ title: "Harvest record deleted successfully." });
     } else {
@@ -113,7 +136,7 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
                 <CardTitle>Total Harvests</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{summary.totalHarvests}</p>
+                { isLoading ? <Skeleton className="h-8 w-1/4" /> : <p className="text-3xl font-bold">{summary.totalHarvests}</p> }
                 <p className="text-sm text-muted-foreground">Harvest records</p>
             </CardContent>
         </Card>
@@ -122,7 +145,7 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
                 <CardTitle>Active Crops</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{summary.activeCrops}</p>
+                { isLoading ? <Skeleton className="h-8 w-1/4" /> : <p className="text-3xl font-bold">{summary.activeCrops}</p> }
                 <p className="text-sm text-muted-foreground">Crops with output</p>
             </CardContent>
         </Card>
@@ -131,10 +154,10 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
                 <CardTitle>Latest Harvest</CardTitle>
             </CardHeader>
             <CardContent>
-                {summary.latestHarvest ? (
+                { isLoading ? <Skeleton className="h-8 w-1/2" /> : summary.latestHarvest ? (
                     <>
                         <p className="text-xl font-bold">{summary.latestHarvest.cropName}</p>
-                        <p className="text-sm text-muted-foreground">{format(summary.latestHarvest.harvestDate, "PPP")}</p>
+                        <p className="text-sm text-muted-foreground">{format(new Date(summary.latestHarvest.harvestDate), "PPP")}</p>
                     </>
                 ) : (
                     <>
@@ -166,7 +189,17 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {harvests.length > 0 ? (
+                {isLoading ? (
+                    Array.from({length: 3}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : harvests.length > 0 ? (
                   harvests.map((harvest) => (
                     <TableRow key={harvest.id}>
                       <TableCell className="font-medium">{harvest.cropName}</TableCell>
@@ -174,7 +207,7 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
                         {harvest.quantity} {harvest.unit}
                       </TableCell>
                       <TableCell>
-                        {format(harvest.harvestDate, "dd/MM/yyyy")}
+                        {format(new Date(harvest.harvestDate), "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{harvest.notes || "-"}</TableCell>
                       <TableCell className="text-right">
@@ -217,6 +250,7 @@ export default function HarvestPageClient({ harvests }: { harvests: Harvest[] })
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         harvest={editingHarvest}
+        availableCrops={availableCrops}
       />
     </div>
   );
@@ -226,41 +260,57 @@ interface HarvestFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   harvest: Harvest | null;
+  availableCrops: Crop[];
 }
 
 function HarvestFormDialog({
   isOpen,
   onOpenChange,
   harvest,
+  availableCrops,
 }: HarvestFormDialogProps) {
-  const [cropName, setCropName] = useState("");
+  const { user } = useAuth();
+  const [cropId, setCropId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState<HarvestUnit>("kg");
   const [harvestDate, setHarvestDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  
-  const availableCrops = availableCropsList.filter(c => c !== "All");
+
+  useEffect(() => {
+    if (isOpen) {
+      setCropId(harvest?.cropId || "");
+      setQuantity(harvest?.quantity.toString() || "");
+      setUnit(harvest?.unit || "kg");
+      setHarvestDate(harvest?.harvestDate ? new Date(harvest.harvestDate) : new Date());
+      setNotes(harvest?.notes || "");
+    }
+  }, [isOpen, harvest]);
 
   const handleSubmit = async () => {
-    if(!cropName || !quantity || !harvestDate) {
+    const selectedCrop = availableCrops.find(c => c.id === cropId);
+    if(!selectedCrop || !quantity || !harvestDate) {
         toast({ variant: "destructive", title: "Error", description: "Please fill all required fields." });
         return;
     }
+    if (!user) {
+        toast({ variant: "destructive", title: "Error", description: "You must be logged in to perform this action."});
+        return;
+    }
     
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const harvestData: HarvestFormInput = {
-        cropName, 
-        cropId: cropName, // Using name as ID for simplicity
+        cropId: selectedCrop.id,
+        cropName: selectedCrop.name,
         quantity: parseFloat(quantity), 
         unit, 
         harvestDate: harvestDate.toISOString(), 
         notes 
     };
 
-    const result = harvest?.id ? await updateHarvest(harvest.id, harvestData) : await addHarvest(harvestData);
+    const result = harvest?.id ? await updateHarvest(user.uid, harvest.id, harvestData) : await addHarvest(user.uid, harvestData);
 
     if (result.success) {
         toast({ title: `Harvest ${harvest ? "updated" : "recorded"} successfully.` });
@@ -269,19 +319,9 @@ function HarvestFormDialog({
         toast({ variant: "destructive", title: "Error", description: result.error });
     }
 
-    setIsLoading(false);
+    setIsSubmitting(false);
   };
   
-  useState(() => {
-    if (isOpen) {
-      setCropName(harvest?.cropName || "");
-      setQuantity(harvest?.quantity.toString() || "");
-      setUnit(harvest?.unit || "kg");
-      setHarvestDate(harvest?.harvestDate ? new Date(harvest.harvestDate) : new Date());
-      setNotes(harvest?.notes || "");
-    }
-  }, [isOpen, harvest]);
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -298,12 +338,12 @@ function HarvestFormDialog({
             <Label htmlFor="cropName" className="text-right">
               Crop
             </Label>
-             <Select onValueChange={setCropName} value={cropName} disabled={isLoading}>
+             <Select onValueChange={setCropId} value={cropId} disabled={isSubmitting}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a crop" />
               </SelectTrigger>
               <SelectContent>
-                {availableCrops.map(crop => <SelectItem key={crop} value={crop}>{crop}</SelectItem>)}
+                {availableCrops.map(crop => <SelectItem key={crop.id} value={crop.id}>{crop.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -318,9 +358,9 @@ function HarvestFormDialog({
               onChange={(e) => setQuantity(e.target.value)}
               className="col-span-2"
               placeholder="e.g. 100"
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
-             <Select onValueChange={(v) => setUnit(v as HarvestUnit)} value={unit} disabled={isLoading}>
+             <Select onValueChange={(v) => setUnit(v as HarvestUnit)} value={unit} disabled={isSubmitting}>
               <SelectTrigger className="col-span-1">
                 <SelectValue />
               </SelectTrigger>
@@ -343,7 +383,7 @@ function HarvestFormDialog({
                     "w-[280px] justify-start text-left font-normal",
                     !harvestDate && "text-muted-foreground"
                   )}
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {harvestDate ? format(harvestDate, "PPP") : <span>Pick a date</span>}
@@ -369,16 +409,16 @@ function HarvestFormDialog({
               onChange={(e) => setNotes(e.target.value)}
               className="col-span-3"
               placeholder="Any additional notes..."
-              disabled={isLoading}
+              disabled={isSubmitting}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Record"}
+          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Record"}
           </Button>
         </DialogFooter>
       </DialogContent>

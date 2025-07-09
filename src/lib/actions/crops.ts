@@ -33,10 +33,12 @@ const cropConverter = {
     }
 };
 
-const cropsCollection = collection(db, 'crops').withConverter(cropConverter);
+const getCropsCollection = (userId: string) => collection(db, 'users', userId, 'crops').withConverter(cropConverter);
 
-export async function getCrops(): Promise<Crop[]> {
+export async function getCrops(userId: string): Promise<Crop[]> {
+    if (!userId) return [];
     try {
+        const cropsCollection = getCropsCollection(userId);
         const q = query(cropsCollection, orderBy("plantedDate", "desc"));
         const querySnapshot = await getDocs(q);
         const crops = querySnapshot.docs.map(doc => doc.data());
@@ -47,14 +49,15 @@ export async function getCrops(): Promise<Crop[]> {
     }
 }
 
-export async function addCrop(data: CropFormInput) {
+export async function addCrop(userId: string, data: CropFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const newCrop: Omit<Crop, 'id'> = {
             ...data,
             plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
             harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
-        await addDoc(cropsCollection, newCrop);
+        await addDoc(getCropsCollection(userId), newCrop);
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
@@ -63,9 +66,10 @@ export async function addCrop(data: CropFormInput) {
     }
 }
 
-export async function updateCrop(id: string, data: CropFormInput) {
+export async function updateCrop(userId: string, id: string, data: CropFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = doc(db, 'crops', id);
+        const cropRef = doc(db, 'users', userId, 'crops', id);
         // We can't just spread the data because we need to convert date strings to Date objects
         const updatedCropData: Omit<Crop, 'id'> = {
             name: data.name,
@@ -83,9 +87,10 @@ export async function updateCrop(id: string, data: CropFormInput) {
     }
 }
 
-export async function deleteCrop(id: string) {
+export async function deleteCrop(userId: string, id: string) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = doc(db, 'crops', id);
+        const cropRef = doc(db, 'users', userId, 'crops', id);
         await deleteDoc(cropRef);
         revalidatePath('/crops');
         return { success: true };

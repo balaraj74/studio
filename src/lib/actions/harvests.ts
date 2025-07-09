@@ -28,11 +28,13 @@ const harvestConverter = {
     }
 };
 
-const harvestsCollection = collection(db, 'harvests').withConverter(harvestConverter);
+const getHarvestsCollection = (userId: string) => collection(db, 'users', userId, 'harvests').withConverter(harvestConverter);
 
-export async function getHarvests(): Promise<Harvest[]> {
+
+export async function getHarvests(userId: string): Promise<Harvest[]> {
+    if (!userId) return [];
     try {
-        const q = query(harvestsCollection, orderBy("harvestDate", "desc"));
+        const q = query(getHarvestsCollection(userId), orderBy("harvestDate", "desc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => doc.data());
     } catch (error) {
@@ -41,13 +43,14 @@ export async function getHarvests(): Promise<Harvest[]> {
     }
 }
 
-export async function addHarvest(data: HarvestFormInput) {
+export async function addHarvest(userId: string, data: HarvestFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const newHarvest: Omit<Harvest, 'id'> = {
             ...data,
             harvestDate: new Date(data.harvestDate),
         };
-        await addDoc(harvestsCollection, newHarvest);
+        await addDoc(getHarvestsCollection(userId), newHarvest);
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
@@ -56,9 +59,10 @@ export async function addHarvest(data: HarvestFormInput) {
     }
 }
 
-export async function updateHarvest(id: string, data: HarvestFormInput) {
+export async function updateHarvest(userId: string, id: string, data: HarvestFormInput) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const harvestRef = doc(db, 'harvests', id);
+        const harvestRef = doc(db, 'users', userId, 'harvests', id);
         const updatedHarvest: Omit<Harvest, 'id'> = {
             ...data,
             harvestDate: new Date(data.harvestDate),
@@ -72,9 +76,10 @@ export async function updateHarvest(id: string, data: HarvestFormInput) {
     }
 }
 
-export async function deleteHarvest(id: string) {
+export async function deleteHarvest(userId: string, id: string) {
+    if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        await deleteDoc(doc(db, 'harvests', id));
+        await deleteDoc(doc(db, 'users', userId, 'harvests', id));
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
