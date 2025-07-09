@@ -1,4 +1,4 @@
-import type { MarketPrice, Scheme, Expense } from "@/types";
+import type { MarketPrice, Scheme, Expense, Harvest } from "@/types";
 
 export const marketPrices: MarketPrice[] = [
   { crop: "Rice (Paddy)", region: "Punjab", price: 1940, change: 1.5 },
@@ -63,3 +63,5 @@ export const initialExpenses: Expense[] = [
     { id: "3", name: "Wheat Seeds", category: "Seeds", amount: 2200, date: new Date("2025-06-05") },
     { id: "4", name: "Daily Wages for 5 workers", category: "Labor", amount: 2500, date: new Date("2025-07-01") },
 ];
+
+export const initialHarvests: Harvest[] = [];

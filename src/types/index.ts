@@ -35,3 +35,15 @@ export interface Expense {
   date: Date;
   notes?: string;
 }
+
+export type HarvestUnit = "kg" | "quintal" | "tonne";
+
+export interface Harvest {
+  id: string;
+  cropId: string;
+  cropName: string;
+  quantity: number;
+  unit: HarvestUnit;
+  harvestDate: Date;
+  notes?: string;
+}
