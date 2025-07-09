@@ -1,3 +1,4 @@
+
 export interface MarketPrice {
   crop: string;
   region: string;
@@ -11,4 +12,15 @@ export interface Scheme {
   state: string;
   description: string;
   link: string;
+}
+
+export type CropStatus = "Planned" | "Growing" | "Harvested";
+
+export interface Crop {
+  id: string;
+  name: string;
+  status: CropStatus;
+  plantedDate: Date | null;
+  harvestDate: Date | null;
+  notes: string;
 }
