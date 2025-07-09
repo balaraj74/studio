@@ -2,12 +2,18 @@
 import type { MarketPrice, Scheme, Expense, Harvest, Crop } from "@/types";
 
 export const marketPrices: MarketPrice[] = [
-  { crop: "Rice (Paddy)", region: "Punjab", price: 1940, change: 1.5 },
+  { crop: "Rice", region: "Punjab", price: 1940, change: 1.5 },
+  { crop: "Rice", region: "Uttar Pradesh", price: 1960, change: 1.8 },
   { crop: "Wheat", region: "Uttar Pradesh", price: 2015, change: -0.8 },
+  { crop: "Wheat", region: "Punjab", price: 2050, change: -0.5 },
   { crop: "Maize", region: "Karnataka", price: 1870, change: 2.1 },
+  { crop: "Maize", region: "Maharashtra", price: 1850, change: 1.9 },
   { crop: "Cotton", region: "Gujarat", price: 6025, change: 0.5 },
+  { crop: "Cotton", region: "Madhya Pradesh", price: 5980, change: 0.7 },
   { crop: "Sugarcane", region: "Maharashtra", price: 3050, change: -0.2 },
+  { crop: "Sugarcane", region: "Uttar Pradesh", price: 3100, change: 0.1 },
   { crop: "Soybean", region: "Madhya Pradesh", price: 4200, change: 3.0 },
+  { crop: "Pomegranate", region: "Maharashtra", price: 11000, change: -1.2 },
 ];
 
 export const states = ["All", "Karnataka", "Maharashtra", "Punjab", "Uttar Pradesh", "Gujarat", "Madhya Pradesh", "Central"];
