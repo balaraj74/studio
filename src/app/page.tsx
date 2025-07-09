@@ -74,6 +74,9 @@ export default function SignInPage() {
           case 'auth/operation-not-allowed':
              description = "Sign-in with Google is not enabled for this app. Please contact the administrator.";
              break;
+          case 'auth/invalid-api-key':
+            description = "The Firebase API key is not valid. Please check your .env file."
+            break;
         }
       }
       toast({
