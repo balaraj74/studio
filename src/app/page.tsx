@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from "next/navigation";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
@@ -25,7 +24,6 @@ const GoogleIcon = () => (
 );
 
 export default function LoginPage() {
-  const router = useRouter();
   const { toast } = useToast();
   
   const [signInEmail, setSignInEmail] = useState('');
@@ -59,10 +57,11 @@ export default function LoginPage() {
       }
       // The auth provider will handle the redirect
     } catch (error: any) {
+      const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unknown error occurred';
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
-        description: error.message.replace('Firebase: ', ''),
+        description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
       });
     } finally {
       setIsLoading(false);
@@ -76,10 +75,11 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       // The auth provider will handle the redirect
     } catch (error: any) {
+      const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unknown error occurred';
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Error',
-        description: error.message.replace('Firebase: ', ''),
+        description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
       });
     } finally {
       setIsGoogleLoading(false);
@@ -87,7 +87,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-green-50 to-emerald-50">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center mb-6">
           <Leaf className="h-12 w-12 text-primary" />
@@ -102,7 +102,7 @@ export default function LoginPage() {
           <TabsContent value="sign-in">
             <Card>
               <CardHeader>
-                <CardTitle>Sign In</CardTitle>
+                <CardTitle>Welcome Back</CardTitle>
                 <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -123,8 +123,8 @@ export default function LoginPage() {
           <TabsContent value="sign-up">
             <Card>
               <CardHeader>
-                <CardTitle>Sign Up</CardTitle>
-                <CardDescription>Create an account to get started.</CardDescription>
+                <CardTitle>Create an Account</CardTitle>
+                <CardDescription>Join our community to get started.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                  <div className="space-y-2">

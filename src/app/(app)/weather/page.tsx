@@ -15,12 +15,13 @@ import {
   Cloud,
   CloudRain,
   CloudSnow,
-  Thermometer,
   Droplets,
   Wind,
   MapPin,
   AlertTriangle,
+  CloudSun,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type WeatherData = {
   city: string;
@@ -36,24 +37,17 @@ type WeatherData = {
   }[];
 };
 
-const CloudSunIcon = ({className}: {className?: string}) => (
-    <div className={cn("relative w-6 h-6", className)}>
-        <Cloud className="absolute w-full h-full text-gray-500" />
-        <Sun className="absolute w-3/4 h-3/4 -top-1 -right-1 text-yellow-500" />
-    </div>
-);
-
 const weatherIcons: { [key: string]: React.ReactNode } = {
-  "01d": <Sun className="h-6 w-6 text-yellow-500" />,
-  "02d": <CloudSunIcon />,
-  "03d": <Cloud className="h-6 w-6 text-gray-500" />,
-  "04d": <Cloud className="h-6 w-6 text-gray-600" />,
-  "09d": <CloudRain className="h-6 w-6 text-blue-500" />,
-  "10d": <CloudRain className="h-6 w-6 text-blue-600" />,
-  "11d": <CloudSnow className="h-6 w-6 text-indigo-500" />,
-  "13d": <CloudSnow className="h-6 w-6 text-blue-300" />,
-  "50d": <Cloud className="h-6 w-6 text-gray-400" />,
-  "unknown": <Sun className="h-6 w-6 text-yellow-500" />,
+  "01d": <Sun className="h-full w-full text-yellow-500" />,
+  "02d": <CloudSun className="h-full w-full text-yellow-500" />,
+  "03d": <Cloud className="h-full w-full text-gray-500" />,
+  "04d": <Cloud className="h-full w-full text-gray-600" />,
+  "09d": <CloudRain className="h-full w-full text-blue-500" />,
+  "10d": <CloudRain className="h-full w-full text-blue-600" />,
+  "11d": <CloudSnow className="h-full w-full text-indigo-500" />,
+  "13d": <CloudSnow className="h-full w-full text-blue-300" />,
+  "50d": <Cloud className="h-full w-full text-gray-400" />,
+  "unknown": <Sun className="h-full w-full text-yellow-500" />,
 };
 
 export default function WeatherPage() {
@@ -65,10 +59,7 @@ export default function WeatherPage() {
     lat: number,
     lon: number
   ): Promise<WeatherData> => {
-    // This is a mock function. In a real app, you would fetch from an API
-    // like OpenWeatherMap using the lat/lon and an API key.
-    console.log(`Fetching mock weather for ${lat}, ${lon}`);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1000)); 
 
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const today = new Date().getDay();
@@ -96,6 +87,7 @@ export default function WeatherPage() {
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
       setLoading(false);
+      getMockWeatherData(12.97, 77.59).then(setWeather).finally(() => setLoading(false));
       return;
     }
 
@@ -115,8 +107,6 @@ export default function WeatherPage() {
       },
       () => {
         setError("Unable to retrieve your location. Please enable location services.");
-        setLoading(false);
-        // As a fallback, load with default location
         getMockWeatherData(12.97, 77.59).then(setWeather).finally(() => setLoading(false));
       }
     );
@@ -129,7 +119,7 @@ export default function WeatherPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Skeleton className="h-9 w-1/3" />
           <Skeleton className="h-5 w-2/3" />
         </div>
@@ -139,41 +129,39 @@ export default function WeatherPage() {
              <Skeleton className="h-5 w-1/4" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full rounded-lg" />
+            <Skeleton className="h-40 w-full rounded-lg" />
           </CardContent>
         </Card>
       </div>
     );
   }
-
-  if (error && !weather) {
-    return (
-        <div className="space-y-6">
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold font-headline">Weather Forecast</h1>
-                <p className="text-muted-foreground">Local weather conditions and forecast.</p>
-            </div>
-            <Card className="text-center p-8">
-                <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-                <h3 className="mt-4 text-lg font-medium">Error</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-                <Button onClick={fetchWeather} className="mt-4">
-                    Try Again
-                </Button>
-            </Card>
-        </div>
-    );
-  }
-
+  
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold font-headline">Weather Forecast</h1>
-        <p className="text-muted-foreground">
-          Real-time local weather conditions to help you plan your day.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="bg-primary/10 p-3 rounded-lg">
+          <CloudSun className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Weather Forecast</h1>
+          <p className="text-muted-foreground">
+            Real-time local weather to help you plan your day.
+          </p>
+        </div>
       </div>
+      
+      {error && (
+        <Card className="bg-destructive/10 border-destructive/20 text-destructive-foreground">
+            <CardHeader className="flex-row items-center gap-3 space-y-0">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+                <div className="flex-1">
+                    <CardTitle className="text-destructive">Location Error</CardTitle>
+                    <CardDescription className="text-destructive/80">{error} Showing default location.</CardDescription>
+                </div>
+            </CardHeader>
+        </Card>
+      )}
 
       {weather && (
         <Card className="animate-in fade-in-50">
@@ -183,28 +171,30 @@ export default function WeatherPage() {
               <span>Weather in {weather.city}</span>
             </CardTitle>
             <CardDescription>
-              Last updated: {new Date().toLocaleTimeString()}
+              Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 rounded-lg bg-muted p-6">
-              <div className="flex items-center gap-4">
-                <div className="text-6xl">{weatherIcons[weather.icon] || weatherIcons['unknown']}</div>
+              <div className="flex items-center gap-6">
+                <div className="h-20 w-20">{weatherIcons[weather.icon] || weatherIcons['unknown']}</div>
                 <div>
                   <p className="text-6xl font-bold">{weather.temperature}°C</p>
-                  <p className="text-muted-foreground capitalize">
+                  <p className="text-muted-foreground capitalize text-lg">
                     {weather.description}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 font-medium">
                   <Droplets className="h-4 w-4 text-muted-foreground" />
-                  <span>Humidity: {weather.humidity}%</span>
+                  <span>Humidity</span>
+                  <span className="text-right flex-1">{weather.humidity}%</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 font-medium">
                   <Wind className="h-4 w-4 text-muted-foreground" />
-                  <span>Wind: {weather.windSpeed} km/h</span>
+                  <span>Wind</span>
+                  <span className="text-right flex-1">{weather.windSpeed} km/h</span>
                 </div>
               </div>
             </div>
@@ -214,11 +204,11 @@ export default function WeatherPage() {
                 {weather.forecast.map((day, index) => (
                   <div
                     key={index}
-                    className="flex flex-col items-center gap-2 rounded-lg border p-4"
+                    className="flex flex-col items-center gap-2 rounded-lg border p-4 hover:bg-muted transition-colors"
                   >
-                    <p className="font-medium">{day.day}</p>
-                    <div className="text-4xl">{weatherIcons[day.icon] || weatherIcons['unknown']}</div>
-                    <p className="text-lg font-semibold">{day.temp}°C</p>
+                    <p className="font-bold text-lg">{day.day}</p>
+                    <div className="h-10 w-10">{weatherIcons[day.icon] || weatherIcons['unknown']}</div>
+                    <p className="text-xl font-semibold">{day.temp}°C</p>
                   </div>
                 ))}
               </div>

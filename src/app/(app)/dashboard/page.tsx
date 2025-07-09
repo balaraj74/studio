@@ -15,31 +15,37 @@ import {
   CloudSun,
   Stethoscope,
   ArrowRight,
+  LineChart,
+  ScrollText,
+  MessageCircle,
+  Mic,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const tools = [
-  {
-    title: "Farm Dashboard",
-    description: "Visualize your farm's performance with charts and key metrics.",
-    href: "/dashboard",
-    icon: BarChart2,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-  },
-  {
+interface Tool {
+  title: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  color: string;
+  bgColor: string;
+}
+
+const tools: Tool[] = [
+   {
     title: "Crop Management",
-    description: "Track all your crops from sowing to harvest in one place.",
+    description: "Track your crops from sowing to harvest in one place.",
     href: "/crops",
     icon: Leaf,
-    color: "text-green-500",
+    color: "text-green-700",
     bgColor: "bg-green-500/10",
   },
   {
     title: "Expense Tracking",
-    description: "Monitor all your costs and manage your farm's budget.",
+    description: "Monitor costs and manage your farm's budget.",
     href: "/expenses",
     icon: DollarSign,
-    color: "text-yellow-500",
+    color: "text-yellow-700",
     bgColor: "bg-yellow-500/10",
   },
   {
@@ -47,24 +53,56 @@ const tools = [
     description: "Log your yields, track production, and manage inventory.",
     href: "/harvest",
     icon: Package,
-    color: "text-orange-500",
+    color: "text-orange-700",
     bgColor: "bg-orange-500/10",
   },
   {
+    title: "Crop Diagnosis",
+    description: "Detect crop diseases using your phone's camera.",
+    href: "/disease-check",
+    icon: Stethoscope,
+    color: "text-red-700",
+    bgColor: "bg-red-500/10",
+  },
+  {
     title: "Weather Tracking",
-    description: "Get accurate forecasts and plan your activities accordingly.",
+    description: "Get accurate forecasts to plan your activities.",
     href: "/weather",
     icon: CloudSun,
-    color: "text-sky-500",
+    color: "text-sky-700",
     bgColor: "bg-sky-500/10",
   },
   {
-    title: "Crop Diagnosis",
-    description: "Use your phone's camera to detect diseases in your crops.",
-    href: "/disease-check",
-    icon: Stethoscope,
-    color: "text-red-500",
-    bgColor: "bg-red-500/10",
+    title: "Market Prices",
+    description: "View latest APMC prices for key crops in your region.",
+    href: "/market",
+    icon: LineChart,
+    color: "text-blue-700",
+    bgColor: "bg-blue-500/10",
+  },
+  {
+    title: "Govt. Schemes",
+    description: "Discover and apply for relevant government schemes.",
+    href: "/schemes",
+    icon: ScrollText,
+    color: "text-indigo-700",
+    bgColor: "bg-indigo-500/10",
+  },
+   {
+    title: "AI Chatbot",
+    description: "Ask farming questions and get instant expert advice.",
+    href: "/chatbot",
+    icon: MessageCircle,
+    color: "text-purple-700",
+    bgColor: "bg-purple-500/10",
+  },
+  {
+    title: "Voice Assistant",
+    description: "Interact with the app using voice commands.",
+    href: "/voice",
+    icon: Mic,
+    color: "text-pink-700",
+    bgColor: "bg-pink-500/10",
   },
 ];
 
@@ -76,22 +114,22 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mt-2">
           Here's a quick overview of your farm. Let's make today a productive one.
         </p>
-        <div className="mt-6 flex gap-4">
-          <Button asChild size="lg" className="bg-primary hover:bg-primary/90 font-bold">
+        <div className="mt-6 flex flex-col sm:flex-row gap-4">
+          <Button asChild size="lg" className="font-bold">
             <Link href="/chatbot">
-              Try AI Assistant
+              Ask AI Assistant
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link href="/dashboard">
-              View Dashboard
+            <Link href="/crops">
+              Manage My Crops
             </Link>
           </Button>
         </div>
       </div>
       
       <div>
-        <h2 className="text-2xl font-bold font-headline mb-4">Comprehensive Farm Management Tools</h2>
+        <h2 className="text-2xl font-bold font-headline mb-4">Your Farming Toolkit</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {tools.map((tool) => (
             <Card
@@ -112,7 +150,7 @@ export default function DashboardPage() {
                 <CardDescription>{tool.description}</CardDescription>
               </CardContent>
               <div className="p-6 pt-0">
-                <Button asChild className="w-full">
+                <Button asChild className="w-full" variant="outline">
                   <Link href={tool.href}>
                     Open Tool
                     <ArrowRight className="ml-2 h-4 w-4" />

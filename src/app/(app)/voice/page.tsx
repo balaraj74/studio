@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -20,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Mic, Bot, User, Volume2, Sparkles, Loader2 } from "lucide-react";
+import { Languages, Mic, Bot, User, Volume2, Loader2 } from "lucide-react";
 
 export default function VoicePage() {
   const [isListening, setIsListening] = useState(false);
@@ -35,14 +34,16 @@ export default function VoicePage() {
 
   useEffect(() => {
     const loadVoices = () => {
-      const availableVoices = window.speechSynthesis.getVoices();
-      const supportedVoices = availableVoices.filter(
-        (v) =>
-          v.lang.startsWith("en") ||
-          v.lang.startsWith("kn") ||
-          v.lang.startsWith("hi")
-      );
-      setVoices(supportedVoices);
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        const availableVoices = window.speechSynthesis.getVoices();
+        const supportedVoices = availableVoices.filter(
+          (v) =>
+            v.lang.startsWith("en") ||
+            v.lang.startsWith("kn") ||
+            v.lang.startsWith("hi")
+        );
+        setVoices(supportedVoices);
+      }
     };
 
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -154,11 +155,16 @@ export default function VoicePage() {
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold font-headline">Voice Assistant</h1>
-        <p className="text-muted-foreground">
-          Interact with AgriSence using your voice in your preferred language.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="bg-primary/10 p-3 rounded-lg">
+            <Mic className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+            <h1 className="text-3xl font-bold font-headline">Voice Assistant</h1>
+            <p className="text-muted-foreground">
+            Interact with AgriSence using your voice.
+            </p>
+        </div>
       </div>
 
       <Card className="w-full max-w-2xl">
@@ -166,7 +172,7 @@ export default function VoicePage() {
           <div className="flex justify-center mb-4">
             <Button
               size="lg"
-              className={`relative h-24 w-24 rounded-full ${isListening ? "bg-red-500 hover:bg-red-600" : ""}`}
+              className={`relative h-24 w-24 rounded-full transition-colors ${isListening ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"}`}
               onClick={handleMicClick}
               disabled={isLoading}
             >

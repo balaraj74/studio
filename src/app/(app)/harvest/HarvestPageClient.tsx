@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -52,7 +51,6 @@ import { getHarvests, addHarvest, updateHarvest, deleteHarvest, type HarvestForm
 import { getCrops } from "@/lib/actions/crops";
 import { Skeleton } from "@/components/ui/skeleton";
 
-
 export default function HarvestPageClient() {
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [availableCrops, setAvailableCrops] = useState<Crop[]>([]);
@@ -87,7 +85,6 @@ export default function HarvestPageClient() {
 
     return { totalHarvests, activeCrops, latestHarvest };
   }, [harvests]);
-
 
   const handleAddNew = () => {
     setEditingHarvest(null);
@@ -124,65 +121,66 @@ export default function HarvestPageClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <Package className="h-8 w-8 text-primary" />
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <Package className="h-8 w-8 text-primary" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold font-headline">Output Tracking</h1>
+            <h1 className="text-3xl font-bold font-headline">Harvest Records</h1>
             <p className="text-muted-foreground">
-              Record and track your crop yields
+              Record and track your crop yields and output.
             </p>
           </div>
         </div>
         <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" /> Record Output
+          <Plus className="mr-2 h-4 w-4" /> Record New Output
         </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-            <CardHeader>
-                <CardTitle>Total Harvests</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>Total Records</CardDescription>
+                <CardTitle className="text-4xl">
+                    { isLoading ? <Skeleton className="h-8 w-1/4" /> : summary.totalHarvests }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                { isLoading ? <Skeleton className="h-8 w-1/4" /> : <p className="text-3xl font-bold">{summary.totalHarvests}</p> }
-                <p className="text-sm text-muted-foreground">Harvest records</p>
+                <p className="text-xs text-muted-foreground">Harvest records logged</p>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader>
-                <CardTitle>Active Crops</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>Harvested Crops</CardDescription>
+                <CardTitle className="text-4xl">
+                    { isLoading ? <Skeleton className="h-8 w-1/4" /> : summary.activeCrops }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                { isLoading ? <Skeleton className="h-8 w-1/4" /> : <p className="text-3xl font-bold">{summary.activeCrops}</p> }
-                <p className="text-sm text-muted-foreground">Crops with output</p>
+                <p className="text-xs text-muted-foreground">Unique crops with output</p>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader>
-                <CardTitle>Latest Harvest</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>Latest Harvest</CardDescription>
+                <CardTitle className="text-2xl font-bold">
+                    { isLoading ? <Skeleton className="h-8 w-1/2" /> : summary.latestHarvest ? summary.latestHarvest.cropName : 'N/A' }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                { isLoading ? <Skeleton className="h-8 w-1/2" /> : summary.latestHarvest ? (
-                    <>
-                        <p className="text-xl font-bold">{summary.latestHarvest.cropName}</p>
-                        <p className="text-sm text-muted-foreground">{format(new Date(summary.latestHarvest.harvestDate), "PPP")}</p>
-                    </>
-                ) : (
-                    <>
-                        <p className="text-xl font-semibold">No harvests</p>
-                        <p className="text-sm text-muted-foreground">Record your first harvest</p>
-                    </>
-                )}
+               <p className="text-xs text-muted-foreground">
+                { summary.latestHarvest ? format(new Date(summary.latestHarvest.harvestDate), "PPP") : "Record your first harvest" }
+               </p>
             </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Harvest Records</CardTitle>
+          <CardTitle>Harvest Log</CardTitle>
           <CardDescription>
-            {harvests.length} harvest records
+            A list of all your recorded harvests.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -193,7 +191,7 @@ export default function HarvestPageClient() {
                   <TableHead>Crop</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead className="hidden md:table-cell">Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -204,8 +202,8 @@ export default function HarvestPageClient() {
                             <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                            <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[120px]" /></TableCell>
+                            <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
                         </TableRow>
                     ))
                 ) : harvests.length > 0 ? (
@@ -216,9 +214,9 @@ export default function HarvestPageClient() {
                         {harvest.quantity} {harvest.unit}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(harvest.harvestDate), "dd/MM/yyyy")}
+                        {format(new Date(harvest.harvestDate), "dd MMM, yyyy")}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">{harvest.notes || "-"}</TableCell>
+                      <TableCell className="hidden md:table-cell max-w-xs truncate">{harvest.notes || "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -244,7 +242,7 @@ export default function HarvestPageClient() {
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Scale className="h-12 w-12 text-muted-foreground" />
                         <h3 className="font-semibold">No harvest records yet</h3>
-                        <p className="text-muted-foreground text-sm">Click "Record Output" to start tracking.</p>
+                        <p className="text-muted-foreground text-sm">Click "Record New Output" to start tracking.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -393,7 +391,7 @@ function HarvestFormDialog({
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[280px] justify-start text-left font-normal",
+                    "col-span-3 justify-start text-left font-normal",
                     !harvestDate && "text-muted-foreground"
                   )}
                   disabled={isSubmitting}

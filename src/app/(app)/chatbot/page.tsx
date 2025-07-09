@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Mic, Bot, User, Volume2, Languages } from "lucide-react";
+import { Send, Mic, Bot, User, Volume2, Languages, MessageCircle } from "lucide-react";
 import { farmingAdviceChatbot } from "@/ai/flows/farming-advice-chatbot";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -41,20 +41,27 @@ export default function ChatbotPage() {
 
   useEffect(() => {
     const loadVoices = () => {
-        const availableVoices = window.speechSynthesis.getVoices();
-        const supportedVoices = availableVoices.filter(v => v.lang.startsWith('en') || v.lang.startsWith('kn') || v.lang.startsWith('hi'));
-        setVoices(supportedVoices);
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            const availableVoices = window.speechSynthesis.getVoices();
+            const supportedVoices = availableVoices.filter(v => v.lang.startsWith('en') || v.lang.startsWith('kn') || v.lang.startsWith('hi'));
+            setVoices(supportedVoices);
+        }
     };
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
     loadVoices();
   }, []);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      const scrollableNode = scrollAreaRef.current.querySelector('div');
+      if(scrollableNode) {
+        scrollableNode.scrollTo({
+          top: scrollableNode.scrollHeight,
+          behavior: "smooth",
+        });
+      }
     }
   };
 
@@ -96,7 +103,7 @@ export default function ChatbotPage() {
     const recognition = new (window as any).webkitSpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = ttsLanguage; // Use the selected language for STT as well
+    recognition.lang = ttsLanguage; 
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -107,7 +114,6 @@ export default function ChatbotPage() {
     recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
-        // Automatically submit after voice input
         handleSubmit(undefined, transcript);
     };
     
@@ -150,11 +156,16 @@ export default function ChatbotPage() {
 
   return (
     <div className="h-[calc(100vh-10rem)] flex flex-col">
-       <div className="space-y-1 mb-4">
-        <h1 className="text-3xl font-bold font-headline">AI Farming Chatbot</h1>
-        <p className="text-muted-foreground">
-          Ask me anything about farming, crops, or techniques. I support voice input!
-        </p>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="bg-primary/10 p-3 rounded-lg">
+          <MessageCircle className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+            <h1 className="text-3xl font-bold font-headline">AI Farming Chatbot</h1>
+            <p className="text-muted-foreground">
+            Ask me anything about farming, crops, or techniques.
+            </p>
+        </div>
       </div>
       <Card className="flex-1 flex flex-col">
         <CardHeader className="flex flex-row justify-between items-center">
@@ -165,8 +176,8 @@ export default function ChatbotPage() {
             <div className="flex items-center gap-2">
                 <Languages className="h-4 w-4 text-muted-foreground" />
                 <Select value={ttsLanguage} onValueChange={setTtsLanguage}>
-                    <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select TTS Language" />
+                    <SelectTrigger className="w-auto sm:w-[180px]">
+                        <SelectValue placeholder="Select Language" />
                     </SelectTrigger>
                     <SelectContent>
                         {languageOptions.map(opt => (
@@ -187,7 +198,7 @@ export default function ChatbotPage() {
                   }`}
                 >
                   {message.sender === "bot" && (
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 bg-primary/10 text-primary">
                       <AvatarFallback><Bot size={20} /></AvatarFallback>
                     </Avatar>
                   )}
@@ -217,7 +228,7 @@ export default function ChatbotPage() {
               ))}
               {isLoading && (
                  <div className="flex items-end gap-2 justify-start">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 bg-primary/10 text-primary">
                       <AvatarFallback><Bot size={20} /></AvatarFallback>
                     </Avatar>
                     <div className="max-w-xs rounded-lg px-4 py-2 bg-muted">
@@ -241,10 +252,10 @@ export default function ChatbotPage() {
               disabled={isLoading}
               className="flex-1"
             />
-            <Button type="button" variant="secondary" size="icon" onClick={handleMicClick} disabled={isLoading}>
+            <Button type="button" variant="secondary" size="icon" onClick={handleMicClick} disabled={isLoading} aria-label="Use Microphone">
               <Mic className={`h-4 w-4 ${isListening ? 'text-red-500 animate-pulse' : ''}`} />
             </Button>
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()} aria-label="Send Message">
               <Send className="h-4 w-4" />
             </Button>
           </form>

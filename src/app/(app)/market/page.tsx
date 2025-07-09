@@ -15,16 +15,21 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { marketPrices } from "@/lib/data";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, LineChart } from "lucide-react";
 
 export default function MarketPage() {
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold font-headline">Market Prices</h1>
-        <p className="text-muted-foreground">
-          Track the latest Agriculture Produce Market Committee (APMC) prices for key crops.
-        </p>
+      <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <LineChart className="h-8 w-8 text-primary" />
+          </div>
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Market Prices</h1>
+          <p className="text-muted-foreground">
+            Track the latest Agriculture Produce Market Committee (APMC) prices for key crops.
+          </p>
+        </div>
       </div>
 
       <Card>
@@ -54,7 +59,7 @@ export default function MarketPage() {
                     <TableCell className="text-right">
                       <Badge
                         variant={item.change >= 0 ? "default" : "destructive"}
-                        className={`${item.change >= 0 ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' : 'bg-red-500/20 text-red-700 hover:bg-red-500/30'}`}
+                        className={`border-transparent ${item.change >= 0 ? 'bg-green-500/20 text-green-700 hover:bg-green-500/30' : 'bg-red-500/20 text-red-700 hover:bg-red-500/30'}`}
                       >
                         <div className="flex items-center">
                           {item.change >= 0 ? (

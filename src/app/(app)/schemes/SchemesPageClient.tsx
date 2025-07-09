@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from "react";
@@ -20,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import type { Scheme } from "@/types";
 import Link from "next/link";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen, ScrollText } from "lucide-react";
 
 interface SchemesPageClientProps {
     schemes: Scheme[];
@@ -48,11 +47,16 @@ export default function SchemesPageClient({ schemes, states, crops }: SchemesPag
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold font-headline">Government Schemes</h1>
-        <p className="text-muted-foreground">
-          Discover central and state government schemes for farmers.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="bg-primary/10 p-3 rounded-lg">
+          <ScrollText className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Government Schemes</h1>
+          <p className="text-muted-foreground">
+            Discover central and state government schemes for farmers.
+          </p>
+        </div>
       </div>
 
       <Card>
@@ -102,39 +106,45 @@ export default function SchemesPageClient({ schemes, states, crops }: SchemesPag
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredSchemes.length > 0 ? (
-          filteredSchemes.map((scheme, index) => (
-            <Card key={index} className="flex flex-col">
-              <CardHeader>
-                <CardTitle className="flex items-start gap-2">
-                  <BookOpen className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-                  <span>{scheme.name}</span>
-                </CardTitle>
-                <div className="flex flex-wrap gap-2 pt-2">
-                    {scheme.state !== 'All' && <span className="text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded-full">{scheme.state}</span>}
-                    {scheme.crop !== 'All' && <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{scheme.crop}</span>}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-muted-foreground">{scheme.description}</p>
-              </CardContent>
-              <CardFooter>
-                <Button asChild className="w-full">
-                  <Link href={scheme.link} target="_blank" rel="noopener noreferrer">
-                    Apply Now <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
-        ) : (
-          <div className="md:col-span-2 lg:col-span-3 text-center py-12">
-            <p className="text-muted-foreground">
-              No schemes found for the selected filters.
-            </p>
-          </div>
-        )}
+      <div>
+        <h2 className="text-xl font-bold mb-4">Available Schemes ({filteredSchemes.length})</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredSchemes.length > 0 ? (
+            filteredSchemes.map((scheme, index) => (
+                <Card key={index} className="flex flex-col">
+                <CardHeader>
+                    <CardTitle className="flex items-start gap-3">
+                    <div className="bg-primary/10 p-2 rounded-lg mt-1">
+                        <BookOpen className="h-5 w-5 text-primary flex-shrink-0" />
+                    </div>
+                    <span>{scheme.name}</span>
+                    </CardTitle>
+                    <div className="flex flex-wrap gap-2 pt-2">
+                        {scheme.state !== 'All' && <span className="text-xs bg-indigo-500/20 text-indigo-700 px-2 py-0.5 rounded-full">{scheme.state}</span>}
+                        {scheme.crop !== 'All' && <span className="text-xs bg-green-500/20 text-green-700 px-2 py-0.5 rounded-full">{scheme.crop}</span>}
+                    </div>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                    <p className="text-sm text-muted-foreground">{scheme.description}</p>
+                </CardContent>
+                <CardFooter>
+                    <Button asChild className="w-full" variant="outline">
+                    <Link href={scheme.link} target="_blank" rel="noopener noreferrer">
+                        Learn More <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                    </Button>
+                </CardFooter>
+                </Card>
+            ))
+            ) : (
+            <div className="md:col-span-2 lg:col-span-3 text-center py-12 bg-card rounded-lg border">
+                <p className="text-muted-foreground font-semibold">
+                No schemes found for the selected filters.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">Try selecting "All" to broaden your search.</p>
+            </div>
+            )}
+        </div>
       </div>
     </div>
   );

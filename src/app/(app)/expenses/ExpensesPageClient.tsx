@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -52,13 +51,12 @@ import { useToast } from "@/hooks/use-toast";
 import { getExpenses, addExpense, updateExpense, deleteExpense, type ExpenseFormInput } from "@/lib/actions/expenses";
 import { Skeleton } from "@/components/ui/skeleton";
 
-
 const categoryStyles: { [key in ExpenseCategory]: string } = {
-  Seeds: "bg-green-100 text-green-800",
-  Fertilizer: "bg-yellow-100 text-yellow-800",
-  Labor: "bg-blue-100 text-blue-800",
-  Equipment: "bg-orange-100 text-orange-800",
-  Other: "bg-gray-100 text-gray-800",
+  Seeds: "bg-green-500/20 text-green-700",
+  Fertilizer: "bg-yellow-500/20 text-yellow-700",
+  Labor: "bg-blue-500/20 text-blue-700",
+  Equipment: "bg-orange-500/20 text-orange-700",
+  Other: "bg-gray-500/20 text-gray-700",
 };
 
 export default function ExpensesPageClient() {
@@ -99,7 +97,6 @@ export default function ExpensesPageClient() {
     return { totalExpenses, thisMonthExpenses, topCategory };
   }, [expenses]);
 
-
   const handleAddNew = () => {
     setEditingExpense(null);
     setIsDialogOpen(true);
@@ -135,56 +132,55 @@ export default function ExpensesPageClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <DollarSign className="h-8 w-8 text-primary" />
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <DollarSign className="h-8 w-8 text-primary" />
+          </div>
           <div>
             <h1 className="text-3xl font-bold font-headline">Expense Tracking</h1>
             <p className="text-muted-foreground">
-              Track and manage your farming expenses
+              Track and manage all your farming expenses.
             </p>
           </div>
         </div>
         <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" /> Add Expense
+          <Plus className="mr-2 h-4 w-4" /> Add New Expense
         </Button>
       </div>
       
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-            <CardHeader>
-                <CardTitle>Total Expenses</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>Total Expenses</CardDescription>
+                <CardTitle className="text-4xl">
+                  {isLoading ? <Skeleton className="h-8 w-3/4" /> : `₹${summary.totalExpenses.toLocaleString()}` }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <p className="text-3xl font-bold">₹{summary.totalExpenses.toLocaleString()}</p> }
-                <p className="text-sm text-muted-foreground">{expenses.length} expenses recorded</p>
+                <div className="text-xs text-muted-foreground">{expenses.length} expenses recorded</div>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader>
-                <CardTitle>This Month</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>This Month</CardDescription>
+                <CardTitle className="text-4xl">
+                  {isLoading ? <Skeleton className="h-8 w-3/4" /> : `₹${summary.thisMonthExpenses.toLocaleString()}` }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <p className="text-3xl font-bold">₹{summary.thisMonthExpenses.toLocaleString()}</p> }
-                <p className="text-sm text-muted-foreground">Current month spending</p>
+                <div className="text-xs text-muted-foreground">Current month spending</div>
             </CardContent>
         </Card>
         <Card>
-            <CardHeader>
-                <CardTitle>Top Category</CardTitle>
+            <CardHeader className="pb-2">
+                <CardDescription>Top Category</CardDescription>
+                <CardTitle className="text-4xl">
+                   {isLoading ? <Skeleton className="h-8 w-1/2" /> : summary.topCategory ? summary.topCategory : 'N/A' }
+                </CardTitle>
             </CardHeader>
             <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-1/2" /> : summary.topCategory ? (
-                    <>
-                        <p className="text-3xl font-bold">{summary.topCategory}</p>
-                        <p className="text-sm text-muted-foreground">Highest spending category</p>
-                    </>
-                ) : (
-                    <>
-                        <p className="text-xl font-semibold">No expenses</p>
-                        <p className="text-sm text-muted-foreground">Add expenses to see insights</p>
-                    </>
-                )}
+                 <div className="text-xs text-muted-foreground">Highest spending category</div>
             </CardContent>
         </Card>
       </div>
@@ -193,7 +189,7 @@ export default function ExpensesPageClient() {
         <CardHeader>
           <CardTitle>Recent Expenses</CardTitle>
           <CardDescription>
-            {expenses.length} expenses recorded
+            A list of your most recent expenses.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -213,10 +209,10 @@ export default function ExpensesPageClient() {
                     Array.from({length: 5}).map((_, i) => (
                         <TableRow key={i}>
                             <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-[80px] rounded-full" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-[60px] float-right" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                            <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
                         </TableRow>
                     ))
                 ) : expenses.length > 0 ? (
@@ -232,7 +228,7 @@ export default function ExpensesPageClient() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {format(expense.date, "dd/MM/yyyy")}
+                        {format(expense.date, "dd MMM, yyyy")}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         ₹{expense.amount.toLocaleString()}
@@ -262,7 +258,7 @@ export default function ExpensesPageClient() {
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Receipt className="h-12 w-12 text-muted-foreground" />
                         <h3 className="font-semibold">No expenses recorded yet</h3>
-                        <p className="text-muted-foreground text-sm">Click "Add Expense" to start tracking.</p>
+                        <p className="text-muted-foreground text-sm">Click "Add New Expense" to start tracking.</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -413,7 +409,7 @@ function ExpenseFormDialog({
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[280px] justify-start text-left font-normal",
+                    "col-span-3 justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
                   disabled={isSubmitting}

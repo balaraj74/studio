@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -54,9 +53,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 const statusStyles: { [key in CropStatus]: string } = {
-  Planned: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border-yellow-200",
-  Growing: "bg-green-100 text-green-800 hover:bg-green-200 border-green-200",
-  Harvested: "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200",
+  Planned: "bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30 border-yellow-500/30",
+  Growing: "bg-green-500/20 text-green-700 hover:bg-green-500/30 border-green-500/30",
+  Harvested: "bg-blue-500/20 text-blue-700 hover:bg-blue-500/30 border-blue-500/30",
 };
 
 export default function CropsPageClient() {
@@ -114,18 +113,20 @@ export default function CropsPageClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="flex items-center gap-3">
-          <Leaf className="h-8 w-8 text-primary" />
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <Leaf className="h-8 w-8 text-primary" />
+          </div>
           <div>
             <h1 className="text-3xl font-bold font-headline">Crop Management</h1>
             <p className="text-muted-foreground">
-              Manage your crops and track their growth
+              Manage your crops and track their growth cycle.
             </p>
           </div>
         </div>
         <Button onClick={handleAddNew}>
-          <Plus className="mr-2 h-4 w-4" /> Add Crop
+          <Plus className="mr-2 h-4 w-4" /> Add New Crop
         </Button>
       </div>
 
@@ -133,7 +134,7 @@ export default function CropsPageClient() {
         <CardHeader>
           <CardTitle>Your Crops</CardTitle>
           <CardDescription>
-            {crops.length} crops in your farm
+            A list of all crops you are currently tracking on your farm.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -145,7 +146,7 @@ export default function CropsPageClient() {
                   <TableHead>Status</TableHead>
                   <TableHead>Planted Date</TableHead>
                   <TableHead>Harvest Date</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead className="hidden md:table-cell">Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -154,11 +155,11 @@ export default function CropsPageClient() {
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-[90px] rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[120px]" /></TableCell>
+                        <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
                     </TableRow>
                   ))
                 ) : crops.length > 0 ? (
@@ -167,23 +168,22 @@ export default function CropsPageClient() {
                       <TableCell className="font-medium">{crop.name}</TableCell>
                       <TableCell>
                         <Badge
-                          variant="outline"
-                          className={cn(statusStyles[crop.status])}
+                          className={cn("border", statusStyles[crop.status])}
                         >
                           {crop.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {crop.plantedDate
-                          ? format(crop.plantedDate, "dd/MM/yyyy")
+                          ? format(crop.plantedDate, "dd MMM, yyyy")
                           : "-"}
                       </TableCell>
                       <TableCell>
                         {crop.harvestDate
-                          ? format(crop.harvestDate, "dd/MM/yyyy")
+                          ? format(crop.harvestDate, "dd MMM, yyyy")
                           : "-"}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate">
+                      <TableCell className="hidden md:table-cell max-w-xs truncate">
                         {crop.notes || "-"}
                       </TableCell>
                       <TableCell className="text-right">
@@ -191,6 +191,7 @@ export default function CropsPageClient() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(crop)}
+                          aria-label="Edit crop"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -199,6 +200,7 @@ export default function CropsPageClient() {
                           size="icon"
                           onClick={() => handleDelete(crop.id)}
                           className="text-destructive hover:text-destructive"
+                          aria-label="Delete crop"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -341,7 +343,7 @@ function CropFormDialog({
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[280px] justify-start text-left font-normal",
+                    "col-span-3 justify-start text-left font-normal",
                     !plantedDate && "text-muted-foreground"
                   )}
                   disabled={isSubmitting}
@@ -369,7 +371,7 @@ function CropFormDialog({
                 <Button
                   variant={"outline"}
                   className={cn(
-                    "w-[280px] justify-start text-left font-normal",
+                    "col-span-3 justify-start text-left font-normal",
                     !harvestDate && "text-muted-foreground"
                   )}
                   disabled={isSubmitting}
