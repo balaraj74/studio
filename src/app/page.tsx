@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react';
 import { Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
+import { useToast } from "@/hooks/use-toast";
 
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -17,10 +26,64 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
 
-  const handleAuthAction = () => {
-    // In a real app, this would handle actual authentication
-    router.push('/dashboard');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleAuthAction = async (action: 'signIn' | 'signUp') => {
+    setIsLoading(true);
+    const email = action === 'signIn' ? signInEmail : signUpEmail;
+    const password = action === 'signIn' ? signInPassword : signUpPassword;
+
+    if (!email || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Email and password cannot be empty.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      if (action === 'signUp') {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      // The auth provider will handle the redirect
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: error.message.replace('Firebase: ', ''),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      // The auth provider will handle the redirect
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-In Error',
+        description: error.message.replace('Firebase: ', ''),
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -45,14 +108,14 @@ export default function LoginPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email-in">Email</Label>
-                  <Input id="email-in" type="email" placeholder="farmer@example.com" />
+                  <Input id="email-in" type="email" placeholder="farmer@example.com" value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password-in">Password</Label>
-                  <Input id="password-in" type="password" />
+                  <Input id="password-in" type="password" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
                 </div>
-                <Button onClick={handleAuthAction} className="w-full font-bold bg-primary hover:bg-primary/90">
-                  Sign In
+                <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isLoading || isGoogleLoading}>
+                  {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </CardContent>
             </Card>
@@ -66,14 +129,14 @@ export default function LoginPage() {
               <CardContent className="space-y-4">
                  <div className="space-y-2">
                   <Label htmlFor="email-up">Email</Label>
-                  <Input id="email-up" type="email" placeholder="farmer@example.com" />
+                  <Input id="email-up" type="email" placeholder="farmer@example.com" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password-up">Password</Label>
-                  <Input id="password-up" type="password" />
+                  <Input id="password-up" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
                 </div>
-                <Button onClick={handleAuthAction} className="w-full font-bold bg-primary hover:bg-primary/90">
-                  Sign Up
+                <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isLoading || isGoogleLoading}>
+                  {isLoading ? 'Signing Up...' : 'Sign Up'}
                 </Button>
               </CardContent>
             </Card>
@@ -89,9 +152,9 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={handleAuthAction}>
-          <GoogleIcon />
-          Continue with Google
+        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+          {isGoogleLoading ? <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <GoogleIcon />}
+          {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
         </Button>
       </div>
     </div>
