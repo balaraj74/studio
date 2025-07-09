@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Mic, Bot, User, Volume2, Languages } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
 import { farmingAdviceChatbot } from "@/ai/flows/farming-advice-chatbot";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -34,7 +33,6 @@ export default function ChatbotPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const { user } = useAuth();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -198,11 +196,11 @@ export default function ChatbotPage() {
                             <Volume2 className="h-4 w-4" />
                         </Button>
                     )}
-                  {message.sender === "user" && user && (
+                  {message.sender === "user" && (
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.photoURL || ""} />
+                      <AvatarImage src={""} />
                       <AvatarFallback>
-                        {user.displayName?.charAt(0) || <User />}
+                        <User />
                       </AvatarFallback>
                     </Avatar>
                   )}
