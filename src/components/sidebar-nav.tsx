@@ -10,19 +10,27 @@ import {
 import {
   LayoutDashboard,
   Leaf,
-  MessageCircle,
-  ScrollText,
+  DollarSign,
+  Package,
   CloudSun,
+  Stethoscope,
   LineChart,
+  ScrollText,
+  MessageCircle,
+  Mic,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/disease-check", label: "Disease Check", icon: Leaf },
-  { href: "/chatbot", label: "AI Chatbot", icon: MessageCircle },
-  { href: "/schemes", label: "Schemes", icon: ScrollText },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/crops", label: "Crops", icon: Leaf },
+  { href: "/expenses", label: "Expenses", icon: DollarSign },
+  { href: "/harvest", label: "Harvest", icon: Package },
   { href: "/weather", label: "Weather", icon: CloudSun },
-  { href: "/market", label: "Market Prices", icon: LineChart },
+  { href: "/disease-check", label: "Diagnosis", icon: Stethoscope },
+  { href: "/market", label: "Prices", icon: LineChart },
+  { href: "/schemes", label: "Schemes", icon: ScrollText },
+  { href: "/chatbot", label: "AI Chat", icon: MessageCircle },
+  { href: "/voice", label: "Voice", icon: Mic },
 ];
 
 export function SidebarNav() {
