@@ -59,7 +59,7 @@ export default function SignInPage() {
       // The useEffect will handle the redirect
     } catch (error: any) {
       console.error("Sign in failed", error);
-      let description = "Could not sign in with Google. Please check your configuration and try again.";
+      let description = "Could not sign in. Check your Firebase project settings: ensure Google Sign-In is enabled and this domain is authorized.";
       if (error.code) {
         switch (error.code) {
           case 'auth/popup-closed-by-user':
@@ -72,7 +72,7 @@ export default function SignInPage() {
             description = "The sign-in popup was blocked by your browser. Please allow popups and try again.";
             break;
           case 'auth/operation-not-allowed':
-             description = "Sign-in with Google is not enabled for this app. Please contact the administrator.";
+             description = "Sign-in with Google is not enabled for this app. Please enable it in your Firebase project's Authentication settings.";
              break;
           case 'auth/invalid-api-key':
             description = "The Firebase API key is not valid. Please check your .env file."
@@ -83,6 +83,7 @@ export default function SignInPage() {
         variant: "destructive",
         title: "Sign-in Failed",
         description,
+        duration: 9000,
       });
       setIsSigningIn(false);
     }
