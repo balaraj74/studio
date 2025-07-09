@@ -20,6 +20,7 @@ import {
   type DiagnoseCropDiseaseOutput,
 } from "@/ai/flows/crop-disease-detection";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function DiseaseCheckPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -189,20 +190,25 @@ export default function DiseaseCheckPage() {
       {result && (
         <Card className="animate-in fade-in-50">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center gap-2">
               <Leaf className="mr-2 text-primary" />
-              Diagnosis Result
+              <span>{result.diseaseName}</span>
             </CardTitle>
+            <CardDescription>A comprehensive diagnosis of the detected issue.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label className="text-muted-foreground">Identified Disease</Label>
-              <p className="text-lg font-semibold">{result.diseaseName}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Suggested Remedy</Label>
-              <p className="text-base whitespace-pre-wrap">{result.suggestedRemedy}</p>
-            </div>
+              <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">Stage: {result.diseaseStage}</Badge>
+                  <Badge variant="outline">Remedy Type: {result.remedyType}</Badge>
+              </div>
+              <div>
+                  <Label className="font-semibold">Description</Label>
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{result.description}</p>
+              </div>
+              <div>
+                  <Label className="font-semibold">Suggested Remedy</Label>
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{result.suggestedRemedy}</p>
+              </div>
           </CardContent>
         </Card>
       )}

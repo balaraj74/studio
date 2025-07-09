@@ -22,7 +22,10 @@ export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSc
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
   diseaseName: z.string().describe('The name of the identified disease.'),
-  suggestedRemedy: z.string().describe('The suggested remedy for the disease.'),
+  description: z.string().describe('A detailed description of the disease, its symptoms, and causes.'),
+  diseaseStage: z.string().describe('The likely stage of the disease (e.g., Early, Mid, Advanced).'),
+  remedyType: z.string().describe('The type of remedy suggested (e.g., Fungicide, Pesticide, Cultural Practice).'),
+  suggestedRemedy: z.string().describe('A detailed suggested remedy and treatment plan for the disease.'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -34,11 +37,16 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert in plant pathology, skilled in diagnosing crop diseases from leaf images. Analyze the provided image and provide the disease name and suggested remedy.
+  prompt: `You are an expert in plant pathology, skilled in diagnosing crop diseases from leaf images. Analyze the provided image and identify the disease.
 
   Photo: {{media url=photoDataUri}}
   
-  Respond with the disease name and a concise treatment plan for the farmer.`,
+  Provide a comprehensive diagnosis including:
+  - The disease name.
+  - A detailed description of the disease, its common symptoms, and what might cause it.
+  - The likely stage of the disease (e.g., Early, Mid, Advanced).
+  - The type of remedy required (e.g., Fungicide, Pesticide, Cultural Practice, Nutrient Management).
+  - A detailed step-by-step suggested remedy and treatment plan for the farmer.`,
 });
 
 const diagnoseCropDiseaseFlow = ai.defineFlow(
