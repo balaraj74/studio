@@ -6,6 +6,7 @@ import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Leaf, Bot, Sun, IndianRupee } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -43,6 +44,7 @@ export default function SignInPage() {
   const { user, loading, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!loading && user) {
@@ -55,8 +57,30 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
       // The useEffect will handle the redirect
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in failed", error);
+      let description = "Could not sign in with Google. Please check your configuration and try again.";
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+            description = "The sign-in popup was closed before completing. Please try again.";
+            break;
+          case 'auth/cancelled-popup-request':
+            description = "The sign-in process was cancelled. Please try again.";
+            break;
+          case 'auth/popup-blocked':
+            description = "The sign-in popup was blocked by your browser. Please allow popups and try again.";
+            break;
+          case 'auth/operation-not-allowed':
+             description = "Sign-in with Google is not enabled for this app. Please contact the administrator.";
+             break;
+        }
+      }
+      toast({
+        variant: "destructive",
+        title: "Sign-in Failed",
+        description,
+      });
       setIsSigningIn(false);
     }
   };
