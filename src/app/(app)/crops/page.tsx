@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardHeader,
@@ -251,7 +251,7 @@ function CropFormDialog({
     onSave({ name, status, plantedDate, harvestDate, notes });
   };
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setName(crop?.name || "");
       setStatus(crop?.status || "Planned");
