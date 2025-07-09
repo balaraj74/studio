@@ -24,3 +24,14 @@ export interface Crop {
   harvestDate: Date | null;
   notes: string;
 }
+
+export type ExpenseCategory = "Seeds" | "Fertilizer" | "Labor" | "Equipment" | "Other";
+
+export interface Expense {
+  id: string;
+  name: string;
+  category: ExpenseCategory;
+  amount: number;
+  date: Date;
+  notes?: string;
+}

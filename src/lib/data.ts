@@ -1,4 +1,4 @@
-import type { MarketPrice, Scheme } from "@/types";
+import type { MarketPrice, Scheme, Expense } from "@/types";
 
 export const marketPrices: MarketPrice[] = [
   { crop: "Rice (Paddy)", region: "Punjab", price: 1940, change: 1.5 },
@@ -55,4 +55,11 @@ export const schemes: Scheme[] = [
     description: "Aims to increase the production of oilseeds and oil palm to meet the domestic demand for edible oils.",
     link: "#",
   }
+];
+
+export const initialExpenses: Expense[] = [
+    { id: "1", name: "Urea Fertilizer", category: "Fertilizer", amount: 1500, date: new Date("2025-06-15") },
+    { id: "2", name: "Tractor Rental", category: "Equipment", amount: 3000, date: new Date("2025-06-10") },
+    { id: "3", name: "Wheat Seeds", category: "Seeds", amount: 2200, date: new Date("2025-06-05") },
+    { id: "4", name: "Daily Wages for 5 workers", category: "Labor", amount: 2500, date: new Date("2025-07-01") },
 ];
