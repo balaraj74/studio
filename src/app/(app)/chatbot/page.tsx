@@ -42,7 +42,7 @@ export default function ChatbotPage() {
   useEffect(() => {
     const loadVoices = () => {
         const availableVoices = window.speechSynthesis.getVoices();
-        const supportedVoices = availableVoices.filter(v => v.lang.startsWith('en') || v.lang.startsWith('kn'));
+        const supportedVoices = availableVoices.filter(v => v.lang.startsWith('en') || v.lang.startsWith('kn') || v.lang.startsWith('hi'));
         setVoices(supportedVoices);
     };
     window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -62,6 +62,7 @@ export default function ChatbotPage() {
   
   const handleSpeak = (text: string) => {
     if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       const selectedVoice = voices.find(v => v.lang === ttsLanguage);
       utterance.voice = selectedVoice || null;
@@ -95,7 +96,7 @@ export default function ChatbotPage() {
     const recognition = new (window as any).webkitSpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-IN';
+    recognition.lang = ttsLanguage; // Use the selected language for STT as well
 
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
@@ -106,23 +107,26 @@ export default function ChatbotPage() {
     recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
+        // Automatically submit after voice input
+        handleSubmit(undefined, transcript);
     };
     
     recognition.start();
     recognitionRef.current = recognition;
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent, voiceInput?: string) => {
     e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+    const currentInput = voiceInput || input;
+    if (!currentInput.trim() || isLoading) return;
 
-    const userMessage: Message = { sender: "user", text: input };
+    const userMessage: Message = { sender: "user", text: currentInput };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await farmingAdviceChatbot({ question: input });
+      const response = await farmingAdviceChatbot({ question: currentInput });
       const botMessage: Message = { sender: "bot", text: response.answer };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -137,6 +141,12 @@ export default function ChatbotPage() {
       setIsLoading(false);
     }
   };
+
+  const languageOptions = [
+      { value: 'en-IN', label: 'English (India)' },
+      { value: 'kn-IN', label: 'Kannada' },
+      { value: 'hi-IN', label: 'Hindi' },
+  ];
 
   return (
     <div className="h-[calc(100vh-10rem)] flex flex-col">
@@ -159,10 +169,9 @@ export default function ChatbotPage() {
                         <SelectValue placeholder="Select TTS Language" />
                     </SelectTrigger>
                     <SelectContent>
-                        {voices.map(voice => (
-                            <SelectItem key={voice.name} value={voice.lang}>{voice.name} ({voice.lang})</SelectItem>
+                        {languageOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
-                         {voices.length === 0 && <SelectItem value="en-IN" disabled>English (India)</SelectItem>}
                     </SelectContent>
                 </Select>
             </div>

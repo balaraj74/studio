@@ -129,7 +129,7 @@ export default function DiseaseCheckPage() {
                   <Image
                     src={previewUrl}
                     alt="Selected leaf preview"
-                    layout="fill"
+                    fill
                     objectFit="contain"
                     className="rounded-lg"
                   />

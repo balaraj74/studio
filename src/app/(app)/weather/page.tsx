@@ -36,11 +36,16 @@ type WeatherData = {
   }[];
 };
 
-const CloudSun = ({className}: {className?: string}) => <div className={className}><Cloud/><Sun className="absolute top-0 right-0"/></div>
+const CloudSunIcon = ({className}: {className?: string}) => (
+    <div className={cn("relative w-6 h-6", className)}>
+        <Cloud className="absolute w-full h-full text-gray-500" />
+        <Sun className="absolute w-3/4 h-3/4 -top-1 -right-1 text-yellow-500" />
+    </div>
+);
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
   "01d": <Sun className="h-6 w-6 text-yellow-500" />,
-  "02d": <CloudSun className="h-6 w-6 text-yellow-600" />,
+  "02d": <CloudSunIcon />,
   "03d": <Cloud className="h-6 w-6 text-gray-500" />,
   "04d": <Cloud className="h-6 w-6 text-gray-600" />,
   "09d": <CloudRain className="h-6 w-6 text-blue-500" />,
@@ -48,6 +53,7 @@ const weatherIcons: { [key: string]: React.ReactNode } = {
   "11d": <CloudSnow className="h-6 w-6 text-indigo-500" />,
   "13d": <CloudSnow className="h-6 w-6 text-blue-300" />,
   "50d": <Cloud className="h-6 w-6 text-gray-400" />,
+  "unknown": <Sun className="h-6 w-6 text-yellow-500" />,
 };
 
 export default function WeatherPage() {
@@ -111,7 +117,7 @@ export default function WeatherPage() {
         setError("Unable to retrieve your location. Please enable location services.");
         setLoading(false);
         // As a fallback, load with default location
-        getMockWeatherData(12.97, 77.59).then(setWeather);
+        getMockWeatherData(12.97, 77.59).then(setWeather).finally(() => setLoading(false));
       }
     );
   };
@@ -183,7 +189,7 @@ export default function WeatherPage() {
           <CardContent className="space-y-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6 rounded-lg bg-muted p-6">
               <div className="flex items-center gap-4">
-                <div className="text-6xl">{weatherIcons[weather.icon]}</div>
+                <div className="text-6xl">{weatherIcons[weather.icon] || weatherIcons['unknown']}</div>
                 <div>
                   <p className="text-6xl font-bold">{weather.temperature}°C</p>
                   <p className="text-muted-foreground capitalize">
@@ -211,7 +217,7 @@ export default function WeatherPage() {
                     className="flex flex-col items-center gap-2 rounded-lg border p-4"
                   >
                     <p className="font-medium">{day.day}</p>
-                    <div className="text-4xl">{weatherIcons[day.icon]}</div>
+                    <div className="text-4xl">{weatherIcons[day.icon] || weatherIcons['unknown']}</div>
                     <p className="text-lg font-semibold">{day.temp}°C</p>
                   </div>
                 ))}
