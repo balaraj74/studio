@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
@@ -261,8 +260,7 @@ export default function FieldMappingClient() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 h-full bg-muted rounded-lg flex items-center justify-center">
-                    {apiKey === undefined && <Skeleton className="h-[500px] w-full" />}
-                    {!apiKey && apiKey !== undefined && (
+                    {!apiKey ? (
                         <Alert variant="destructive" className="m-4">
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Configuration Error</AlertTitle>
@@ -270,11 +268,8 @@ export default function FieldMappingClient() {
                                 Google Maps API Key is missing. Please add it to your environment variables.
                             </AlertDescription>
                         </Alert>
-                    )}
-                    {apiKey && (
-                        <Wrapper apiKey={apiKey} libraries={["drawing", "geometry"]}>
-                           {renderWrapperContent()}
-                        </Wrapper>
+                    ) : (
+                        renderWrapperContent()
                     )}
                 </div>
 
@@ -456,7 +451,6 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-8rem)]">
                     <div className="md:col-span-2 h-full rounded-lg bg-muted flex items-center justify-center">
                         {isOpen && apiKey && (
-                            <Wrapper apiKey={apiKey} libraries={["drawing", "geometry"]}>
                                 <MapComponent 
                                     center={field?.centroid || center} 
                                     fields={[]}
@@ -465,7 +459,6 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                                     onFieldClick={() => {}}
                                     initialPolygon={field?.coordinates}
                                 />
-                            </Wrapper>
                         )}
                          {isOpen && !apiKey && (
                             <Alert variant="destructive">

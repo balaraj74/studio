@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Wrapper, Status } from "@googlemaps/react-wrapper";
+import { Status } from "@googlemaps/react-wrapper";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -250,7 +250,7 @@ export default function FertilizerFinderPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <Button onClick={handleFindShops} disabled={status === 'locating' || status === 'fetching'}>
+            <Button onClick={handleFindShops} disabled={status === 'locating' || status === 'fetching' || !apiKey}>
                 <Search className="mr-2 h-4 w-4" />
                 {status === 'locating' && 'Locating...'}
                 {status === 'fetching' && 'Searching...'}
@@ -261,8 +261,7 @@ export default function FertilizerFinderPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 h-[450px] lg:h-auto lg:min-h-[500px] bg-muted rounded-lg flex items-center justify-center p-4">
-             {apiKey === undefined && <Skeleton className="h-full w-full" />}
-             {!apiKey && apiKey !== undefined && (
+             {!apiKey && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Configuration Error</AlertTitle>
@@ -271,11 +270,7 @@ export default function FertilizerFinderPage() {
                     </AlertDescription>
                 </Alert>
              )}
-             {apiKey && (
-                <Wrapper apiKey={apiKey} libraries={["places"]}>
-                    {renderContent()}
-                </Wrapper>
-             )}
+             {apiKey && renderContent()}
         </div>
         <Card className="lg:col-span-1">
           <CardHeader>

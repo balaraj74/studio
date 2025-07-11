@@ -1,3 +1,5 @@
+"use client";
+
 import {
   SidebarProvider,
   Sidebar,
@@ -8,12 +10,24 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { Bot, Leaf } from "lucide-react";
+import { Bot } from "lucide-react";
 import Link from "next/link";
 import { UserNav } from "@/components/user-nav";
 import { Button } from "@/components/ui/button";
+import { Wrapper } from "@googlemaps/react-wrapper";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  const renderMapWrapper = (content: React.ReactNode) => {
+    if (!apiKey) {
+      // If no API key, just return the children. The pages will show an error message.
+      return content;
+    }
+    return <Wrapper apiKey={apiKey} libraries={["drawing", "geometry", "places"]}>{content}</Wrapper>
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -38,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1" />
           <UserNav />
         </header>
-        <main className="flex-1 p-4 sm:p-6">{children}</main>
+        <main className="flex-1 p-4 sm:p-6">{renderMapWrapper(children)}</main>
         <footer className="w-full border-t p-4 text-center">
             <p className="text-sm text-muted-foreground">
               &copy; {new Date().getFullYear()} AgriSence. All rights reserved.
