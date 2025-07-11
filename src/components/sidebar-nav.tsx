@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Mic,
   MapPin,
+  FileText,
 } from "lucide-react";
 
 const navItems = [
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/disease-check", label: "Diagnosis", icon: Stethoscope },
   { href: "/market", label: "Prices", icon: LineChart },
   { href: "/schemes", label: "Schemes", icon: ScrollText },
+  { href: "/land-records", label: "Land Records", icon: FileText },
   { href: "/chatbot", label: "AI Chat", icon: MessageCircle },
   { href: "/voice", label: "Voice", icon: Mic },
   { href: "/fertilizer-finder", label: "Fertilizer Finder", icon: MapPin },
