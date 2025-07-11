@@ -74,10 +74,10 @@ const weatherTool = ai.defineTool(
 
     let locationName = "Your Location";
     if (geocodeData?.address) {
-        const { city, town, village, county, state_district } = geocodeData.address;
-        const place = city || town || village || "Unknown Place";
-        const district = county || state_district || "Unknown District";
-        locationName = `${place}, ${district}`;
+        const { city, town, village, county, state, state_district } = geocodeData.address;
+        const place = city || town || village || state || "Unknown Place";
+        const district = county || state_district || "";
+        locationName = [place, district].filter(Boolean).join(', ');
     }
 
     const dailyForecasts = weatherData.daily.time.slice(1, 6).map((time: string, index: number) => ({
