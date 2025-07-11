@@ -123,7 +123,9 @@ export default function WeatherPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Current Weather</CardTitle>
-                    <CardDescription>What it feels like right now at your location.</CardDescription>
+                    <CardDescription>
+                        {weatherData.location.name}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-6">
                     <div className="flex items-center gap-6">

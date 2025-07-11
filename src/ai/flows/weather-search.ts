@@ -25,6 +25,9 @@ const DailyForecastSchema = z.object({
 });
 
 const GetWeatherInfoOutputSchema = z.object({
+  location: z.object({
+    name: z.string().describe("The name of the location, e.g., 'Bengaluru, Bangalore Urban'"),
+  }),
   current: z.object({
     temperature: z.number(),
     weatherCode: z.number(),
@@ -50,11 +53,32 @@ const weatherTool = ai.defineTool(
   },
   async ({ lat, lon }) => {
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const weatherResponse = await fetch(weatherUrl);
+    const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+
+    const [weatherResponse, geocodeResponse] = await Promise.all([
+        fetch(weatherUrl),
+        fetch(geocodeUrl, { headers: { 'User-Agent': 'AgriSence-App/1.0' }})
+    ]);
+
      if (!weatherResponse.ok) {
         throw new Error("Failed to fetch weather data.");
     }
+     if (!geocodeResponse.ok) {
+        // Don't fail the whole thing, just proceed without a location name
+        console.error("Failed to fetch geocoding data.");
+    }
+
     const weatherData = await weatherResponse.json() as any;
+    const geocodeData = geocodeResponse.ok ? await geocodeResponse.json() as any : null;
+
+    let locationName = "Your Location";
+    if (geocodeData?.address) {
+        const { city, town, village, county, state_district } = geocodeData.address;
+        const place = city || town || village || "Unknown Place";
+        const district = county || state_district || "Unknown District";
+        locationName = `${place}, ${district}`;
+    }
+
 
     const dailyForecasts = weatherData.daily.time.slice(1, 6).map((time: string, index: number) => ({
         date: new Date(time).toLocaleDateString('en-US', { weekday: 'long' }),
@@ -64,6 +88,9 @@ const weatherTool = ai.defineTool(
     }));
     
     return {
+        location: {
+            name: locationName
+        },
         current: {
             temperature: Math.round(weatherData.current.temperature_2m),
             weatherCode: weatherData.current.weather_code,
