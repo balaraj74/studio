@@ -1,4 +1,5 @@
 
+
 export interface MarketPrice {
   crop: string;
   region: string;
@@ -46,4 +47,15 @@ export interface Harvest {
   unit: HarvestUnit;
   harvestDate: Date;
   notes?: string;
+}
+
+// Type for storing field boundary data
+export interface Field {
+    id: string;
+    fieldName: string;
+    surveyNumber: string;
+    village: string;
+    area: number; // in acres
+    coordinates: google.maps.LatLngLiteral[];
+    centroid: google.maps.LatLngLiteral;
 }

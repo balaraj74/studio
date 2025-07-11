@@ -20,6 +20,7 @@ import {
   Mic,
   MapPin,
   FileText,
+  Map,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/crops", label: "Crops", icon: Leaf },
   { href: "/expenses", label: "Expenses", icon: DollarSign },
   { href: "/harvest", label: "Harvest", icon: Package },
+  { href: "/field-mapping", label: "Field Map", icon: Map },
   { href: "/weather", label: "Weather", icon: CloudSun },
   { href: "/disease-check", label: "Diagnosis", icon: Stethoscope },
   { href: "/market", label: "Prices", icon: LineChart },

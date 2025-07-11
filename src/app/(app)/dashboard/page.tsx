@@ -20,6 +20,7 @@ import {
   MessageCircle,
   Mic,
   MapPin,
+  Map,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -56,6 +57,14 @@ const tools: Tool[] = [
     icon: Package,
     color: "text-orange-700",
     bgColor: "bg-orange-500/10",
+  },
+  {
+    title: "Field Mapping",
+    description: "Draw your field boundaries and measure area.",
+    href: "/field-mapping",
+    icon: Map,
+    color: "text-cyan-700",
+    bgColor: "bg-cyan-500/10",
   },
   {
     title: "Crop Diagnosis",
