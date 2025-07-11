@@ -95,6 +95,18 @@ export default function SchemesPageClient() {
         </Card>
       )}
 
+      {result === null && !isLoading && (
+        <Card className="flex items-center justify-center h-64">
+            <div className="text-center p-8">
+                <Wand2 className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-medium">Find Government Schemes</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Enter a query above to find relevant schemes for you.
+                </p>
+            </div>
+        </Card>
+      )}
+
       {result && (
         <div className="space-y-4 animate-in fade-in-50">
             <div className="flex items-start gap-3 text-sm">
