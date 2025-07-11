@@ -9,10 +9,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const SearchSchemesInputSchema = z.object({
-  query: z.string().describe("The user's query about government schemes, which could include crop, state, or other keywords."),
+  query: z.string().describe("The user's query about government schemes, which could include crop, state, or other keywords. If empty, provide a general list of major national schemes."),
 });
 export type SearchSchemesInput = z.infer<typeof SearchSchemesInputSchema>;
 
@@ -40,12 +40,15 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert on agricultural policies and government schemes for farmers in India.
   
   Your task is to find and summarize relevant government schemes based on the user's query.
-  
+
+  {{#if query}}
   Analyze the user's query: "{{{query}}}"
-  
   Find the most relevant central or state-level schemes. For each scheme, provide its name, a brief description, key eligibility criteria, and a link if you can find one. If a link is not available, return '#' as the link value.
-  
-  Present the information clearly. Start with a friendly message to the user summarizing what you found.`,
+  Start with a friendly message to the user summarizing what you found for their specific query.
+  {{else}}
+  The user has not provided a specific query. Find 3-5 of the most important and widely available national-level agricultural schemes in India (e.g., PM-KISAN, PMFBY, Soil Health Card). For each scheme, provide its name, a brief description, key eligibility criteria, and a link.
+  Start with a friendly introductory message like "Here are some of the major agricultural schemes currently available in India."
+  {{/if}}`,
 });
 
 const searchSchemesFlow = ai.defineFlow(

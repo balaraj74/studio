@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -13,14 +13,35 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { searchSchemes, type SearchSchemesOutput } from '@/ai/flows/schemes-search';
-import { Bot, Loader2, Search, Wand2, ScrollText, BookOpen, ArrowRight } from 'lucide-react';
+import { Bot, Loader2, Search, ScrollText, BookOpen, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SchemesPageClient() {
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<SearchSchemesOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Used for both initial load and search
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchInitialSchemes = async () => {
+      setIsLoading(true);
+      try {
+        const initialResult = await searchSchemes({ query: '' });
+        setResult(initialResult);
+      } catch (error) {
+        console.error('Initial scheme fetch error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error Fetching Schemes',
+          description: 'Could not load the initial list of schemes.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchInitialSchemes();
+  }, [toast]);
 
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,16 +72,16 @@ export default function SchemesPageClient() {
           <ScrollText className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold font-headline">AI Government Scheme Finder</h1>
+          <h1 className="text-3xl font-bold font-headline">Government Scheme Finder</h1>
           <p className="text-muted-foreground">
-            Ask Gemini to find central and state government schemes for you.
+            Discover central and state government schemes for you.
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Find Schemes</CardTitle>
+          <CardTitle>Find Specific Schemes</CardTitle>
           <CardDescription>
             Enter a crop, state, or topic to find relevant schemes.
           </CardDescription>
@@ -74,7 +95,7 @@ export default function SchemesPageClient() {
               disabled={isLoading}
             />
             <Button type="submit" size="icon" disabled={isLoading || !query.trim()} aria-label="Find Schemes">
-              {isLoading ? (
+              {isLoading && query ? ( // Only show spinner on button for active search
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Search className="h-4 w-4" />
@@ -83,31 +104,39 @@ export default function SchemesPageClient() {
           </form>
         </CardContent>
       </Card>
-
+      
       {isLoading && (
-         <Card>
-            <CardContent className="pt-6">
-                <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-                <Bot className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm">AgriSence AI is searching for schemes...</p>
-                </div>
-            </CardContent>
-        </Card>
-      )}
-
-      {result === null && !isLoading && (
-        <Card className="flex items-center justify-center h-64">
-            <div className="text-center p-8">
-                <Wand2 className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-medium">Find Government Schemes</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Enter a query above to find relevant schemes for you.
-                </p>
+         <div className="space-y-4">
+            <div className="flex items-start gap-3 text-sm">
+                <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <Skeleton className="h-10 w-2/3" />
             </div>
-        </Card>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <Card key={index}>
+                        <CardHeader>
+                            <Skeleton className="h-6 w-3/4" />
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-1">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                             <div className="space-y-1">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-10 w-full" />
+                            </div>
+                        </CardContent>
+                        <CardFooter>
+                            <Skeleton className="h-10 w-full" />
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+         </div>
       )}
 
-      {result && (
+      {result && !isLoading && (
         <div className="space-y-4 animate-in fade-in-50">
             <div className="flex items-start gap-3 text-sm">
                 <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
