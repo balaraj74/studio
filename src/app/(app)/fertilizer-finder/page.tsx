@@ -99,12 +99,12 @@ export default function FertilizerFinderPage() {
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [apiKey, setApiKey] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // Log the current URL to help debug API key restrictions
-    if (typeof window !== 'undefined') {
-      console.log("DEBUG: Current URL for API key whitelisting:", window.location.href);
-    }
+    // We need to set the key in a state to ensure it's available client-side
+    // before the Wrapper component tries to render.
+    setApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
   }, []);
 
   const handleFindShops = () => {
@@ -182,21 +182,6 @@ export default function FertilizerFinderPage() {
     }
   };
   
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    return (
-        <div className="space-y-6">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Configuration Error</AlertTitle>
-              <AlertDescription>
-                The Google Maps API Key is missing. Please add your key to the <code>.env</code> file to use this feature.
-              </AlertDescription>
-            </Alert>
-        </div>
-    );
-  }
-
   const renderContent = () => {
     if (status === 'idle') {
       return (
@@ -243,6 +228,36 @@ export default function FertilizerFinderPage() {
       );
     }
     return null;
+  }
+
+  // Only render the page content if the API key is available on the client
+  if (apiKey === undefined) {
+    // Show a loading or skeleton state while waiting for the key
+    return (
+       <div className="space-y-6">
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="h-6 w-3/4" />
+        <Card>
+            <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
+            <CardContent><Skeleton className="h-10 w-48" /></CardContent>
+        </Card>
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (!apiKey) {
+    return (
+      <div className="space-y-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Configuration Error</AlertTitle>
+            <AlertDescription>
+              The Google Maps API Key is missing. Please add your key to the <code>.env</code> file as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to use this feature.
+            </AlertDescription>
+          </Alert>
+      </div>
+    );
   }
 
   return (
@@ -320,3 +335,5 @@ export default function FertilizerFinderPage() {
     </div>
   );
 }
+
+    
