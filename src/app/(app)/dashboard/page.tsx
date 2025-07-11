@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -18,10 +20,14 @@ import {
   Sunrise,
   Sunset,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from '@/hooks/use-auth';
+import { useState, useEffect } from "react";
+import { getWeatherInfo, type GetWeatherInfoOutput } from "@/ai/flows/weather-search";
+import { WeatherIcon } from "@/components/weather-icon";
 
 interface QuickAccessTool {
   title: string;
@@ -64,7 +70,42 @@ const quickAccessTools: QuickAccessTool[] = [
 
 
 export default function DashboardPage() {
+  const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(null);
+  const [isWeatherLoading, setIsWeatherLoading] = useState(true);
+  const { user } = useAuth();
   
+  useEffect(() => {
+    const fetchWeather = () => {
+        if (!navigator.geolocation) {
+            console.warn("Geolocation is not supported by your browser.");
+            setIsWeatherLoading(false);
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const result = await getWeatherInfo({ 
+                        lat: position.coords.latitude, 
+                        lon: position.coords.longitude 
+                    });
+                    setWeatherData(result);
+                } catch (error) {
+                    console.error("Failed to fetch weather data:", error);
+                } finally {
+                    setIsWeatherLoading(false);
+                }
+            },
+            (error) => {
+                console.error("Geolocation error:", error);
+                setIsWeatherLoading(false);
+            }
+        );
+    };
+
+    fetchWeather();
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -76,21 +117,34 @@ export default function DashboardPage() {
       {/* Weather Card */}
       <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg overflow-hidden">
         <CardContent className="p-4 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-                 <Image src="/weather-icon.png" alt="Weather" width={64} height={64} />
-                 <div>
-                    <p className="text-lg font-semibold">Bengaluru</p>
-                    <p className="text-4xl font-bold">24°C</p>
+            {isWeatherLoading ? (
+                 <div className="flex items-center gap-4 text-white w-full">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <p>Loading weather data...</p>
                  </div>
-            </div>
-            <div className="text-right text-sm space-y-2">
-                <div className="flex items-center gap-2 justify-end"><Droplets size={16}/> Humidity: 75%</div>
-                <div className="flex items-center gap-2 justify-end"><Wind size={16}/> Wind: 12 km/h</div>
-            </div>
+            ) : weatherData ? (
+                <>
+                    <div className="flex items-center gap-4">
+                        <WeatherIcon code={weatherData.current.weatherCode} className="w-16 h-16" />
+                        <div>
+                            <p className="text-lg font-semibold">{weatherData.location.name}</p>
+                            <p className="text-4xl font-bold">{weatherData.current.temperature}°C</p>
+                        </div>
+                    </div>
+                    <div className="text-right text-sm space-y-2">
+                        <div className="flex items-center gap-2 justify-end"><Droplets size={16}/> Humidity: {weatherData.current.humidity}%</div>
+                        <div className="flex items-center gap-2 justify-end"><Wind size={16}/> Wind: {weatherData.current.windSpeed} km/h</div>
+                    </div>
+                </>
+            ) : (
+                <div className="flex items-center gap-4 text-white">
+                   <p>Could not load weather data. Please enable location access.</p>
+                </div>
+            )}
         </CardContent>
         <div className="bg-black/10 px-4 py-2 text-xs flex justify-between items-center">
             <div className="flex items-center gap-1"><Sunrise size={14}/> 06:05 AM</div>
-            <div className="font-semibold">Today is a good day to apply pesticides.</div>
+            <div className="font-semibold text-center flex-1 px-2">{weatherData?.summary || "..."}</div>
             <div className="flex items-center gap-1"><Sunset size={14}/> 06:45 PM</div>
         </div>
       </Card>
