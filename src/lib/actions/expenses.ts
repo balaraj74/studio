@@ -13,7 +13,7 @@ export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
 const expenseConverter = {
     toFirestore: (expense: Omit<Expense, 'id'>) => ({
         ...expense,
-        date: Timestamp.fromDate(expense.date),
+        date: Timestamp.fromDate(new Date(expense.date)),
     }),
     fromFirestore: (snapshot: any, options: any): Expense => {
         const data = snapshot.data(options);
@@ -30,7 +30,7 @@ const expenseConverter = {
 
 const getExpensesCollection = async (userId: string) => {
     const db = await getAdminDb();
-    return collection(db, 'users', userId, 'expenses').withConverter(expenseConverter);
+    return collection(db, 'users', userId, 'expenses');
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
@@ -39,7 +39,7 @@ export async function getExpenses(userId: string): Promise<Expense[]> {
         const expensesCollection = await getExpensesCollection(userId);
         const q = query(expensesCollection, orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => doc.data());
+        return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc, {}));
     } catch (error) {
         console.error("Error fetching expenses: ", error);
         return [];
@@ -49,12 +49,12 @@ export async function getExpenses(userId: string): Promise<Expense[]> {
 export async function addExpense(userId: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const newExpense: Omit<Expense, 'id'> = {
+        const dataToSave = {
             ...data,
-            date: new Date(data.date),
+            date: Timestamp.fromDate(new Date(data.date)),
         };
         const expensesCollection = await getExpensesCollection(userId);
-        await addDoc(expensesCollection, newExpense);
+        await addDoc(expensesCollection, dataToSave);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -68,13 +68,9 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
     try {
         const db = await getAdminDb();
         const expenseRef = doc(db, 'users', userId, 'expenses', id);
-        const updatedExpense: Omit<Expense, 'id'> = {
-            ...data,
-            date: new Date(data.date),
-        };
         const dataToUpdate = {
-            ...updatedExpense,
-            date: Timestamp.fromDate(updatedExpense.date)
+            ...data,
+            date: Timestamp.fromDate(new Date(data.date))
         };
         await updateDoc(expenseRef, dataToUpdate);
         revalidatePath('/expenses');

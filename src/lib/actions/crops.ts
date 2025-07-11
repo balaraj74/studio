@@ -51,9 +51,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
     try {
         const cropsCollection = await getCropsCollection(userId);
         const dataToSave = {
-            name: data.name,
-            status: data.status,
-            notes: data.notes || null,
+            ...data,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
@@ -74,14 +72,12 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
         const cropRef = doc(db, 'users', userId, 'crops', id);
         
         const dataToUpdate = {
-            name: data.name,
-            status: data.status,
-            notes: data.notes || null,
+            ...data,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
 
-        await updateDoc(cropRef, dataToUpdate);
+        await updateDoc(cropRef, dataToUpdate as { [x: string]: any });
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
