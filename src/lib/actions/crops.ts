@@ -58,6 +58,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
             plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
             harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
+        // The withConverter handles the conversion to Timestamps
         await addDoc(getCropsCollection(userId), newCrop);
         revalidatePath('/crops');
         return { success: true };
@@ -70,14 +71,14 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = doc(db, 'users', userId, 'crops', id);
+        const cropRef = doc(db, 'users', userId, 'crops', id).withConverter(cropConverter);
         
-        const dataToUpdate = {
+        const dataToUpdate: Omit<Crop, 'id'> = {
             name: data.name,
             status: data.status,
             notes: data.notes || null,
-            plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
-            harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
+            plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
+            harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
 
         await updateDoc(cropRef, dataToUpdate);
