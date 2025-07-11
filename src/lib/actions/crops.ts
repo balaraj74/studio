@@ -71,19 +71,15 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const cropRef = doc(db, 'users', userId, 'crops', id);
-        // We can't just spread the data because we need to convert date strings to Date objects
-        const updatedCropData: Omit<Crop, 'id'> = {
+        
+        const dataToUpdate = {
             name: data.name,
             status: data.status,
             notes: data.notes || null,
-            plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
-            harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
+            plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
+            harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
-        const dataToUpdate = {
-            ...updatedCropData,
-            plantedDate: updatedCropData.plantedDate ? Timestamp.fromDate(updatedCropData.plantedDate) : null,
-            harvestDate: updatedCropData.harvestDate ? Timestamp.fromDate(updatedCropData.harvestDate) : null,
-        }
+
         await updateDoc(cropRef, dataToUpdate);
         revalidatePath('/crops');
         return { success: true };
