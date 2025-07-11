@@ -1,42 +1,73 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherInfo } from '@/ai/flows/weather-search';
-import { Bot, CloudSun, Loader2, Search } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { Bot, CloudSun, Loader2, LocateFixed, Search } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
 
 export default function WeatherPage() {
-  const [location, setLocation] = useState('Bengaluru, India');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState('idle'); // idle, locating, fetching, done, error
   const { toast } = useToast();
 
-  const handleGetWeather = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!location.trim() || isLoading) return;
-
-    setIsLoading(true);
+  const handleGetWeatherForLocation = async () => {
+    setStatus('locating');
+    setError(null);
     setResponse('');
 
-    try {
-      const result = await getWeatherInfo({ location });
-      setResponse(result.response);
-    } catch (error) {
-      console.error('AI weather error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'AI Weather Failed',
-        description: 'Could not get a response from the AI assistant. Please try again.',
-      });
-      setResponse('Sorry, I was unable to fetch the weather for that location. Please ensure you provided a valid city name and try again.');
-    } finally {
-      setIsLoading(false);
+    if (!navigator.geolocation) {
+        setError("Geolocation is not supported by your browser.");
+        setStatus('error');
+        return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const { latitude, longitude } = position.coords;
+            setStatus('fetching');
+            setIsLoading(true);
+            try {
+                const result = await getWeatherInfo({ lat: latitude, lon: longitude });
+                setResponse(result.response);
+                setStatus('done');
+            } catch (err) {
+                console.error('AI weather error:', err);
+                setError('Could not get a response from the AI assistant. Please try again.');
+                setStatus('error');
+                toast({
+                    variant: 'destructive',
+                    title: 'AI Weather Failed',
+                    description: 'There was a problem contacting the AI assistant.',
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        () => {
+            setError("Permission to access location was denied. Please enable location services in your browser settings.");
+            setStatus('error');
+        }
+    );
   };
+
+  const getStatusMessage = () => {
+    switch (status) {
+        case 'locating':
+            return 'Getting your location... Please grant permission if prompted.';
+        case 'fetching':
+            return 'Got your location! Gemini is checking the skies...';
+        default:
+            return 'Click the button to get the weather for your current location.';
+    }
+  }
+
 
   return (
     <div className="space-y-6">
@@ -47,58 +78,68 @@ export default function WeatherPage() {
         <div>
           <h1 className="text-3xl font-bold font-headline">AI Weather Assistant</h1>
           <p className="text-muted-foreground">
-            Get a conversational weather forecast from Gemini.
+            Get a conversational weather forecast from Gemini for your current location.
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Check Weather</CardTitle>
-          <CardDescription>Enter a city name to get the latest weather forecast.</CardDescription>
+          <CardTitle>Check Local Weather</CardTitle>
+          <CardDescription>
+            Use your current location to get the latest weather forecast.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleGetWeather} className="flex gap-2">
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g., Mumbai, India"
-              disabled={isLoading}
-            />
-            <Button type="submit" disabled={isLoading || !location.trim()}>
+        <CardContent className="flex flex-col items-center justify-center text-center gap-4">
+            <Button 
+                size="lg" 
+                onClick={handleGetWeatherForLocation} 
+                disabled={isLoading}
+                className="font-bold"
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Fetching...
                 </>
               ) : (
                 <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Get Weather
+                  <LocateFixed className="mr-2 h-5 w-5" />
+                  Use My Location
                 </>
               )}
             </Button>
-          </form>
+            <p className="text-sm text-muted-foreground h-5">
+                {status !== 'idle' && status !== 'done' && !error && getStatusMessage()}
+            </p>
         </CardContent>
       </Card>
       
-      {(isLoading || response) && (
+      {error && (
+        <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {(isLoading || response) && !error && (
         <Card>
             <CardHeader>
-                <CardTitle>Forecast for {location}</CardTitle>
+                <CardTitle>Forecast for Your Current Location</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="w-full space-y-4">
                 {isLoading && !response && (
                     <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
                         <Bot className="h-5 w-5 flex-shrink-0" />
-                        <p className="text-sm">Gemini is checking the skies...</p>
+                        <p className="text-sm">{getStatusMessage()}</p>
                     </div>
                 )}
                 {response && (
                     <div className="flex items-start gap-3 text-sm animate-in fade-in-50">
                         <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                        <p className="text-foreground whitespace-pre-wrap">{response}</p>
+                        <div className="text-foreground whitespace-pre-wrap prose prose-sm max-w-none">{response}</div>
                     </div>
                 )}
                 </div>

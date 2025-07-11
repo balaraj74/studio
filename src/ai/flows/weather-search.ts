@@ -12,7 +12,8 @@ import { z } from 'genkit';
 import fetch from 'node-fetch';
 
 const GetWeatherInfoInputSchema = z.object({
-  location: z.string().describe('The city and state, e.g. San Francisco, CA'),
+  lat: z.number().describe('The latitude for the location.'),
+  lon: z.number().describe('The longitude for the location.'),
 });
 export type GetWeatherInfoInput = z.infer<typeof GetWeatherInfoInputSchema>;
 
@@ -28,25 +29,13 @@ export async function getWeatherInfo(input: GetWeatherInfoInput): Promise<GetWea
 
 const weatherTool = ai.defineTool(
   {
-    name: 'getWeather',
-    description: 'Get the current weather in a given location',
-    inputSchema: z.object({ location: z.string() }),
+    name: 'getCurrentWeather',
+    description: 'Get the current weather and forecast for a given latitude and longitude.',
+    inputSchema: z.object({ lat: z.number(), lon: z.number() }),
     outputSchema: z.string(),
   },
-  async ({ location }) => {
-    // First, get lat/lon for the location from a geocoding API
-    const geocodeUrl = `https://geocode.maps.co/search?q=${encodeURIComponent(location)}`;
-    const geocodeResponse = await fetch(geocodeUrl);
-    if (!geocodeResponse.ok) {
-        return JSON.stringify({ error: "Failed to geocode location" });
-    }
-    const geocodeData = await geocodeResponse.json() as any[];
-    if (!geocodeData || geocodeData.length === 0) {
-        return JSON.stringify({ error: "Could not find location" });
-    }
-    const { lat, lon } = geocodeData[0];
-
-    // Then, get the weather from Open-Meteo
+  async ({ lat, lon }) => {
+    // Get the weather from Open-Meteo
     const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
     const weatherResponse = await fetch(weatherUrl);
      if (!weatherResponse.ok) {
@@ -63,12 +52,13 @@ const weatherPrompt = ai.definePrompt(
     input: { schema: GetWeatherInfoInputSchema },
     output: { schema: GetWeatherInfoOutputSchema },
     tools: [weatherTool],
-    prompt: `You are a helpful AI assistant. Your user wants to know the weather.
-  Use the provided tool to get the weather for the user's location.
+    prompt: `You are a helpful AI assistant. Your user wants to know the weather for their current location.
+  Use the provided tool to get the weather for the user's latitude and longitude.
   
-  Provide a friendly, conversational response summarizing the current temperature, conditions, humidity, and wind speed. Also, provide a brief summary of the forecast for the next few days.
+  Provide a friendly, conversational response summarizing the current temperature, conditions (based on the weather_code), humidity, and wind speed. Also, provide a brief summary of the forecast for the next few days. Refer to the location as "your current location".
 
-  Location: {{{location}}}
+  Latitude: {{{lat}}}
+  Longitude: {{{lon}}}
   `,
   },
 );
