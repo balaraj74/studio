@@ -1,16 +1,18 @@
 'use server';
 
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert, type ServiceAccount } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import serviceAccount from '../../../serviceAccountKey.json';
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+if (!getApps().length) {
+    initializeApp({
+        credential: cert(serviceAccount as ServiceAccount),
     });
 }
 
-const adminDb = admin.firestore();
-const adminAuth = admin.auth();
+const adminDb = getFirestore();
+const adminAuth = getAuth();
 
 export { adminDb, adminAuth };
 
