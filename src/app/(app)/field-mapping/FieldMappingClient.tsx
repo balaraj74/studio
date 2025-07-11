@@ -12,7 +12,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash } from 'lucide-react';
+import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash } from 'lucide-react';
 import type { Field } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
 
@@ -264,7 +264,7 @@ export default function FieldMappingClient() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
-                <div className="bg-primary/10 p-3 rounded-lg"><Map className="h-8 w-8 text-primary" /></div>
+                <div className="bg-primary/10 p-3 rounded-lg"><MapIcon className="h-8 w-8 text-primary" /></div>
                 <div>
                     <h1 className="text-3xl font-bold font-headline">Field Mapping</h1>
                     <p className="text-muted-foreground">Draw, measure, and manage your field boundaries.</p>
