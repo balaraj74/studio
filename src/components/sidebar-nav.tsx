@@ -18,6 +18,7 @@ import {
   ScrollText,
   MessageCircle,
   Mic,
+  MapPin,
 } from "lucide-react";
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/schemes", label: "Schemes", icon: ScrollText },
   { href: "/chatbot", label: "AI Chat", icon: MessageCircle },
   { href: "/voice", label: "Voice", icon: Mic },
+  { href: "/fertilizer-finder", label: "Fertilizer Finder", icon: MapPin },
 ];
 
 export function SidebarNav() {

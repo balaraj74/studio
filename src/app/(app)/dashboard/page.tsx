@@ -19,6 +19,7 @@ import {
   ScrollText,
   MessageCircle,
   Mic,
+  MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -104,6 +105,14 @@ const tools: Tool[] = [
     color: "text-pink-700",
     bgColor: "bg-pink-500/10",
   },
+   {
+    title: "Fertilizer Finder",
+    description: "Find nearby fertilizer shops on a map.",
+    href: "/fertilizer-finder",
+    icon: MapPin,
+    color: "text-teal-700",
+    bgColor: "bg-teal-500/10",
+  },
 ];
 
 export default function DashboardPage() {
@@ -131,7 +140,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-bold font-headline mb-4">Your Farming Toolkit</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tools.map((tool) => (
+          {tools.sort((a,b) => a.title.localeCompare(b.title)).map((tool) => (
             <Card
               key={tool.href}
               className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1"
