@@ -122,9 +122,9 @@ export default function WeatherPage() {
         <div className="space-y-6 animate-in fade-in-50">
             <Card>
                 <CardHeader>
-                    <CardTitle>Current Weather</CardTitle>
+                    <CardTitle>Current Weather in {weatherData.location.name}</CardTitle>
                     <CardDescription>
-                        {weatherData.location.name}
+                        {weatherData.summary}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-6">
