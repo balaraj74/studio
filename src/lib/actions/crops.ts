@@ -54,6 +54,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
     try {
         const newCrop: Omit<Crop, 'id'> = {
             ...data,
+            notes: data.notes || null,
             plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
             harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
@@ -74,7 +75,7 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
         const updatedCropData: Omit<Crop, 'id'> = {
             name: data.name,
             status: data.status,
-            notes: data.notes,
+            notes: data.notes || null,
             plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
             harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
         };
@@ -104,5 +105,3 @@ export async function deleteCrop(userId: string, id: string) {
         return { success: false, error: 'Failed to delete crop.' };
     }
 }
-
-    

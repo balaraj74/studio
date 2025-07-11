@@ -22,7 +22,7 @@ export interface Crop {
   status: CropStatus;
   plantedDate: Date | null;
   harvestDate: Date | null;
-  notes: string;
+  notes: string | null;
 }
 
 export type ExpenseCategory = "Seeds" | "Fertilizer" | "Labor" | "Equipment" | "Other";
