@@ -19,9 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    allowedDevOrigins: ['*.cloudworkstations.dev', '*.googleusercontent.com', '*.hosted.app', 'studio-agrisence.us-central1.hosted.app'],
-  },
 };
 
 export default nextConfig;

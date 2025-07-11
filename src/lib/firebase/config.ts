@@ -4,7 +4,7 @@ import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getAuth, type Auth } from "firebase/auth";
 
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration, as provided.
 const firebaseConfig = {
   apiKey: "AIzaSyAd8T2SnKYd0lC464LCU8SPloORnCtf2f8",
   authDomain: "agrisence-1dc30.firebaseapp.com",
@@ -16,7 +16,7 @@ const firebaseConfig = {
 };
 
 
-// Initialize Firebase
+// Initialize Firebase for client-side usage
 let app: FirebaseApp;
 if (!getApps().length) {
     app = initializeApp(firebaseConfig);
