@@ -89,5 +89,3 @@ export async function deleteExpense(userId: string, id: string) {
         return { success: false, error: 'Failed to delete expense.' };
     }
 }
-
-    

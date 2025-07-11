@@ -16,40 +16,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
-let analytics: Analytics | undefined = undefined;
+const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
+const storage: FirebaseStorage = getStorage(app);
 
-if (typeof window !== 'undefined' && !getApps().length) {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    if (firebaseConfig.measurementId) {
-      analytics = getAnalytics(app);
-    }
-} else if (getApps().length > 0) {
-    app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    if (firebaseConfig.measurementId) {
-      try {
-        analytics = getAnalytics(app);
-      } catch (e) {
-        // It's possible analytics is not initialized in some contexts.
-        // We can ignore this error.
-      }
-    }
-} else {
-    // To prevent errors during server-side rendering, we create dummy objects.
-    // The actual initialization will happen on the client.
-    app = {} as FirebaseApp;
-    auth = {} as Auth;
-    db = {} as Firestore;
-    storage = {} as FirebaseStorage;
+let analytics: Analytics | undefined;
+if (typeof window !== 'undefined') {
+  if (firebaseConfig.measurementId) {
+    analytics = getAnalytics(app);
+  }
 }
 
 export { app, db, storage, auth, analytics };
