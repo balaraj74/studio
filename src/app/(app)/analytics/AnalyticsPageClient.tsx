@@ -19,10 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Harvest, Expense, Crop, ExpenseCategory } from "@/types";
+import type { Harvest, Expense, ExpenseCategory } from "@/types";
 import { getHarvests } from "@/lib/actions/harvests";
 import { getExpenses } from "@/lib/actions/expenses";
-import { getCrops } from "@/lib/actions/crops";
 import { BarChart as BarChartIcon, LayoutGrid, Loader2 } from "lucide-react";
 import {
   BarChart,
@@ -37,7 +36,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { subMonths, startOfMonth, endOfMonth, format } from "date-fns";
+import { subMonths } from "date-fns";
 
 type TimeRange = "all" | "3m" | "6m" | "12m";
 
@@ -63,16 +62,23 @@ export default function AnalyticsPageClient() {
   useEffect(() => {
     async function fetchData(currentUser: User) {
       setIsLoading(true);
-      const [harvestData, expenseData] = await Promise.all([
-        getHarvests(currentUser.uid),
-        getExpenses(currentUser.uid),
-      ]);
-      setAllHarvests(harvestData);
-      setAllExpenses(expenseData);
-      setIsLoading(false);
+      try {
+        const [harvestData, expenseData] = await Promise.all([
+          getHarvests(currentUser.uid),
+          getExpenses(currentUser.uid),
+        ]);
+        setAllHarvests(harvestData);
+        setAllExpenses(expenseData);
+      } catch (error) {
+        console.error("Failed to fetch analytics data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     }
     if (user) {
       fetchData(user);
+    } else {
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -108,6 +114,7 @@ export default function AnalyticsPageClient() {
 
   // Data for Crop Performance Chart
   const cropPerformanceData = useMemo(() => {
+    if (!filteredData.harvests) return [];
     const dataByCrop: { [key: string]: { yield: number } } = {};
     filteredData.harvests.forEach((h) => {
       if (!dataByCrop[h.cropName]) {
@@ -128,6 +135,7 @@ export default function AnalyticsPageClient() {
 
   // Data for Expense Breakdown Chart
   const expenseBreakdownData = useMemo(() => {
+    if (!filteredData.expenses) return [];
     const dataByCategory: { [key: string]: number } = {};
     filteredData.expenses.forEach((e) => {
       if (!dataByCategory[e.category]) {

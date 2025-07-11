@@ -12,19 +12,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const renderMapWrapper = (content: React.ReactNode) => {
-    if (!apiKey) {
-      // If no API key, just return the children. The pages will show an error message.
-      return content;
+    // Only wrap with Google Maps provider if the API key is available.
+    // The individual pages will handle showing an error message if the key is missing.
+    if (apiKey) {
+      return <Wrapper apiKey={apiKey} libraries={["drawing", "geometry", "places"]}>{content}</Wrapper>
     }
-    // Load all possible libraries needed by the app at once.
-    return <Wrapper apiKey={apiKey} libraries={["drawing", "geometry", "places"]}>{content}</Wrapper>
+    // If no API key, just return the children. 
+    return content;
   }
 
   const getPageTitle = () => {
     const segments = pathname.split('/').filter(Boolean);
-    const title = segments[segments.length -1];
-    if (pathname === '/dashboard') return "AgriSence";
-    return title.charAt(0).toUpperCase() + title.slice(1).replace('-', ' ');
+    const lastSegment = segments.pop() || 'dashboard';
+
+    // Handle special cases or dynamic routes here if needed in the future
+    if (lastSegment === 'dashboard') return "AgriSence";
+    
+    // Convert kebab-case to Title Case
+    return lastSegment
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   return (
