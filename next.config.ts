@@ -1,4 +1,7 @@
 
+require('dotenv').config({ path: './.env.local' });
+require('dotenv').config();
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -20,7 +23,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    allowedDevOrigins: ['*.cloudworkstations.dev', '*.googleusercontent.com', '*.hosted.app'],
+    allowedDevOrigins: ['*.cloudworkstations.dev', '*.googleusercontent.com', '*.hosted.app', 'studio-agrisence.us-central1.hosted.app'],
   },
 };
 
