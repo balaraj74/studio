@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, where, type DocumentData } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type DocumentData } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase/admin';
 import type { Crop } from '@/types';
 
 // This is the data shape for client-to-server communication, ensuring dates are strings.
@@ -26,7 +26,10 @@ const docToCrop = (doc: DocumentData): Crop => {
 };
 
 
-const getCropsCollection = (userId: string) => collection(db, 'users', userId, 'crops');
+const getCropsCollection = (userId: string) => {
+    const db = getAdminDb();
+    return collection(db, 'users', userId, 'crops');
+}
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
@@ -66,6 +69,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         const cropRef = doc(db, 'users', userId, 'crops', id);
         
         const dataToUpdate = {
@@ -89,6 +93,7 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
 export async function deleteCrop(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         const cropRef = doc(db, 'users', userId, 'crops', id);
         await deleteDoc(cropRef);
         revalidatePath('/crops');

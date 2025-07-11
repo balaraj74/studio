@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { getAdminDb } from '@/lib/firebase/admin';
 import type { Expense } from '@/types';
 
 export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
@@ -27,7 +27,10 @@ const expenseConverter = {
     }
 };
 
-const getExpensesCollection = (userId: string) => collection(db, 'users', userId, 'expenses').withConverter(expenseConverter);
+const getExpensesCollection = (userId: string) => {
+    const db = getAdminDb();
+    return collection(db, 'users', userId, 'expenses').withConverter(expenseConverter);
+}
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
@@ -60,6 +63,7 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         const expenseRef = doc(db, 'users', userId, 'expenses', id);
         const updatedExpense: Omit<Expense, 'id'> = {
             ...data,
@@ -81,6 +85,7 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         await deleteDoc(doc(db, 'users', userId, 'expenses', id));
         revalidatePath('/expenses');
         return { success: true };

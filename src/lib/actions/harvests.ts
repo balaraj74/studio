@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { getAdminDb } from '@/lib/firebase/admin';
 import type { Harvest } from '@/types';
 
 export type HarvestFormInput = Omit<Harvest, 'id' | 'harvestDate'> & {
@@ -28,7 +28,10 @@ const harvestConverter = {
     }
 };
 
-const getHarvestsCollection = (userId: string) => collection(db, 'users', userId, 'harvests').withConverter(harvestConverter);
+const getHarvestsCollection = (userId: string) => {
+    const db = getAdminDb();
+    return collection(db, 'users', userId, 'harvests').withConverter(harvestConverter);
+}
 
 
 export async function getHarvests(userId: string): Promise<Harvest[]> {
@@ -62,6 +65,7 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
 export async function updateHarvest(userId: string, id: string, data: HarvestFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         const harvestRef = doc(db, 'users', userId, 'harvests', id);
         const updatedHarvest: Omit<Harvest, 'id'> = {
             ...data,
@@ -83,6 +87,7 @@ export async function updateHarvest(userId: string, id: string, data: HarvestFor
 export async function deleteHarvest(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         await deleteDoc(doc(db, 'users', userId, 'harvests', id));
         revalidatePath('/harvest');
         return { success: true };
@@ -91,5 +96,3 @@ export async function deleteHarvest(userId: string, id: string) {
         return { success: false, error: 'Failed to delete harvest.' };
     }
 }
-
-    
