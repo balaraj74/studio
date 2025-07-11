@@ -26,15 +26,15 @@ const docToCrop = (doc: DocumentData): Crop => {
 };
 
 
-const getCropsCollection = (userId: string) => {
-    const db = getAdminDb();
+const getCropsCollection = async (userId: string) => {
+    const db = await getAdminDb();
     return collection(db, 'users', userId, 'crops');
 }
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
     try {
-        const cropsCollection = getCropsCollection(userId);
+        const cropsCollection = await getCropsCollection(userId);
         const q = query(cropsCollection, orderBy("plantedDate", "desc"));
         const querySnapshot = await getDocs(q);
         const crops = querySnapshot.docs.map(docToCrop);
@@ -48,7 +48,7 @@ export async function getCrops(userId: string): Promise<Crop[]> {
 export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropsCollection = getCropsCollection(userId);
+        const cropsCollection = await getCropsCollection(userId);
         const dataToSave = {
             name: data.name,
             status: data.status,
@@ -69,7 +69,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
+        const db = await getAdminDb();
         const cropRef = doc(db, 'users', userId, 'crops', id);
         
         const dataToUpdate = {
@@ -93,7 +93,7 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
 export async function deleteCrop(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
+        const db = await getAdminDb();
         const cropRef = doc(db, 'users', userId, 'crops', id);
         await deleteDoc(cropRef);
         revalidatePath('/crops');

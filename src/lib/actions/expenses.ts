@@ -27,15 +27,16 @@ const expenseConverter = {
     }
 };
 
-const getExpensesCollection = (userId: string) => {
-    const db = getAdminDb();
+const getExpensesCollection = async (userId: string) => {
+    const db = await getAdminDb();
     return collection(db, 'users', userId, 'expenses').withConverter(expenseConverter);
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
     try {
-        const q = query(getExpensesCollection(userId), orderBy("date", "desc"));
+        const expensesCollection = await getExpensesCollection(userId);
+        const q = query(expensesCollection, orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => doc.data());
     } catch (error) {
@@ -51,7 +52,8 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
             ...data,
             date: new Date(data.date),
         };
-        await addDoc(getExpensesCollection(userId), newExpense);
+        const expensesCollection = await getExpensesCollection(userId);
+        await addDoc(expensesCollection, newExpense);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -63,7 +65,7 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
+        const db = await getAdminDb();
         const expenseRef = doc(db, 'users', userId, 'expenses', id);
         const updatedExpense: Omit<Expense, 'id'> = {
             ...data,
@@ -85,7 +87,7 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
+        const db = await getAdminDb();
         await deleteDoc(doc(db, 'users', userId, 'expenses', id));
         revalidatePath('/expenses');
         return { success: true };
