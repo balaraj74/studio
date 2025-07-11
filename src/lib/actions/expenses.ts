@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type Firestore } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Expense } from '@/types';
 
@@ -15,8 +15,9 @@ const expenseConverter = {
         ...expense,
         date: Timestamp.fromDate(new Date(expense.date)),
     }),
-    fromFirestore: (snapshot: any, options: any): Expense => {
-        const data = snapshot.data(options);
+    fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Expense => {
+        const data = snapshot.data();
+        if(!data) throw new Error("Document is empty");
         return {
             id: snapshot.id,
             name: data.name,
@@ -28,18 +29,18 @@ const expenseConverter = {
     }
 };
 
-const getExpensesCollection = (db: Firestore, userId: string) => {
-    return collection(db, 'users', userId, 'expenses');
+const getExpensesCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+    return db.collection('users').doc(userId).collection('expenses');
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const expensesCollection = getExpensesCollection(db, userId);
-        const q = query(expensesCollection, orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc, {}));
+        const q = expensesCollection.orderBy("date", "desc");
+        const querySnapshot = await q.get();
+        return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc));
     } catch (error) {
         console.error("Error fetching expenses: ", error);
         return [];
@@ -53,9 +54,9 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
             ...data,
             date: Timestamp.fromDate(new Date(data.date)),
         };
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const expensesCollection = getExpensesCollection(db, userId);
-        await addDoc(expensesCollection, dataToSave);
+        await expensesCollection.add(dataToSave);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -67,13 +68,13 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        const expenseRef = doc(db, 'users', userId, 'expenses', id);
+        const db = getAdminDb();
+        const expenseRef = db.collection('users').doc(userId).collection('expenses').doc(id);
         const dataToUpdate = {
             ...data,
             date: Timestamp.fromDate(new Date(data.date))
         };
-        await updateDoc(expenseRef, dataToUpdate);
+        await expenseRef.update(dataToUpdate);
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {
@@ -85,8 +86,8 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        await deleteDoc(doc(db, 'users', userId, 'expenses', id));
+        const db = getAdminDb();
+        await db.collection('users').doc(userId).collection('expenses').doc(id).delete();
         revalidatePath('/expenses');
         return { success: true };
     } catch (error) {

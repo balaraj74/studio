@@ -2,7 +2,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, type Firestore } from 'firebase/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Field } from '@/types';
 
@@ -12,8 +11,9 @@ const fieldConverter = {
     toFirestore: (field: Omit<Field, 'id'>) => {
         return field;
     },
-    fromFirestore: (snapshot: any, options: any): Field => {
-        const data = snapshot.data(options);
+    fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Field => {
+        const data = snapshot.data();
+        if(!data) throw new Error("Document is empty");
         return {
             id: snapshot.id,
             fieldName: data.fieldName,
@@ -26,18 +26,18 @@ const fieldConverter = {
     }
 };
 
-const getFieldsCollection = (db: Firestore, userId: string) => {
-    return collection(db, 'users', userId, 'fields').withConverter(fieldConverter);
+const getFieldsCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+    return db.collection('users').doc(userId).collection('fields');
 }
 
 export async function getFields(userId: string): Promise<Field[]> {
     if (!userId) return [];
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const fieldsCollection = getFieldsCollection(db, userId);
-        const q = query(fieldsCollection, orderBy("fieldName", "asc"));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => doc.data());
+        const q = fieldsCollection.orderBy("fieldName", "asc");
+        const querySnapshot = await q.get();
+        return querySnapshot.docs.map(doc => fieldConverter.fromFirestore(doc));
     } catch (error) {
         console.error("Error fetching fields: ", error);
         return [];
@@ -47,9 +47,9 @@ export async function getFields(userId: string): Promise<Field[]> {
 export async function addField(userId: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const fieldsCollection = getFieldsCollection(db, userId);
-        await addDoc(fieldsCollection, data);
+        await fieldsCollection.withConverter(fieldConverter).add(data);
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {
@@ -61,9 +61,9 @@ export async function addField(userId: string, data: FieldFormInput) {
 export async function updateField(userId: string, id: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        const fieldRef = doc(db, 'users', userId, 'fields', id);
-        await updateDoc(fieldRef, data as any);
+        const db = getAdminDb();
+        const fieldRef = db.collection('users').doc(userId).collection('fields').doc(id);
+        await fieldRef.withConverter(fieldConverter).update(data);
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {
@@ -75,8 +75,8 @@ export async function updateField(userId: string, id: string, data: FieldFormInp
 export async function deleteField(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        await deleteDoc(doc(db, 'users', userId, 'fields', id));
+        const db = getAdminDb();
+        await db.collection('users').doc(userId).collection('fields').doc(id).delete();
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {

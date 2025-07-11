@@ -4,18 +4,18 @@ import { initializeApp, getApps, cert, type ServiceAccount } from 'firebase-admi
 import { getFirestore } from 'firebase-admin/firestore';
 import serviceAccount from '../../../serviceAccountKey.json';
 
-// Initialize the app only if it hasn't been initialized yet
+let adminDb: FirebaseFirestore.Firestore;
+
 if (!getApps().length) {
     initializeApp({
         credential: cert(serviceAccount as ServiceAccount),
     });
 }
-
-const adminDb = getFirestore();
+adminDb = getFirestore();
 
 /**
  * Returns a server-side Firestore instance.
  */
-export async function getAdminDb() {
+export function getAdminDb() {
     return adminDb;
 }

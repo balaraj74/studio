@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type DocumentData, type Firestore } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Crop } from '@/types';
 
@@ -14,8 +14,9 @@ export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate'> & {
 
 
 // Helper function to convert Firestore doc data to a Crop object
-const docToCrop = (doc: DocumentData): Crop => {
+const docToCrop = (doc: FirebaseFirestore.DocumentSnapshot): Crop => {
     const data = doc.data();
+    if (!data) throw new Error("Document data is empty");
     return {
         id: doc.id,
         name: data.name,
@@ -27,17 +28,17 @@ const docToCrop = (doc: DocumentData): Crop => {
 };
 
 
-const getCropsCollection = (db: Firestore, userId: string) => {
-    return collection(db, 'users', userId, 'crops');
+const getCropsCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+    return db.collection('users').doc(userId).collection('crops');
 }
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const cropsCollection = getCropsCollection(db, userId);
-        const q = query(cropsCollection, orderBy("plantedDate", "desc"));
-        const querySnapshot = await getDocs(q);
+        const q = cropsCollection.orderBy("plantedDate", "desc");
+        const querySnapshot = await q.get();
         const crops = querySnapshot.docs.map(docToCrop);
         return crops;
     } catch (error) {
@@ -49,14 +50,14 @@ export async function getCrops(userId: string): Promise<Crop[]> {
 export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const cropsCollection = getCropsCollection(db, userId);
         const dataToSave = {
             ...data,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
-        await addDoc(cropsCollection, dataToSave);
+        await cropsCollection.add(dataToSave);
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
@@ -69,8 +70,8 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        const cropRef = doc(db, 'users', userId, 'crops', id);
+        const db = getAdminDb();
+        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
         
         const dataToUpdate = {
             ...data,
@@ -78,7 +79,7 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
 
-        await updateDoc(cropRef, dataToUpdate as { [x: string]: any });
+        await cropRef.update(dataToUpdate);
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
@@ -91,9 +92,9 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
 export async function deleteCrop(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        const cropRef = doc(db, 'users', userId, 'crops', id);
-        await deleteDoc(cropRef);
+        const db = getAdminDb();
+        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
+        await cropRef.delete();
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {

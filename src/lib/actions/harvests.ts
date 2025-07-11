@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type Firestore } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Harvest } from '@/types';
 
@@ -14,8 +14,9 @@ const harvestConverter = {
         ...harvest,
         harvestDate: Timestamp.fromDate(harvest.harvestDate),
     }),
-    fromFirestore: (snapshot: any, options: any): Harvest => {
-        const data = snapshot.data(options);
+    fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Harvest => {
+        const data = snapshot.data();
+        if(!data) throw new Error("Document is empty");
         return {
             id: snapshot.id,
             cropId: data.cropId,
@@ -28,19 +29,19 @@ const harvestConverter = {
     }
 };
 
-const getHarvestsCollection = (db: Firestore, userId: string) => {
-    return collection(db, 'users', userId, 'harvests').withConverter(harvestConverter);
+const getHarvestsCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+    return db.collection('users').doc(userId).collection('harvests');
 }
 
 
 export async function getHarvests(userId: string): Promise<Harvest[]> {
     if (!userId) return [];
     try {
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const harvestsCollection = getHarvestsCollection(db, userId);
-        const q = query(harvestsCollection, orderBy("harvestDate", "desc"));
-        const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(doc => doc.data());
+        const q = harvestsCollection.orderBy("harvestDate", "desc");
+        const querySnapshot = await q.get();
+        return querySnapshot.docs.map(doc => harvestConverter.fromFirestore(doc));
     } catch (error) {
         console.error("Error fetching harvests: ", error);
         return [];
@@ -54,9 +55,9 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
             ...data,
             harvestDate: new Date(data.harvestDate),
         };
-        const db = await getAdminDb();
+        const db = getAdminDb();
         const harvestsCollection = getHarvestsCollection(db, userId);
-        await addDoc(harvestsCollection, newHarvest);
+        await harvestsCollection.withConverter(harvestConverter).add(newHarvest);
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
@@ -68,17 +69,13 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
 export async function updateHarvest(userId: string, id: string, data: HarvestFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        const harvestRef = doc(db, 'users', userId, 'harvests', id);
+        const db = getAdminDb();
+        const harvestRef = db.collection('users').doc(userId).collection('harvests').doc(id);
         const updatedHarvest: Omit<Harvest, 'id'> = {
             ...data,
             harvestDate: new Date(data.harvestDate),
         };
-        const dataToUpdate = {
-            ...updatedHarvest,
-            harvestDate: Timestamp.fromDate(updatedHarvest.harvestDate),
-        }
-        await updateDoc(harvestRef, dataToUpdate);
+        await harvestRef.withConverter(harvestConverter).update(updatedHarvest);
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
@@ -90,8 +87,8 @@ export async function updateHarvest(userId: string, id: string, data: HarvestFor
 export async function deleteHarvest(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = await getAdminDb();
-        await deleteDoc(doc(db, 'users', userId, 'harvests', id));
+        const db = getAdminDb();
+        await db.collection('users').doc(userId).collection('harvests').doc(id).delete();
         revalidatePath('/harvest');
         return { success: true };
     } catch (error) {
