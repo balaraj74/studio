@@ -150,7 +150,6 @@ function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFiel
 export default function FieldMappingClient() {
     const { user } = useAuth();
     const { toast } = useToast();
-    const [apiKey, setApiKey] = useState<string | undefined>(undefined);
     const [fields, setFields] = useState<Field[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral>({ lat: 20.5937, lng: 78.9629 }); // Default to India center
@@ -159,26 +158,23 @@ export default function FieldMappingClient() {
     const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
-    // Set API key on client
-    useEffect(() => {
-        setApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
-    }, []);
-
     // Get user's current location once
     useEffect(() => {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setUserLocation({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                });
-            },
-            () => {
-                // Keep default location if user denies access
-                console.log("Location access denied by user.");
-            },
-            { enableHighAccuracy: true }
-        );
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    });
+                },
+                () => {
+                    // Keep default location if user denies access
+                    console.log("Location access denied by user.");
+                },
+                { enableHighAccuracy: true }
+            );
+        }
     }, []);
 
     // Fetch saved fields from Firestore
@@ -260,17 +256,7 @@ export default function FieldMappingClient() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 h-full bg-muted rounded-lg flex items-center justify-center">
-                    {!apiKey ? (
-                        <Alert variant="destructive" className="m-4">
-                            <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Configuration Error</AlertTitle>
-                            <AlertDescription>
-                                Google Maps API Key is missing. Please add it to your environment variables.
-                            </AlertDescription>
-                        </Alert>
-                    ) : (
-                        renderWrapperContent()
-                    )}
+                    {renderWrapperContent()}
                 </div>
 
                 <Card className="lg:col-span-1">
@@ -332,7 +318,6 @@ export default function FieldMappingClient() {
                 field={editingField}
                 onFormSubmit={refreshFields}
                 center={userLocation}
-                apiKey={apiKey}
             />
         </div>
     );
@@ -346,10 +331,9 @@ interface FieldFormDialogProps {
   field: Field | null;
   onFormSubmit: () => void;
   center: google.maps.LatLngLiteral;
-  apiKey?: string;
 }
 
-function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, apiKey }: FieldFormDialogProps) {
+function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: FieldFormDialogProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [fieldName, setFieldName] = useState('');
@@ -450,7 +434,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-8rem)]">
                     <div className="md:col-span-2 h-full rounded-lg bg-muted flex items-center justify-center">
-                        {isOpen && apiKey && (
+                        {isOpen && (
                                 <MapComponent 
                                     center={field?.centroid || center} 
                                     fields={[]}
@@ -460,15 +444,6 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                                     initialPolygon={field?.coordinates}
                                 />
                         )}
-                         {isOpen && !apiKey && (
-                            <Alert variant="destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <AlertTitle>API Key Error</AlertTitle>
-                                <AlertDescription>
-                                    The Google Maps API key is not configured. The map cannot be loaded.
-                                </AlertDescription>
-                            </Alert>
-                         )}
                     </div>
                     <div className="md:col-span-1 space-y-4 flex flex-col">
                         <Card>
