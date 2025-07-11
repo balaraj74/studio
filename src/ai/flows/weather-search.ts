@@ -30,7 +30,7 @@ export async function getWeatherInfo(input: GetWeatherInfoInput): Promise<GetWea
 const weatherTool = ai.defineTool(
   {
     name: 'getCurrentWeather',
-    description: 'Get the current weather and forecast for a given latitude and longitude.',
+    description: 'Get the current weather and a multi-day forecast for a given latitude and longitude. Returns current temperature, humidity, wind speed, and a daily forecast including max/min temperatures and weather conditions.',
     inputSchema: z.object({ lat: z.number(), lon: z.number() }),
     outputSchema: z.string(),
   },
