@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
   Stethoscope,
@@ -19,11 +18,18 @@ import {
   Wind,
   Sunrise,
   Sunset,
-  ChevronRight,
   Loader2,
+  FileText,
+  MapPin,
+  CloudSun,
+  Bot,
+  DollarSign,
+  Package,
+  Map,
+  ClipboardList,
+  Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import Image from "next/image";
 import { useAuth } from '@/hooks/use-auth';
 import { useState, useEffect } from "react";
 import { getWeatherInfo, type GetWeatherInfoOutput } from "@/ai/flows/weather-search";
@@ -40,10 +46,31 @@ interface QuickAccessTool {
 const quickAccessTools: QuickAccessTool[] = [
   {
     title: "Crop Management",
-    href: "/records",
+    href: "/crops",
     icon: Leaf,
     color: "text-green-600",
     bgColor: "bg-green-100",
+  },
+  {
+    title: "Expense Tracking",
+    href: "/expenses",
+    icon: DollarSign,
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-100",
+  },
+  {
+    title: "Harvest Records",
+    href: "/harvest",
+    icon: Package,
+    color: "text-orange-600",
+    bgColor: "bg-orange-100",
+  },
+  {
+    title: "Field Mapping",
+    href: "/field-mapping",
+    icon: Map,
+    color: "text-lime-600",
+    bgColor: "bg-lime-100",
   },
   {
     title: "Crop Diagnosis",
@@ -51,6 +78,13 @@ const quickAccessTools: QuickAccessTool[] = [
     icon: Stethoscope,
     color: "text-red-600",
     bgColor: "bg-red-100",
+  },
+  {
+    title: "Weather Forecast",
+    href: "/weather",
+    icon: CloudSun,
+    color: "text-sky-600",
+    bgColor: "bg-sky-100",
   },
   {
     title: "Market Prices",
@@ -65,6 +99,27 @@ const quickAccessTools: QuickAccessTool[] = [
     icon: ScrollText,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
+  },
+  {
+    title: "Land Records",
+    href: "/land-records",
+    icon: FileText,
+    color: "text-amber-600",
+    bgColor: "bg-amber-100",
+  },
+  {
+    title: "Fertilizer Finder",
+    href: "/fertilizer-finder",
+    icon: MapPin,
+    color: "text-teal-600",
+    bgColor: "bg-teal-100",
+  },
+  {
+    href: '/ai',
+    title: 'AI Assistant',
+    icon: Bot,
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-100",
   },
 ];
 
@@ -151,8 +206,10 @@ export default function DashboardPage() {
 
       {/* Quick Access Tools */}
       <div>
-        <h2 className="text-xl font-bold mb-3">Quick Access</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="flex justify-between items-center mb-3">
+             <h2 className="text-xl font-bold">Quick Access</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {quickAccessTools.map((tool) => (
             <Link href={tool.href} key={tool.title} className="block">
                 <Card className="h-full bg-card hover:bg-muted/80 transition-colors flex flex-col items-center justify-center text-center p-4 aspect-square">
@@ -165,47 +222,6 @@ export default function DashboardPage() {
             ))}
         </div>
       </div>
-      
-      {/* Best Offers */}
-      <div>
-        <div className="flex justify-between items-center mb-3">
-             <h2 className="text-xl font-bold">Best Offers</h2>
-             <Button variant="ghost" size="sm" asChild>
-                <Link href="#">View all <ChevronRight className="h-4 w-4 ml-1"/></Link>
-             </Button>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <Card className="overflow-hidden">
-                <div className="relative h-32 w-full">
-                    <Image
-                        src="https://placehold.co/600x400.png"
-                        data-ai-hint="premium seeds farm"
-                        alt="Premium Seeds"
-                        fill
-                        className="object-cover"
-                    />
-                </div>
-                <CardHeader className="p-3">
-                    <CardTitle className="text-base">Premium Seeds</CardTitle>
-                </CardHeader>
-            </Card>
-             <Card className="overflow-hidden">
-                <div className="relative h-32 w-full">
-                    <Image
-                        src="https://placehold.co/600x400.png"
-                        data-ai-hint="farm drone"
-                        alt="Drone Spraying"
-                        fill
-                        className="object-cover"
-                    />
-                </div>
-                 <CardHeader className="p-3">
-                    <CardTitle className="text-base">Drone Spraying</CardTitle>
-                </CardHeader>
-            </Card>
-        </div>
-      </div>
-
     </div>
   );
 }

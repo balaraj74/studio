@@ -123,13 +123,22 @@ const weatherFlow = ai.defineFlow(
     // 1. Call the tool to get structured weather data.
     const structuredData = await weatherTool(input);
 
-    // 2. Call the AI to generate a summary from the structured data.
-    const { output } = await weatherPrompt(structuredData);
+    let summary = "Enjoy the weather!";
+    try {
+        // 2. Call the AI to generate a summary from the structured data.
+        const { output } = await weatherPrompt(structuredData);
+        if (output?.summary) {
+            summary = output.summary;
+        }
+    } catch (error) {
+        console.error("Could not generate weather summary from AI:", error);
+        // Do not throw; proceed with a default summary.
+    }
     
     // 3. Combine the structured data and the AI's summary.
     return {
       ...structuredData,
-      summary: output?.summary || "Could not generate a summary.",
+      summary,
     };
   }
 );

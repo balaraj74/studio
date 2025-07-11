@@ -19,8 +19,6 @@ export function BottomNav() {
   return (
     <div className="grid h-16 grid-cols-4 items-center gap-2 p-2">
       {navItems.map((item) => {
-        const isActive = pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard');
-        
         // A special check for the base path to not be active for all sub-routes
         const isCurrentlyActive = item.href === '/dashboard' ? pathname === item.href : pathname.startsWith(item.href);
 
