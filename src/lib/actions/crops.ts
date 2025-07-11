@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, where, type DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import type { Crop } from '@/types';
 
@@ -11,29 +11,22 @@ export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate'> & {
     harvestDate: string | null;
 };
 
-// Firestore data converter to handle Date and Timestamp conversions.
-const cropConverter = {
-    toFirestore: (crop: Omit<Crop, 'id'>) => {
-        return {
-            ...crop,
-            plantedDate: crop.plantedDate ? Timestamp.fromDate(crop.plantedDate) : null,
-            harvestDate: crop.harvestDate ? Timestamp.fromDate(crop.harvestDate) : null,
-        };
-    },
-    fromFirestore: (snapshot: any, options: any): Crop => {
-        const data = snapshot.data(options);
-        return {
-            id: snapshot.id,
-            name: data.name,
-            status: data.status,
-            notes: data.notes,
-            plantedDate: data.plantedDate ? (data.plantedDate as Timestamp).toDate() : null,
-            harvestDate: data.harvestDate ? (data.harvestDate as Timestamp).toDate() : null,
-        };
-    }
+
+// Helper function to convert Firestore doc data to a Crop object
+const docToCrop = (doc: DocumentData): Crop => {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        name: data.name,
+        status: data.status,
+        notes: data.notes || null,
+        plantedDate: data.plantedDate ? (data.plantedDate as Timestamp).toDate() : null,
+        harvestDate: data.harvestDate ? (data.harvestDate as Timestamp).toDate() : null,
+    };
 };
 
-const getCropsCollection = (userId: string) => collection(db, 'users', userId, 'crops').withConverter(cropConverter);
+
+const getCropsCollection = (userId: string) => collection(db, 'users', userId, 'crops');
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
@@ -41,7 +34,7 @@ export async function getCrops(userId: string): Promise<Crop[]> {
         const cropsCollection = getCropsCollection(userId);
         const q = query(cropsCollection, orderBy("plantedDate", "desc"));
         const querySnapshot = await getDocs(q);
-        const crops = querySnapshot.docs.map(doc => doc.data());
+        const crops = querySnapshot.docs.map(docToCrop);
         return crops;
     } catch (error) {
         console.error("Error fetching crops: ", error);
@@ -52,9 +45,11 @@ export async function getCrops(userId: string): Promise<Crop[]> {
 export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropsCollection = collection(db, 'users', userId, 'crops');
+        const cropsCollection = getCropsCollection(userId);
         const dataToSave = {
-            ...data,
+            name: data.name,
+            status: data.status,
+            notes: data.notes || null,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
@@ -63,7 +58,8 @@ export async function addCrop(userId: string, data: CropFormInput) {
         return { success: true };
     } catch (error) {
         console.error("Error adding crop: ", error);
-        return { success: false, error: 'Failed to add crop.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to add crop. Details: ${errorMessage}` };
     }
 }
 
@@ -73,7 +69,9 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
         const cropRef = doc(db, 'users', userId, 'crops', id);
         
         const dataToUpdate = {
-            ...data,
+            name: data.name,
+            status: data.status,
+            notes: data.notes || null,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
@@ -83,7 +81,8 @@ export async function updateCrop(userId: string, id: string, data: CropFormInput
         return { success: true };
     } catch (error) {
         console.error("Error updating crop: ", error);
-        return { success: false, error: 'Failed to update crop.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to update crop. Details: ${errorMessage}` };
     }
 }
 
