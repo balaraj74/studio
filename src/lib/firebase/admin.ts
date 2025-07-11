@@ -20,4 +20,6 @@ const adminAuth = admin.auth();
 
 export { adminDb, adminAuth };
 
-export const getAdminDb = () => adminDb;
+export async function getAdminDb() {
+    return adminDb;
+};
