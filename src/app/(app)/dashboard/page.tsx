@@ -41,21 +41,21 @@ const quickAccessTools: QuickAccessTool[] = [
   },
   {
     title: "Crop Diagnosis",
-    href: "/tools",
+    href: "/disease-check",
     icon: Stethoscope,
     color: "text-red-600",
     bgColor: "bg-red-100",
   },
   {
     title: "Market Prices",
-    href: "/tools",
+    href: "/market",
     icon: LineChart,
     color: "text-blue-600",
     bgColor: "bg-blue-100",
   },
   {
     title: "Govt. Schemes",
-    href: "/tools",
+    href: "/schemes",
     icon: ScrollText,
     color: "text-purple-600",
     bgColor: "bg-purple-100",
@@ -100,7 +100,7 @@ export default function DashboardPage() {
         <h2 className="text-xl font-bold mb-3">Quick Access</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {quickAccessTools.map((tool) => (
-            <Link href={tool.href} key={tool.href} className="block">
+            <Link href={tool.href} key={tool.title} className="block">
                 <Card className="h-full bg-card hover:bg-muted/80 transition-colors flex flex-col items-center justify-center text-center p-4 aspect-square">
                 <div className={`p-3 rounded-full mb-2 ${tool.bgColor}`}>
                     <tool.icon className={`h-6 w-6 ${tool.color}`} />
