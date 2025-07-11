@@ -116,16 +116,11 @@ export default function CropsPageClient() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-3 rounded-lg">
-            <Leaf className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold font-headline">Crop Management</h1>
-            <p className="text-muted-foreground">
-              Manage your crops and track their growth cycle.
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Crop Management</h1>
+          <p className="text-muted-foreground">
+            Manage your crops and track their growth cycle.
+          </p>
         </div>
         <Button onClick={handleAddNew}>
           <Plus className="mr-2 h-4 w-4" /> Add New Crop

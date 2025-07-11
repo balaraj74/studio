@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
     <title>Google</title>
-    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.9 2.04-5.07 2.04-3.83 0-6.97-3.14-6.97-7s3.14-7 6.97-7c2.2 0 3.58.88 4.43 1.69l2.5-2.5C18.17 2.09 15.63 1 12.48 1 7.23 1 3.06 4.9 3.06 10s4.17 9 9.42 9c2.8 0 5.2-1 6.9-2.83 1.79-1.83 2.34-4.59 2.34-6.57 0-.54-.05-.98-.12-1.4z"/>
+    <path fill="currentColor" d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.9 2.04-5.07 2.04-3.83 0-6.97-3.14-6.97-7s3.14-7 6.97-7c2.2 0 3.58.88 4.43 1.69l2.5-2.5C18.17 2.09 15.63 1 12.48 1 7.23 1 3.06 4.9 3.06 10s4.17 9 9.42 9c2.8 0 5.2-1 6.9-2.83 1.79-1.83 2.34-4.59 2.34-6.57 0-.54-.05-.98-.12-1.4z"/>
   </svg>
 );
 
@@ -87,11 +87,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-green-50 to-emerald-50">
+    <div className="flex items-center justify-center min-h-screen p-4 bg-background">
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center text-center mb-6">
-          <Leaf className="h-12 w-12 text-primary" />
-          <h1 className="text-3xl font-bold mt-2 font-headline">AgriSence</h1>
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="p-3 bg-primary rounded-xl mb-3">
+            <Leaf className="h-10 w-10 text-primary-foreground" />
+          </div>
+          <h1 className="text-3xl font-bold font-headline text-primary">AgriSence</h1>
           <p className="text-muted-foreground mt-1">Your AI-powered agriculture assistant</p>
         </div>
         <Tabs defaultValue="sign-in" className="w-full">
@@ -114,7 +116,7 @@ export default function LoginPage() {
                   <Label htmlFor="password-in">Password</Label>
                   <Input id="password-in" type="password" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
                 </div>
-                <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isLoading || isGoogleLoading}>
+                <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold" disabled={isLoading || isGoogleLoading}>
                   {isLoading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </CardContent>
@@ -135,7 +137,7 @@ export default function LoginPage() {
                   <Label htmlFor="password-up">Password</Label>
                   <Input id="password-up" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
                 </div>
-                <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold bg-primary hover:bg-primary/90" disabled={isLoading || isGoogleLoading}>
+                <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold" disabled={isLoading || isGoogleLoading}>
                   {isLoading ? 'Signing Up...' : 'Sign Up'}
                 </Button>
               </CardContent>

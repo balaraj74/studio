@@ -9,178 +9,145 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
-  Leaf,
-  CloudSun,
-  Stethoscope,
   ArrowRight,
+  Sun,
+  Wind,
+  Droplets,
+  Gauge,
+  Leaf,
+  Stethoscope,
   LineChart,
   ScrollText,
-  MessageCircle,
-  Map,
-  DollarSign,
-  Package
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 
-interface Tool {
+interface QuickAccessTool {
   title: string;
-  description: string;
   href: string;
   icon: LucideIcon;
 }
 
-const tools: Tool[] = [
-   {
+const quickAccessTools: QuickAccessTool[] = [
+  {
     title: "Crop Management",
-    description: "Track your crops from sowing to harvest.",
     href: "/crops",
     icon: Leaf,
   },
   {
-    title: "Field Mapping",
-    description: "Draw your field boundaries and measure area.",
-    href: "/field-mapping",
-    icon: Map,
-  },
-  {
     title: "Crop Diagnosis",
-    description: "Detect crop diseases using your phone's camera.",
     href: "/disease-check",
     icon: Stethoscope,
   },
   {
-    title: "Weather Tracking",
-    description: "Get accurate forecasts to plan your activities.",
-    href: "/weather",
-    icon: CloudSun,
-  },
-  {
     title: "Market Prices",
-    description: "View latest prices for key crops in your region.",
     href: "/market",
     icon: LineChart,
   },
   {
     title: "Govt. Schemes",
-    description: "Discover and apply for relevant government schemes.",
     href: "/schemes",
     icon: ScrollText,
-  },
-   {
-    title: "AI Chatbot",
-    description: "Ask farming questions and get instant expert advice.",
-    href: "/chatbot",
-    icon: MessageCircle,
-  },
-  {
-    title: "Expense Tracking",
-    description: "Monitor costs and manage your farm's budget.",
-    href: "/expenses",
-    icon: DollarSign,
-  },
-  {
-    title: "Harvest Records",
-    description: "Log your yields, track production, and manage inventory.",
-    href: "/harvest",
-    icon: Package,
   },
 ];
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold font-headline">Good Morning, Farmer!</h1>
-        <p className="text-muted-foreground">
-          Here is your farm's performance and operations summary.
-        </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold font-headline">Hello, Good Morning</h1>
+        <p className="text-muted-foreground">Sunday, 01 Dec 2024</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-            <CardHeader>
-                <CardTitle>Production Overview</CardTitle>
-                <CardDescription>A summary of your farm's production.</CardDescription>
-            </CardHeader>
-             <CardContent>
-                <div className="h-60 w-full bg-muted rounded-lg flex items-center justify-center">
-                    <p className="text-muted-foreground">Production Chart Placeholder</p>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          {/* Weather Card */}
+          <Card className="bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-lg">
+            <CardContent className="p-6 flex flex-col sm:flex-row justify-between items-start gap-6">
+              <div className="flex-1">
+                <p className="font-medium">Chateauneuf-du-Pape</p>
+                <div className="flex items-end gap-2 mt-2">
+                    <p className="text-7xl font-bold leading-none">+17°</p>
+                    <div className="text-sm font-light">
+                        <p>H: 23°</p>
+                        <p>L: 14°</p>
+                    </div>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm mt-4 sm:mt-0">
+                <div className="flex items-center gap-2"><Droplets size={16}/> Humidity: 40%</div>
+                <div className="flex items-center gap-2"><Gauge size={16}/> Pressure: 450hPa</div>
+                <div className="flex items-center gap-2"><Wind size={16}/> Wind: 23m/s</div>
+              </div>
             </CardContent>
-        </Card>
+             <CardFooter className="p-6 pt-0">
+                <div className="w-full flex items-center justify-between text-sm">
+                    <span>5:25 am</span>
+                    <div className="relative w-full max-w-xs h-8">
+                        <div className="absolute top-1/2 left-0 w-full h-px bg-white/30"></div>
+                        <div className="absolute -top-1 left-1/4 w-10 h-10 bg-yellow-300 rounded-full shadow-md"></div>
+                    </div>
+                    <span>8:04 am</span>
+                </div>
+             </CardFooter>
+          </Card>
+
+          {/* Quick Access Tools (Adapted from "Invest by Category") */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Quick Access</h2>
+             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {quickAccessTools.map((tool) => (
+                <Link href={tool.href} key={tool.href}>
+                  <Card className="h-full bg-card hover:bg-muted/80 transition-colors flex flex-col items-center justify-center text-center p-4">
+                    <div className="p-3 bg-primary/10 rounded-full mb-2">
+                        <tool.icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="font-semibold text-sm">{tool.title}</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Side Column with Best Offers */}
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Weather</CardTitle>
-                    <CardDescription>Current conditions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <CloudSun className="h-12 w-12 text-yellow-500" />
-                            <div>
-                                <p className="text-4xl font-bold">24°C</p>
-                                <p className="text-muted-foreground">Cloudy</p>
-                            </div>
-                        </div>
-                         <Button asChild variant="outline">
-                            <Link href="/weather">View Details</Link>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Vegetable Harvest Summary</CardTitle>
+                    <CardTitle>Best Offers</CardTitle>
+                    <CardDescription>Check out the latest offers and services.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <p>Tomatoes</p>
-                        <p className="font-semibold">150 tons</p>
+                    <div className="relative h-40 w-full rounded-lg overflow-hidden">
+                        <Image
+                            src="https://placehold.co/600x400.png"
+                            data-ai-hint="wheat field"
+                            alt="Wheat field offer"
+                            fill
+                            className="object-cover"
+                        />
+                         <div className="absolute inset-0 bg-black/30 flex items-end p-4">
+                            <h3 className="text-white font-bold">Premium Seeds</h3>
+                        </div>
                     </div>
-                     <div className="flex justify-between items-center">
-                        <p>Carrots</p>
-                        <p className="font-semibold">120 tons</p>
+                    <div className="relative h-40 w-full rounded-lg overflow-hidden">
+                        <Image
+                            src="https://placehold.co/600x400.png"
+                            data-ai-hint="farm drone"
+                            alt="Drone service offer"
+                            fill
+                            className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/30 flex items-end p-4">
+                            <h3 className="text-white font-bold">Drone Spraying</h3>
+                        </div>
                     </div>
-                     <div className="flex justify-between items-center">
-                        <p>Corn</p>
-                        <p className="font-semibold">200 tons</p>
-                    </div>
+                     <Button variant="outline" className="w-full">View all</Button>
                 </CardContent>
             </Card>
         </div>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-         {tools.map((tool) => (
-            <Card
-              key={tool.href}
-              className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                    <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary`}
-                    >
-                    <tool.icon className="h-5 w-5" />
-                    </div>
-                    <CardTitle className="text-xl">{tool.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <CardDescription>{tool.description}</CardDescription>
-              </CardContent>
-              <CardFooter>
-                <Button asChild className="w-full">
-                  <Link href={tool.href}>
-                    Open Tool
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
       </div>
     </div>
   );
