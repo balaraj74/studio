@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getExpenses, addExpense, updateExpense, deleteExpense, type ExpenseFormInput } from "@/lib/actions/expenses";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { User } from 'firebase/auth';
 
 const categoryStyles: { [key in ExpenseCategory]: string } = {
   Seeds: "bg-green-500/20 text-green-700",
@@ -273,6 +274,7 @@ export default function ExpensesPageClient() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         expense={editingExpense}
+        user={user}
         onFormSubmit={onFormSubmit}
       />
     </div>
@@ -283,6 +285,7 @@ interface ExpenseFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   expense: Expense | null;
+  user: User | null;
   onFormSubmit: () => void;
 }
 
@@ -290,9 +293,9 @@ function ExpenseFormDialog({
   isOpen,
   onOpenChange,
   expense,
+  user,
   onFormSubmit,
 }: ExpenseFormDialogProps) {
-  const { user } = useAuth();
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("Other");
   const [amount, setAmount] = useState("");

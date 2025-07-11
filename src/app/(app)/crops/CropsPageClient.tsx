@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getCrops, addCrop, updateCrop, deleteCrop, type CropFormInput } from "@/lib/actions/crops";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { User } from 'firebase/auth';
 
 
 const statusStyles: { [key in CropStatus]: string } = {
@@ -224,6 +225,7 @@ export default function CropsPageClient() {
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         crop={editingCrop}
+        user={user}
         onFormSubmit={onFormSubmit}
       />
     </div>
@@ -234,6 +236,7 @@ interface CropFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   crop: Crop | null;
+  user: User | null;
   onFormSubmit: () => void;
 }
 
@@ -241,9 +244,9 @@ function CropFormDialog({
   isOpen,
   onOpenChange,
   crop,
+  user,
   onFormSubmit,
 }: CropFormDialogProps) {
-  const { user } = useAuth();
   const [name, setName] = useState("");
   const [status, setStatus] = useState<CropStatus>("Planned");
   const [plantedDate, setPlantedDate] = useState<Date | undefined>();
