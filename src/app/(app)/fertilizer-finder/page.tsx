@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -98,6 +99,13 @@ export default function FertilizerFinderPage() {
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
+
+  useEffect(() => {
+    // Log the current URL to help debug API key restrictions
+    if (typeof window !== 'undefined') {
+      console.log("DEBUG: Current URL for API key whitelisting:", window.location.href);
+    }
+  }, []);
 
   const handleFindShops = () => {
     setStatus('locating');
