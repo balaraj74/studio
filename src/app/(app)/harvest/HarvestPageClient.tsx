@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -42,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Package, Plus, Pencil, Trash2, CalendarIcon, Scale } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarIcon, Scale } from "lucide-react";
 import type { Harvest, HarvestUnit, Crop } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -122,16 +123,11 @@ export default function HarvestPageClient() {
   return (
     <div className="space-y-6">
        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-3 rounded-lg">
-            <Package className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold font-headline">Harvest Records</h1>
+        <div className="hidden md:block">
+            <h1 className="text-3xl font-bold">Harvest Records</h1>
             <p className="text-muted-foreground">
               Record and track your crop yields and output.
             </p>
-          </div>
         </div>
         <Button onClick={handleAddNew}>
           <Plus className="mr-2 h-4 w-4" /> Record New Output
@@ -191,7 +187,6 @@ export default function HarvestPageClient() {
                   <TableHead>Crop</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead className="hidden md:table-cell">Notes</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -202,7 +197,6 @@ export default function HarvestPageClient() {
                             <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                            <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[120px]" /></TableCell>
                             <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
                         </TableRow>
                     ))
@@ -216,7 +210,6 @@ export default function HarvestPageClient() {
                       <TableCell>
                         {format(new Date(harvest.harvestDate), "dd MMM, yyyy")}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell max-w-xs truncate">{harvest.notes || "-"}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -238,7 +231,7 @@ export default function HarvestPageClient() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center h-48">
+                    <TableCell colSpan={4} className="text-center h-48">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <Scale className="h-12 w-12 text-muted-foreground" />
                         <h3 className="font-semibold">No harvest records yet</h3>

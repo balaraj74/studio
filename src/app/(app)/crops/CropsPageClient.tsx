@@ -44,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Leaf, Plus, Pencil, Trash2, CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarIcon } from "lucide-react";
 import type { Crop, CropStatus } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -116,8 +116,8 @@ export default function CropsPageClient() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Crop Management</h1>
+        <div className="hidden md:block">
+          <h1 className="text-3xl font-bold">Crop Management</h1>
           <p className="text-muted-foreground">
             Manage your crops and track their growth cycle.
           </p>
@@ -141,9 +141,8 @@ export default function CropsPageClient() {
                 <TableRow>
                   <TableHead>Crop Name</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Planted Date</TableHead>
-                  <TableHead>Harvest Date</TableHead>
-                  <TableHead className="hidden md:table-cell">Notes</TableHead>
+                  <TableHead>Planted</TableHead>
+                  <TableHead>Harvest</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -155,7 +154,6 @@ export default function CropsPageClient() {
                         <TableCell><Skeleton className="h-6 w-[90px] rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-[120px]" /></TableCell>
                         <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
                     </TableRow>
                   ))
@@ -172,16 +170,13 @@ export default function CropsPageClient() {
                       </TableCell>
                       <TableCell>
                         {crop.plantedDate
-                          ? format(crop.plantedDate, "dd MMM, yyyy")
+                          ? format(crop.plantedDate, "dd MMM, yy")
                           : "-"}
                       </TableCell>
                       <TableCell>
                         {crop.harvestDate
-                          ? format(crop.harvestDate, "dd MMM, yyyy")
+                          ? format(crop.harvestDate, "dd MMM, yy")
                           : "-"}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell max-w-xs truncate">
-                        {crop.notes || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -206,7 +201,7 @@ export default function CropsPageClient() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24">
+                    <TableCell colSpan={5} className="text-center h-24">
                       No crops found. Add your first crop to get started.
                     </TableCell>
                   </TableRow>
