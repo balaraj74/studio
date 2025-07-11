@@ -1,30 +1,57 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useState, type FormEvent, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { marketPriceSearch } from '@/ai/flows/market-price-search';
-import { Bot, LineChart, Loader2, Search, Wand2, ArrowRight } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { marketPriceSearch, type MarketPriceSearchOutput } from '@/ai/flows/market-price-search';
+import { Bot, LineChart, Loader2, Search, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+
+type Price = MarketPriceSearchOutput['prices'][0];
 
 export default function MarketPageClient() {
-  const [aiQuestion, setAiQuestion] = useState('');
-  const [aiAnswer, setAiAnswer] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [question, setQuestion] = useState('');
+  const [searchResult, setSearchResult] = useState<MarketPriceSearchOutput | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleAiSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!aiQuestion.trim() || isAiLoading) return;
+  useEffect(() => {
+    const fetchInitialPrices = async () => {
+      setIsInitialLoading(true);
+      try {
+        const result = await marketPriceSearch({ question: '' });
+        setSearchResult(result);
+      } catch (error) {
+        console.error('Initial price fetch error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error Fetching Prices',
+          description: 'Could not load the initial market prices. Please try again later.',
+        });
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
 
-    setIsAiLoading(true);
-    setAiAnswer('');
+    fetchInitialPrices();
+  }, [toast]);
+
+  const handleSearch = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!question.trim() || isSearching) return;
+
+    setIsSearching(true);
+    setSearchResult(null); // Clear previous results
 
     try {
-      const result = await marketPriceSearch({ question: aiQuestion });
-      setAiAnswer(result.answer);
+      const result = await marketPriceSearch({ question });
+      setSearchResult(result);
     } catch (error) {
       console.error('AI search error:', error);
       toast({
@@ -32,21 +59,29 @@ export default function MarketPageClient() {
         title: 'AI Search Failed',
         description: 'Could not get a response from the AI assistant. Please try again.',
       });
-      setAiAnswer("Sorry, I encountered an error. Please try again.");
     } finally {
-      setIsAiLoading(false);
+      setIsSearching(false);
     }
   };
 
-  const sampleQuestions = [
-    "What is the current price of wheat in Punjab?",
-    "Show me a table of maize prices in Karnataka and Maharashtra.",
-    "Which cotton variety has the highest price right now?",
-  ];
+  const Trend = ({ value }: { value: number }) => {
+    let Icon = Minus;
+    let color = 'text-muted-foreground';
+    if (value > 0) {
+      Icon = TrendingUp;
+      color = 'text-green-600';
+    } else if (value < 0) {
+      Icon = TrendingDown;
+      color = 'text-red-600';
+    }
 
-  const handleSampleQuestion = (question: string) => {
-    setAiQuestion(question);
-  }
+    return (
+      <div className={cn('flex items-center gap-1 font-semibold', color)}>
+        <Icon className="h-4 w-4" />
+        <span>{Math.abs(value)}%</span>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -55,82 +90,106 @@ export default function MarketPageClient() {
           <LineChart className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold font-headline">AI Market Price Assistant</h1>
-          <p className="text-muted-foreground">Ask Gemini about the latest crop prices.</p>
+          <h1 className="text-3xl font-bold font-headline">Market Prices</h1>
+          <p className="text-muted-foreground">View latest crop prices and ask the AI for specific details.</p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wand2 className="h-6 w-6 text-primary" />
-            Ask a Question
-          </CardTitle>
-          <CardDescription>
-            Ask about crop prices in plain language. The AI will provide the latest information it has access to.
-          </CardDescription>
+          <CardTitle>Ask AI Price Assistant</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAiSearch} className="flex flex-col gap-4">
-            <Textarea
-              value={aiQuestion}
-              onChange={(e) => setAiQuestion(e.target.value)}
-              placeholder="e.g., What's the highest price for wheat?"
-              disabled={isAiLoading}
-              className="min-h-[80px]"
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="e.g., 'What is the price of Basmati rice in Haryana?'"
+              disabled={isSearching}
             />
-            <Button type="submit" disabled={isAiLoading || !aiQuestion.trim()} className="self-end">
-              {isAiLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                <>
-                  <Search className="mr-2 h-4 w-4" />
-                  Ask AI
-                </>
-              )}
+            <Button type="submit" size="icon" disabled={isSearching || !question.trim()} aria-label="Search">
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
             </Button>
           </form>
         </CardContent>
-        <CardFooter>
-            <div className="w-full">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Or try a sample question:</p>
-                <div className="flex flex-col sm:flex-row gap-2">
-                    {sampleQuestions.map(q => (
-                        <Button key={q} variant="outline" size="sm" onClick={() => handleSampleQuestion(q)} className="text-left justify-start">
-                           <ArrowRight className="mr-2 h-4 w-4" /> {q}
-                        </Button>
-                    ))}
-                </div>
-            </div>
-        </CardFooter>
       </Card>
 
-      {(isAiLoading || aiAnswer) && (
-        <Card>
+      {isSearching && (
+        <div className="flex items-center gap-2 text-muted-foreground animate-pulse p-4">
+          <Bot className="h-5 w-5" />
+          <p>AI is searching for an answer...</p>
+        </div>
+      )}
+      
+      {searchResult?.answer && (
+         <Card>
             <CardHeader>
                 <CardTitle>AI Response</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="w-full space-y-4">
-                {isAiLoading && !aiAnswer && (
-                    <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-                    <Bot className="h-5 w-5 flex-shrink-0" />
-                    <p className="text-sm">AgriSence AI is thinking...</p>
-                    </div>
-                )}
-                {aiAnswer && (
-                    <div className="flex items-start gap-3 text-sm animate-in fade-in-50">
+                 <div className="flex items-start gap-3 text-sm animate-in fade-in-50">
                     <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div className="text-foreground whitespace-pre-wrap prose prose-sm max-w-none">{aiAnswer}</div>
-                    </div>
-                )}
+                    <div className="text-foreground whitespace-pre-wrap prose prose-sm max-w-none">{searchResult.answer}</div>
                 </div>
             </CardContent>
         </Card>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Today's Market Overview</CardTitle>
+          {isInitialLoading ? (
+            <Skeleton className="h-5 w-3/4 mt-1.5" />
+          ) : (
+            <CardDescription>{searchResult?.summary || 'Price data for major crops across India.'}</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Crop</TableHead>
+                  <TableHead>Market</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Trend</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isInitialLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-[120px]" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-[80px] float-right" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-[50px] float-right" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : searchResult?.prices && searchResult.prices.length > 0 ? (
+                  searchResult.prices.map((price: Price, index: number) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{price.cropName}</TableCell>
+                      <TableCell className="text-muted-foreground">{price.market}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        ₹{price.price.toLocaleString()}<span className="text-xs text-muted-foreground"> {price.unit}</span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Trend value={price.trend} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      No price information available.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
