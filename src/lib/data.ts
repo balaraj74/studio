@@ -1,19 +1,13 @@
 
 import type { MarketPrice, Scheme, Expense, Harvest, Crop } from "@/types";
 
+// This file contains mock data. 
+// In a real application, this would be fetched from a database or live APIs.
+
 export const marketPrices: MarketPrice[] = [
   { crop: "Rice", region: "Punjab", price: 1940, change: 1.5 },
-  { crop: "Rice", region: "Uttar Pradesh", price: 1960, change: 1.8 },
   { crop: "Wheat", region: "Uttar Pradesh", price: 2015, change: -0.8 },
-  { crop: "Wheat", region: "Punjab", price: 2050, change: -0.5 },
   { crop: "Maize", region: "Karnataka", price: 1870, change: 2.1 },
-  { crop: "Maize", region: "Maharashtra", price: 1850, change: 1.9 },
-  { crop: "Cotton", region: "Gujarat", price: 6025, change: 0.5 },
-  { crop: "Cotton", region: "Madhya Pradesh", price: 5980, change: 0.7 },
-  { crop: "Sugarcane", region: "Maharashtra", price: 3050, change: -0.2 },
-  { crop: "Sugarcane", region: "Uttar Pradesh", price: 3100, change: 0.1 },
-  { crop: "Soybean", region: "Madhya Pradesh", price: 4200, change: 3.0 },
-  { crop: "Pomegranate", region: "Maharashtra", price: 11000, change: -1.2 },
 ];
 
 export const states = ["All", "Karnataka", "Maharashtra", "Punjab", "Uttar Pradesh", "Gujarat", "Madhya Pradesh", "Central"];
@@ -24,42 +18,14 @@ export const schemes: Scheme[] = [
     name: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
     crop: "All",
     state: "Central",
-    description: "An insurance service for farmers for their yields. It provides financial support to farmers suffering crop loss/damage arising out of unforeseen events.",
+    description: "An insurance service for farmers for their yields.",
     link: "https://pmfby.gov.in/",
   },
-  {
-    name: "Kisan Credit Card (KCC) Scheme",
-    crop: "All",
-    state: "Central",
-    description: "Provides farmers with timely access to credit for their cultivation and other needs. Aims to meet the short-term credit requirements for cultivation of crops.",
-    link: "#",
-  },
-  {
+   {
     name: "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
     crop: "All",
     state: "Central",
-    description: "A central sector scheme with 100% funding from the Government of India. It provides an income support of ₹6,000 per year in three equal installments to all landholding farmer families.",
+    description: "Income support of ₹6,000 per year for all landholding farmer families.",
     link: "https://pmkisan.gov.in/",
   },
-  {
-    name: "Raita Vidya Nidhi",
-    crop: "All",
-    state: "Karnataka",
-    description: "Scholarship scheme for children of farmers in Karnataka to pursue higher education.",
-    link: "#",
-  },
-  {
-    name: "National Food Security Mission (NFSM)",
-    crop: "Rice",
-    state: "Central",
-    description: "Aims to increase the production of rice, wheat, pulses, coarse cereals and commercial crops through area expansion and productivity enhancement.",
-    link: "https://www.nfsm.gov.in/",
-  },
-  {
-    name: "National Mission on Oilseeds and Oil Palm (NMOOP)",
-    crop: "Soybean",
-    state: "Madhya Pradesh",
-    description: "Aims to increase the production of oilseeds and oil palm to meet the domestic demand for edible oils.",
-    link: "#",
-  }
 ];
