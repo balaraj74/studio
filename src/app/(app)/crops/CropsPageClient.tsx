@@ -268,7 +268,7 @@ function CropFormDialog({
         return;
     }
     if (!user) {
-        toast({ variant: "destructive", title: "Error", description: "You must be logged in to perform this action."});
+        toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to add a crop. Please refresh the page."});
         return;
     }
     
