@@ -8,9 +8,10 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { SidebarNav } from "@/components/sidebar-nav";
-import { Leaf } from "lucide-react";
+import { Bot, Leaf } from "lucide-react";
 import Link from "next/link";
 import { UserNav } from "@/components/user-nav";
+import { Button } from "@/components/ui/button";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -18,18 +19,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader>
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Leaf className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold font-headline text-primary">AgriSence</span>
+            <div className="bg-primary p-2 rounded-lg">
+                <Bot className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold font-headline text-foreground">AgriSence</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav />
         </SidebarContent>
         <SidebarFooter>
+            {/* Can add items here later if needed */}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:h-16 sm:px-6">
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="flex-1" />
           <UserNav />
