@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type DocumentData, type Firestore } from 'firebase/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Crop } from '@/types';
 
@@ -27,15 +27,15 @@ const docToCrop = (doc: DocumentData): Crop => {
 };
 
 
-const getCropsCollection = async (userId: string) => {
-    const db = await getAdminDb();
+const getCropsCollection = (db: Firestore, userId: string) => {
     return collection(db, 'users', userId, 'crops');
 }
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
     try {
-        const cropsCollection = await getCropsCollection(userId);
+        const db = await getAdminDb();
+        const cropsCollection = getCropsCollection(db, userId);
         const q = query(cropsCollection, orderBy("plantedDate", "desc"));
         const querySnapshot = await getDocs(q);
         const crops = querySnapshot.docs.map(docToCrop);
@@ -49,7 +49,8 @@ export async function getCrops(userId: string): Promise<Crop[]> {
 export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropsCollection = await getCropsCollection(userId);
+        const db = await getAdminDb();
+        const cropsCollection = getCropsCollection(db, userId);
         const dataToSave = {
             ...data,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,

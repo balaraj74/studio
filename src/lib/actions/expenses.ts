@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type Firestore } from 'firebase/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Expense } from '@/types';
 
@@ -28,15 +28,15 @@ const expenseConverter = {
     }
 };
 
-const getExpensesCollection = async (userId: string) => {
-    const db = await getAdminDb();
+const getExpensesCollection = (db: Firestore, userId: string) => {
     return collection(db, 'users', userId, 'expenses');
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
     try {
-        const expensesCollection = await getExpensesCollection(userId);
+        const db = await getAdminDb();
+        const expensesCollection = getExpensesCollection(db, userId);
         const q = query(expensesCollection, orderBy("date", "desc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc, {}));
@@ -53,7 +53,8 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
             ...data,
             date: Timestamp.fromDate(new Date(data.date)),
         };
-        const expensesCollection = await getExpensesCollection(userId);
+        const db = await getAdminDb();
+        const expensesCollection = getExpensesCollection(db, userId);
         await addDoc(expensesCollection, dataToSave);
         revalidatePath('/expenses');
         return { success: true };

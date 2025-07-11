@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, type Firestore } from 'firebase/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Harvest } from '@/types';
 
@@ -28,8 +28,7 @@ const harvestConverter = {
     }
 };
 
-const getHarvestsCollection = async (userId: string) => {
-    const db = await getAdminDb();
+const getHarvestsCollection = (db: Firestore, userId: string) => {
     return collection(db, 'users', userId, 'harvests').withConverter(harvestConverter);
 }
 
@@ -37,7 +36,8 @@ const getHarvestsCollection = async (userId: string) => {
 export async function getHarvests(userId: string): Promise<Harvest[]> {
     if (!userId) return [];
     try {
-        const harvestsCollection = await getHarvestsCollection(userId);
+        const db = await getAdminDb();
+        const harvestsCollection = getHarvestsCollection(db, userId);
         const q = query(harvestsCollection, orderBy("harvestDate", "desc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => doc.data());
@@ -54,7 +54,8 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
             ...data,
             harvestDate: new Date(data.harvestDate),
         };
-        const harvestsCollection = await getHarvestsCollection(userId);
+        const db = await getAdminDb();
+        const harvestsCollection = getHarvestsCollection(db, userId);
         await addDoc(harvestsCollection, newHarvest);
         revalidatePath('/harvest');
         return { success: true };

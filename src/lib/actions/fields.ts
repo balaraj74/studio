@@ -2,7 +2,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, type Firestore } from 'firebase/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Field } from '@/types';
 
@@ -26,15 +26,15 @@ const fieldConverter = {
     }
 };
 
-const getFieldsCollection = async (userId: string) => {
-    const db = await getAdminDb();
+const getFieldsCollection = (db: Firestore, userId: string) => {
     return collection(db, 'users', userId, 'fields').withConverter(fieldConverter);
 }
 
 export async function getFields(userId: string): Promise<Field[]> {
     if (!userId) return [];
     try {
-        const fieldsCollection = await getFieldsCollection(userId);
+        const db = await getAdminDb();
+        const fieldsCollection = getFieldsCollection(db, userId);
         const q = query(fieldsCollection, orderBy("fieldName", "asc"));
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs.map(doc => doc.data());
@@ -47,7 +47,8 @@ export async function getFields(userId: string): Promise<Field[]> {
 export async function addField(userId: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const fieldsCollection = await getFieldsCollection(userId);
+        const db = await getAdminDb();
+        const fieldsCollection = getFieldsCollection(db, userId);
         await addDoc(fieldsCollection, data);
         revalidatePath('/field-mapping');
         return { success: true };
@@ -62,7 +63,7 @@ export async function updateField(userId: string, id: string, data: FieldFormInp
     try {
         const db = await getAdminDb();
         const fieldRef = doc(db, 'users', userId, 'fields', id);
-        await updateDoc(fieldRef, data);
+        await updateDoc(fieldRef, data as any);
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {
