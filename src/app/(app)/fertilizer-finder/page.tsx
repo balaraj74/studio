@@ -102,8 +102,6 @@ export default function FertilizerFinderPage() {
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    // We need to set the key in a state to ensure it's available client-side
-    // before the Wrapper component tries to render.
     setApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
   }, []);
 
@@ -230,36 +228,6 @@ export default function FertilizerFinderPage() {
     return null;
   }
 
-  // Only render the page content if the API key is available on the client
-  if (apiKey === undefined) {
-    // Show a loading or skeleton state while waiting for the key
-    return (
-       <div className="space-y-6">
-        <Skeleton className="h-10 w-1/2" />
-        <Skeleton className="h-6 w-3/4" />
-        <Card>
-            <CardHeader><Skeleton className="h-8 w-1/3" /></CardHeader>
-            <CardContent><Skeleton className="h-10 w-48" /></CardContent>
-        </Card>
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
-  if (!apiKey) {
-    return (
-      <div className="space-y-6">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Configuration Error</AlertTitle>
-            <AlertDescription>
-              The Google Maps API Key is missing. Please add your key to the <code>.env</code> file as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to use this feature.
-            </AlertDescription>
-          </Alert>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -293,9 +261,21 @@ export default function FertilizerFinderPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 h-[450px] lg:h-auto lg:min-h-[500px] bg-muted rounded-lg flex items-center justify-center p-4">
-             <Wrapper apiKey={apiKey} libraries={["places"]}>
-                {renderContent()}
-            </Wrapper>
+             {apiKey === undefined && <Skeleton className="h-full w-full" />}
+             {!apiKey && apiKey !== undefined && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Configuration Error</AlertTitle>
+                    <AlertDescription>
+                    The Google Maps API Key is missing. Please add it to the <code>.env</code> file as <code>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to use this feature.
+                    </AlertDescription>
+                </Alert>
+             )}
+             {apiKey && (
+                <Wrapper apiKey={apiKey} libraries={["places"]}>
+                    {renderContent()}
+                </Wrapper>
+             )}
         </div>
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -335,5 +315,3 @@ export default function FertilizerFinderPage() {
     </div>
   );
 }
-
-    

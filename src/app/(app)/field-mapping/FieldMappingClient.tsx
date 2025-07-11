@@ -236,18 +236,6 @@ export default function FieldMappingClient() {
 
 
     const renderWrapperContent = () => {
-        if (apiKey === undefined) return <Skeleton className="h-[500px] w-full" />;
-        if (!apiKey) {
-            return (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Configuration Error</AlertTitle>
-                    <AlertDescription>
-                        Google Maps API Key is missing. Please add it to your environment variables.
-                    </AlertDescription>
-                </Alert>
-            );
-        }
         return (
             <div className="h-[calc(100vh-20rem)] lg:h-full w-full">
                 <MapComponent 
@@ -273,9 +261,21 @@ export default function FieldMappingClient() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 h-full bg-muted rounded-lg flex items-center justify-center">
-                    <Wrapper apiKey={apiKey || ""} libraries={["drawing", "geometry"]}>
-                        {renderWrapperContent()}
-                    </Wrapper>
+                    {apiKey === undefined && <Skeleton className="h-[500px] w-full" />}
+                    {!apiKey && apiKey !== undefined && (
+                        <Alert variant="destructive" className="m-4">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Configuration Error</AlertTitle>
+                            <AlertDescription>
+                                Google Maps API Key is missing. Please add it to your environment variables.
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                    {apiKey && (
+                        <Wrapper apiKey={apiKey} libraries={["drawing", "geometry"]}>
+                           {renderWrapperContent()}
+                        </Wrapper>
+                    )}
                 </div>
 
                 <Card className="lg:col-span-1">
@@ -455,8 +455,8 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-8rem)]">
                     <div className="md:col-span-2 h-full rounded-lg bg-muted flex items-center justify-center">
-                        {isOpen && (
-                            <Wrapper apiKey={apiKey || ""} libraries={["drawing", "geometry"]}>
+                        {isOpen && apiKey && (
+                            <Wrapper apiKey={apiKey} libraries={["drawing", "geometry"]}>
                                 <MapComponent 
                                     center={field?.centroid || center} 
                                     fields={[]}
@@ -467,6 +467,15 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, ap
                                 />
                             </Wrapper>
                         )}
+                         {isOpen && !apiKey && (
+                            <Alert variant="destructive">
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertTitle>API Key Error</AlertTitle>
+                                <AlertDescription>
+                                    The Google Maps API key is not configured. The map cannot be loaded.
+                                </AlertDescription>
+                            </Alert>
+                         )}
                     </div>
                     <div className="md:col-span-1 space-y-4 flex flex-col">
                         <Card>
