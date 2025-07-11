@@ -23,35 +23,63 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FileText, ArrowRight, Info } from "lucide-react";
 import Link from "next/link";
 
-const karnatakaDistricts: { [key: string]: string[] } = {
-    "Bagalkote": ["Badami", "Bagalkote", "Jamkhandi"],
-    "Bengaluru Urban": ["Anekal", "Bengaluru East", "Bengaluru North"],
-    "Belagavi": ["Athani", "Belagavi", "Gokak"],
-    // Add more districts and taluks as needed
-};
+const karnatakaDistricts: string[] = [
+    "Bagalkote", "Ballari (Bellary)", "Belagavi (Belgaum)", "Bengaluru Rural", "Bengaluru Urban",
+    "Bidar", "Chamarajanagar", "Chikkaballapur", "Chikkamagaluru", "Chitradurga",
+    "Dakshina Kannada", "Davanagere", "Dharwad", "Gadag", "Hassan", "Haveri", "Kalaburagi (Gulbarga)",
+    "Kodagu", "Kolar", "Koppal", "Mandya", "Mysuru (Mysore)", "Raichur", "Ramanagara",
+    "Shivamogga (Shimoga)", "Tumakuru (Tumkur)", "Udupi", "Uttara Kannada", "Vijayapura (Bijapur)", "Yadgir"
+];
 
-const statesData: { [key: string]: { name: string, url: string, districts?: { [key: string]: string[] } } } = {
+const statesData: { [key: string]: { name: string, url: string, districts?: string[] } } = {
+    "andhra_pradesh": { name: "Andhra Pradesh", url: "http://meebhoomi.ap.gov.in/" },
+    "arunachal_pradesh": { name: "Arunachal Pradesh", url: "https://namsai.nic.in/service/land-records/" },
+    "assam": { name: "Assam", url: "https://revenueassam.nic.in/ILRMS/" },
+    "bihar": { name: "Bihar", url: "http://biharbhumi.bihar.gov.in/" },
+    "chhattisgarh": { name: "Chhattisgarh", url: "https://bhuiyan.cg.nic.in/" },
+    "goa": { name: "Goa", url: "https://dslr.goa.gov.in/" },
+    "gujarat": { name: "Gujarat", url: "https://anyror.gujarat.gov.in/" },
+    "haryana": { name: "Haryana", url: "https://jamabandi.nic.in/" },
+    "himachal_pradesh": { name: "Himachal Pradesh", url: "https://himachal.nic.in/index.php?lang=1&dpt_id=13" },
+    "jharkhand": { name: "Jharkhand", url: "https://jharbhoomi.nic.in/" },
     "karnataka": { 
         name: "Karnataka", 
         url: "https://landrecords.karnataka.gov.in/service2/RTC.aspx",
         districts: karnatakaDistricts
     },
+    "kerala": { name: "Kerala", url: "http://erekha.kerala.gov.in/" },
+    "madhya_pradesh": { name: "Madhya Pradesh", url: "https://mpbhulekh.gov.in/" },
     "maharashtra": { name: "Maharashtra", url: "https://bhulekh.mahabhumi.gov.in/" },
-    "gujarat": { name: "Gujarat", url: "https://anyror.gujarat.gov.in/" },
+    "manipur": { name: "Manipur", url: "https://louchapathap.nic.in/" },
+    "meghalaya": { name: "Meghalaya", url: "https://meghalaya.gov.in/depts/revenue" },
+    "mizoram": { name: "Mizoram", url: "https://dict.mizoram.gov.in/page/land-record-and-settlement" },
+    "nagaland": { name: "Nagaland", url: "https://dlrs.nagaland.gov.in/" },
+    "odisha": { name: "Odisha", url: "http://bhulekh.ori.nic.in/" },
+    "punjab": { name: "Punjab", url: "http://jamabandi.punjab.gov.in/" },
+    "rajasthan": { name: "Rajasthan", url: "http://apnakhata.raj.nic.in/" },
+    "sikkim": { name: "Sikkim", url: "http://www.sikkimlrdm.gov.in/" },
+    "tamil_nadu": { name: "Tamil Nadu", url: "https://eservices.tn.gov.in/" },
+    "telangana": { name: "Telangana", url: "https://dharani.telangana.gov.in/" },
+    "tripura": { name: "Tripura", url: "https://jami.tripura.gov.in/" },
     "uttar_pradesh": { name: "Uttar Pradesh", url: "https://upbhulekh.gov.in/" },
-    // Add more states as needed
+    "uttarakhand": { name: "Uttarakhand", url: "http://bhulekh.uk.gov.in/" },
+    "west_bengal": { name: "West Bengal", url: "http://banglarbhumi.gov.in/" },
+    "delhi": { name: "Delhi", url: "https://dlrc.delhigovt.nic.in/" },
 };
 
 export default function LandRecordsPage() {
   const [selectedStateKey, setSelectedStateKey] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedTaluk, setSelectedTaluk] = useState("");
   
   const selectedState = statesData[selectedStateKey];
-  const districts = selectedState?.districts ? Object.keys(selectedState.districts) : [];
-  const taluks = selectedDistrict && selectedState?.districts ? selectedState.districts[selectedDistrict] : [];
+  const districts = selectedState?.districts || [];
   
   const canProceed = selectedState?.url;
+
+  const handleStateChange = (key: string) => {
+    setSelectedStateKey(key);
+    setSelectedDistrict(""); // Reset district on state change
+  };
 
   return (
     <div className="space-y-6">
@@ -71,7 +99,7 @@ export default function LandRecordsPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>How it Works</AlertTitle>
         <AlertDescription>
-          AgriSence helps you quickly access official government websites for land records. Select your state and enter your details, and we'll provide a direct link to the portal.
+          AgriSence helps you quickly access official government websites for land records. Select your state, and we'll provide a direct link to the portal. For some states, you can pre-select your district.
         </AlertDescription>
       </Alert>
 
@@ -85,7 +113,7 @@ export default function LandRecordsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="state">State</Label>
-            <Select onValueChange={setSelectedStateKey} value={selectedStateKey}>
+            <Select onValueChange={handleStateChange} value={selectedStateKey}>
               <SelectTrigger id="state">
                 <SelectValue placeholder="Select your state" />
               </SelectTrigger>
@@ -97,7 +125,7 @@ export default function LandRecordsPage() {
             </Select>
           </div>
           
-          {selectedState?.districts && (
+          {selectedState?.districts && districts.length > 0 && (
              <>
                 <div className="space-y-2">
                     <Label htmlFor="district">District</Label>
@@ -112,26 +140,12 @@ export default function LandRecordsPage() {
                     </SelectContent>
                     </Select>
                 </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="taluk">Taluk</Label>
-                    <Select onValueChange={setSelectedTaluk} value={selectedTaluk} disabled={!taluks.length}>
-                    <SelectTrigger id="taluk">
-                        <SelectValue placeholder="Select your taluk" />
-                    </SelectTrigger>
-                    <SelectContent>
-                         {taluks.map((taluk) => (
-                            <SelectItem key={taluk} value={taluk}>{taluk}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
              </>
           )}
 
            <div className="space-y-2">
-                <Label htmlFor="survey-number">Survey Number</Label>
-                <Input id="survey-number" placeholder="Enter your survey number (optional)"/>
+                <Label htmlFor="survey-number">Survey Number (Optional)</Label>
+                <Input id="survey-number" placeholder="Enter your survey number if known"/>
             </div>
 
         </CardContent>
