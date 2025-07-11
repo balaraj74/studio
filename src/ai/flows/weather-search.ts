@@ -109,7 +109,7 @@ const weatherPrompt = ai.definePrompt({
     prompt: `You are a helpful weather assistant. Given the following weather data in JSON format, provide a short, conversational summary of the overall weather.
 
     Data:
-    {{{json aniescape=true}}}
+    {{{json this}}}
     `,
 });
 
