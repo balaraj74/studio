@@ -52,14 +52,13 @@ export async function getCrops(userId: string): Promise<Crop[]> {
 export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const newCrop: Omit<Crop, 'id'> = {
+        const cropsCollection = collection(db, 'users', userId, 'crops');
+        const dataToSave = {
             ...data,
-            notes: data.notes || null,
-            plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
-            harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
+            plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
+            harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
-        // The withConverter handles the conversion to Timestamps
-        await addDoc(getCropsCollection(userId), newCrop);
+        await addDoc(cropsCollection, dataToSave);
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {
@@ -71,14 +70,12 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = doc(db, 'users', userId, 'crops', id).withConverter(cropConverter);
+        const cropRef = doc(db, 'users', userId, 'crops', id);
         
-        const dataToUpdate: Omit<Crop, 'id'> = {
-            name: data.name,
-            status: data.status,
-            notes: data.notes || null,
-            plantedDate: data.plantedDate ? new Date(data.plantedDate) : null,
-            harvestDate: data.harvestDate ? new Date(data.harvestDate) : null,
+        const dataToUpdate = {
+            ...data,
+            plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
+            harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
         };
 
         await updateDoc(cropRef, dataToUpdate);
