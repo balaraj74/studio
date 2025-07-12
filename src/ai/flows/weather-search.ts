@@ -62,11 +62,11 @@ const weatherTool = ai.defineTool(
     ]);
 
      if (!weatherResponse.ok) {
-        throw new Error("Failed to fetch weather data.");
+        throw new Error(`Failed to fetch weather data. Status: ${weatherResponse.status}`);
     }
      if (!geocodeResponse.ok) {
         // Don't fail the whole thing, just proceed without a location name
-        console.error("Failed to fetch geocoding data.");
+        console.error(`Failed to fetch geocoding data. Status: ${geocodeResponse.status}`);
     }
 
     const weatherData = await weatherResponse.json() as any;
@@ -120,25 +120,30 @@ const weatherFlow = ai.defineFlow(
     outputSchema: GetWeatherInfoOutputSchema,
   },
   async (input) => {
-    // 1. Call the tool to get structured weather data.
-    const structuredData = await weatherTool(input);
-
-    let summary = "Enjoy the weather!";
     try {
+      // 1. Call the tool to get structured weather data.
+      const structuredData = await weatherTool(input);
+
+      let summary = 'Enjoy the weather!';
+      try {
         // 2. Call the AI to generate a summary from the structured data.
         const { output } = await weatherPrompt(structuredData);
         if (output?.summary) {
-            summary = output.summary;
+          summary = output.summary;
         }
-    } catch (error) {
-        console.error("Could not generate weather summary from AI:", error);
+      } catch (error) {
+        console.error('Could not generate weather summary from AI:', error);
         // Do not throw; proceed with a default summary.
+      }
+
+      // 3. Combine the structured data and the AI's summary.
+      return {
+        ...structuredData,
+        summary,
+      };
+    } catch (error) {
+      console.error("Error in weatherFlow:", error);
+      throw new Error("The weather service is currently unavailable. Please try again in a few moments.");
     }
-    
-    // 3. Combine the structured data and the AI's summary.
-    return {
-      ...structuredData,
-      summary,
-    };
   }
 );
