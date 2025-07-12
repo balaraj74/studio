@@ -21,6 +21,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { WeatherWidget } from '@/components/weather-widget';
 
 interface QuickLink {
   href: string;
@@ -80,6 +81,8 @@ export default function DashboardPage() {
           Here's a quick overview of your farm assistant.
         </p>
       </div>
+
+      <WeatherWidget />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {quickLinks.map((link) => (
