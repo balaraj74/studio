@@ -16,14 +16,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Conditionally wrap pages that need Google Maps
   const needsMapWrapper = MAPS_PAGES.includes(pathname);
 
-  const getPageTitle = () => {
-    if (pathname === '/dashboard') return "Dashboard";
-    const segments = pathname.split('/').filter(Boolean);
-    if (segments.length === 0) return "AgriSence";
-    // Capitalize the first letter of each word in the last segment
-    return segments[segments.length-1].split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  }
-
   const renderContent = () => {
     if (needsMapWrapper) {
       if (apiKey) {
@@ -43,7 +35,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-4 sm:px-6">
         <div className="flex items-center gap-2">
             <Leaf className="h-7 w-7 text-primary" />
-            <h1 className="text-xl font-bold font-headline">{getPageTitle()}</h1>
+            <h1 className="text-xl font-bold font-headline">Agrisence</h1>
         </div>
         <UserNav />
       </header>
