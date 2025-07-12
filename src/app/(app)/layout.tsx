@@ -7,27 +7,35 @@ import { usePathname } from 'next/navigation';
 import { Leaf } from 'lucide-react';
 import { UserNav } from "@/components/user-nav";
 
+const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const pathname = usePathname();
 
-  const renderMapWrapper = (content: React.ReactNode) => {
-    if (apiKey) {
-      return <Wrapper apiKey={apiKey} libraries={["drawing", "geometry", "places"]}>{content}</Wrapper>
-    }
-    // Add a fallback for when the API key is not available
-    if (pathname === '/fertilizer-finder' || pathname === '/field-mapping') {
-        return <div className="text-center text-red-500">Google Maps API key is not configured. This feature is unavailable.</div>
-    }
-    return content;
-  }
-  
+  // Conditionally wrap pages that need Google Maps
+  const needsMapWrapper = MAPS_PAGES.includes(pathname);
+
   const getPageTitle = () => {
     if (pathname === '/dashboard') return "Dashboard";
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length === 0) return "AgriSence";
     // Capitalize the first letter of each word in the last segment
     return segments[segments.length-1].split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  }
+
+  const renderContent = () => {
+    if (needsMapWrapper) {
+      if (apiKey) {
+        return <Wrapper apiKey={apiKey} libraries={["drawing", "geometry", "places"]}>{children}</Wrapper>;
+      }
+      return (
+        <div className="text-center text-red-500 p-4 border border-destructive/50 bg-destructive/10 rounded-lg">
+          Google Maps API key is not configured. This feature is unavailable.
+        </div>
+      );
+    }
+    return children;
   }
 
   return (
@@ -40,7 +48,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <UserNav />
       </header>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {renderMapWrapper(children)}
+        {renderContent()}
       </main>
       <nav className="sticky bottom-0 mt-auto border-t bg-background/95 backdrop-blur-sm z-10 md:hidden">
         <BottomNav />
