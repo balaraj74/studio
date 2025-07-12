@@ -1,104 +1,123 @@
 
 'use client';
 
+import Link from 'next/link';
 import {
   Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/card';
 import {
-  SlidersHorizontal,
-  MoreHorizontal,
-} from "lucide-react";
-import Image from "next/image";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Leaf,
+  Stethoscope,
+  CloudSun,
+  LineChart,
+  ScrollText,
+  MessageCircle,
+  Mic,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 
-const farms = [
-    {
-        name: "Cucumber Farm 13",
-        earnings: "10,000 BDT/share",
-        rate: "5.5%",
-        duration: "4 Months",
-        image: "https://placehold.co/100x100.png",
-        dataAiHint: "woman holding vegetables"
-    },
-    {
-        name: "Agriculture Farm 27",
-        earnings: "10,000 BDT/share",
-        rate: "5.5%",
-        duration: "4 Months",
-        image: "https://placehold.co/100x100.png",
-        dataAiHint: "man holding vegetables"
-    },
-    {
-        name: "Karolla Farm 18",
-        earnings: "10,000 BDT/share",
-        rate: "5.5%",
-        duration: "4 Months",
-        image: "https://placehold.co/100x100.png",
-        dataAiHint: "corn field"
-    },
-    {
-        name: "Enrichment Farm 7",
-        earnings: "10,000 BDT/share",
-        rate: "5.5%",
-        duration: "4 Months",
-        image: "https://placehold.co/100x100.png",
-        dataAiHint: "farmer hat"
-    },
+interface QuickLink {
+  href: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}
+
+const quickLinks: QuickLink[] = [
+  {
+    href: '/records',
+    title: 'My Farm Records',
+    description: 'Manage crops, expenses, and harvests.',
+    icon: Leaf,
+  },
+  {
+    href: '/disease-check',
+    title: 'Crop Disease Check',
+    description: 'Diagnose diseases from leaf images.',
+    icon: Stethoscope,
+  },
+  {
+    href: '/weather',
+    title: 'Weather Forecast',
+    description: 'Get location-based weather updates.',
+    icon: CloudSun,
+  },
+  {
+    href: '/market',
+    title: 'Market Prices',
+    description: 'View latest prices for major crops.',
+    icon: LineChart,
+  },
+  {
+    href: '/schemes',
+    title: 'Govt. Schemes',
+    description: 'Find relevant agricultural schemes.',
+    icon: ScrollText,
+  },
 ];
 
+const aiTools = [
+    { href: '/chatbot', title: 'AI Chatbot', icon: MessageCircle },
+    { href: '/voice', title: 'Voice Assistant', icon: Mic },
+]
+
 export default function DashboardPage() {
+  const { user } = useAuth();
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold font-headline">
+          Welcome, {user?.displayName?.split(' ')[0] || 'Farmer'}!
+        </h1>
+        <p className="text-muted-foreground">
+          Here's a quick overview of your farm assistant.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {quickLinks.map((link) => (
+          <Link href={link.href} key={link.href} className="block">
+            <Card className="h-full hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-[0.98]">
+              <CardHeader>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <link.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle>{link.title}</CardTitle>
+                    <CardDescription>{link.description}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
+      </div>
       
-      <Tabs defaultValue="regular" className="w-full">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList className="grid grid-cols-2 p-1 h-12 rounded-full">
-            <TabsTrigger value="regular" className="rounded-full text-base">Regular</TabsTrigger>
-            <TabsTrigger value="shariah" className="rounded-full text-base">Shariah</TabsTrigger>
-          </TabsList>
-          <Button variant="outline" size="icon" className="rounded-full h-12 w-12">
-            <SlidersHorizontal className="h-5 w-5" />
-          </Button>
-        </div>
-        <TabsContent value="regular">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Active Farms</h2>
-                <Button variant="link" className="text-primary">View all</Button>
-            </div>
-            <div className="space-y-4">
-                {farms.map((farm, index) => (
-                    <Card key={index} className="overflow-hidden shadow-md border-2">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="relative h-20 w-20 rounded-lg overflow-hidden">
-                                <Image src={farm.image} alt={farm.name} layout="fill" objectFit="cover" data-ai-hint={farm.dataAiHint} />
-                            </div>
-                            <div className="flex-1 space-y-2">
-                                <div className="flex justify-between items-start">
-                                    <h3 className="font-bold text-lg">{farm.name}</h3>
-                                    <button><MoreHorizontal className="h-5 w-5 text-muted-foreground" /></button>
-                                </div>
-                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                    <p>Earnings</p>
-                                    <p>{farm.rate}</p>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <p className="text-primary font-semibold">{farm.earnings}</p>
-                                    <p className="text-muted-foreground">{farm.duration}</p>
-                                </div>
-                                <Button className="w-full rounded-full mt-2 font-bold">Book Now</Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </TabsContent>
-        <TabsContent value="shariah">
-            <p className="text-center text-muted-foreground p-8">Shariah farms will be shown here.</p>
-        </TabsContent>
-      </Tabs>
+       <Card className="bg-gradient-to-br from-primary/80 to-primary text-primary-foreground">
+        <CardHeader>
+            <CardTitle>AI-Powered Assistants</CardTitle>
+            <CardDescription className="text-primary-foreground/80">Get instant help using text or voice.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-4">
+            {aiTools.map(tool => (
+                 <Button key={tool.href} asChild variant="secondary" className="justify-start gap-4 text-lg py-6 flex-1">
+                    <Link href={tool.href}>
+                        <tool.icon className="h-6 w-6" />
+                        <span>{tool.title}</span>
+                    </Link>
+                </Button>
+            ))}
+        </CardContent>
+       </Card>
+
     </div>
   );
 }
