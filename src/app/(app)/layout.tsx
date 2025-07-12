@@ -2,10 +2,11 @@
 "use client";
 
 import { Wrapper } from "@googlemaps/react-wrapper";
-import { BottomNav } from "@/components/bottom-nav";
+import { TopNav } from "@/components/top-nav";
 import { usePathname } from 'next/navigation';
 import { Leaf } from 'lucide-react';
 import { UserNav } from "@/components/user-nav";
+import Link from "next/link";
 
 const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
 
@@ -33,18 +34,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col h-screen bg-muted/20">
       <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-4 sm:px-6">
-        <div className="flex items-center gap-2">
-            <Leaf className="h-7 w-7 text-primary" />
-            <h1 className="text-xl font-bold font-headline">Agrisence</h1>
+        <div className="flex items-center gap-4">
+            <Link href="/dashboard" className="flex items-center gap-2">
+                <Leaf className="h-7 w-7 text-primary" />
+                <h1 className="text-xl font-bold font-headline hidden sm:block">Agrisence</h1>
+            </Link>
+            <TopNav />
         </div>
         <UserNav />
       </header>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {renderContent()}
       </main>
-      <nav className="sticky bottom-0 mt-auto border-t bg-background/95 backdrop-blur-sm z-10 md:hidden">
-        <BottomNav />
-      </nav>
     </div>
   );
 }
