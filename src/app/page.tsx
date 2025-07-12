@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from 'react';
@@ -71,11 +72,25 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
-      // The auth provider will handle the redirect
+      // The auth provider will handle the redirect on success.
     } catch (error: any) {
-      const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unknown error occurred';
+      let errorMessage = 'An unknown error occurred.';
+      if (error.code) {
+          switch (error.code) {
+              case 'auth/popup-closed-by-user':
+                  errorMessage = 'Sign-in window was closed before completion.';
+                  break;
+              case 'auth/cancelled-popup-request':
+                  errorMessage = 'Multiple sign-in windows were opened. Please try again.';
+                  break;
+              default:
+                  errorMessage = error.code.replace('auth/', '').replace(/-/g, ' ');
+                  break;
+          }
+      }
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Error',
