@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: 220 40% 98%;
+    --background: 240 50% 98%;
     --foreground: 224 71% 4%;
 
     --card: 0 0% 100%;
@@ -13,56 +13,56 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    --primary: 84 47% 48%; /* Fresh Green */
-    --primary-foreground: 355 100% 97%;
+    --primary: 158 82% 30%; /* Dark Green from image */
+    --primary-foreground: 0 0% 98%;
 
     --secondary: 220 13% 91%;
     --secondary-foreground: 224 71% 4%;
 
-    --muted: 220 13% 91%;
+    --muted: 220 13% 94%;
     --muted-foreground: 220 9% 46%;
 
-    --accent: 43 51% 60%; /* Earthy Yellow */
-    --accent-foreground: 43 90% 25%;
+    --accent: 220 13% 91%;
+    --accent-foreground: 224 71% 4%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 84 47% 58%;
+    --ring: 158 82% 30%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 220 13% 18%;
+    --background: 220 13% 10%;
     --foreground: 0 0% 98%;
 
-    --card: 220 13% 22%;
+    --card: 220 13% 15%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 220 13% 18%;
+    --popover: 220 13% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 84 47% 52%;
-    --primary-foreground: 355 100% 97%;
+    --primary: 158 82% 40%;
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 220 13% 28%;
+    --secondary: 220 13% 20%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 13% 28%;
+    --muted: 220 13% 20%;
     --muted-foreground: 220 9% 65%;
     
-    --accent: 43 51% 55%;
-    --accent-foreground: 43 90% 20%;
+    --accent: 220 13% 20%;
+    --accent-foreground: 0 0% 98%;
     
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 220 13% 28%;
     --input: 220 13% 28%;
-    --ring: 84 47% 58%;
+    --ring: 158 82% 40%;
   }
 }
 
@@ -72,10 +72,6 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-color: #F8FAF4; /* Soft green background */
-  }
-  .dark body {
-     background-color: hsl(var(--background));
   }
 }
 

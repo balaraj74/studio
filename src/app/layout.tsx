@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'AgriSence - AI Farming Assistant',
   description: 'AI-powered agriculture assistant for Indian farmers',
   manifest: '/manifest.json',
-  themeColor: '#74B72E',
+  themeColor: '#166534', // Dark Green
 };
 
 export default function RootLayout({
