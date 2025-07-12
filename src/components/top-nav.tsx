@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "./ui/button";
@@ -58,10 +60,14 @@ export function TopNav() {
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72">
-                    <div className="flex items-center gap-2 p-2 mb-4 border-b">
-                        <Leaf className="h-7 w-7 text-primary" />
-                        <h1 className="text-xl font-bold font-headline">Agrisence</h1>
-                    </div>
+                    <SheetHeader>
+                         <SheetTitle className="sr-only">Agrisence Menu</SheetTitle>
+                         <div className="flex items-center gap-2 p-2 mb-4 border-b">
+                            <Leaf className="h-7 w-7 text-primary" />
+                            <h1 className="text-xl font-bold font-headline">Agrisence</h1>
+                        </div>
+                    </SheetHeader>
+
                     <nav className="flex flex-col gap-2">
                          {navItems.map((item) => {
                             const isActive =
