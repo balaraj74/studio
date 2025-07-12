@@ -2,7 +2,6 @@
 "use client"
 
 import { useState } from 'react';
-import { Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from "@/hooks/use-toast";
+import { AgrisenceLogo } from '@/components/agrisence-logo';
 
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -105,10 +105,7 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen p-4 bg-background">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="p-3 bg-primary rounded-xl mb-3">
-            <Leaf className="h-10 w-10 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold font-headline text-primary">AgriSence</h1>
+          <AgrisenceLogo className="h-20 w-20 mb-2" />
           <p className="text-muted-foreground mt-1">Your AI-powered agriculture assistant</p>
         </div>
         <Tabs defaultValue="sign-in" className="w-full">

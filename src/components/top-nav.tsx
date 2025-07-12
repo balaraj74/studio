@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ClipboardList, BrainCircuit, Bot, Leaf, User } from "lucide-react";
+import { Home, ClipboardList, BrainCircuit, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "./ui/button";
+import { AgrisenceLogo } from "./agrisence-logo";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
@@ -63,8 +64,7 @@ export function TopNav() {
                     <SheetHeader>
                          <SheetTitle className="sr-only">Agrisence Menu</SheetTitle>
                          <div className="flex items-center gap-2 p-2 mb-4 border-b">
-                            <Leaf className="h-7 w-7 text-primary" />
-                            <h1 className="text-xl font-bold font-headline">Agrisence</h1>
+                            <AgrisenceLogo className="h-8 w-auto" />
                         </div>
                     </SheetHeader>
 

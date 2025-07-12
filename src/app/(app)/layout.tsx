@@ -4,7 +4,7 @@
 import { Wrapper } from "@googlemaps/react-wrapper";
 import { TopNav } from "@/components/top-nav";
 import { usePathname } from 'next/navigation';
-import { Leaf } from 'lucide-react';
+import { AgrisenceLogo } from '@/components/agrisence-logo';
 import { UserNav } from "@/components/user-nav";
 import Link from "next/link";
 
@@ -36,8 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background px-4 sm:px-6">
         <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-                <Leaf className="h-7 w-7 text-primary" />
-                <h1 className="text-xl font-bold font-headline hidden sm:block">Agrisence</h1>
+                <AgrisenceLogo className="h-8 w-auto" />
             </Link>
             <TopNav />
         </div>
