@@ -38,18 +38,20 @@ function calculatePolygonCentroid(coordinates: google.maps.LatLngLiteral[]): goo
 // #endregion
 
 // #region MapComponent
-function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId, onFieldClick, initialPolygon }: {
+function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId, onFieldClick, initialPolygon, isDialog }: {
     mapRef: React.MutableRefObject<google.maps.Map | null>;
     center: google.maps.LatLngLiteral,
     fields: Field[],
     onPolygonComplete: (polygon: google.maps.Polygon) => void,
     activeFieldId: string | null,
     onFieldClick: (fieldId: string) => void,
-    initialPolygon?: google.maps.LatLngLiteral[]
+    initialPolygon?: google.maps.LatLngLiteral[],
+    isDialog?: boolean;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager>();
     const drawnPolygonsRef = useRef<Map<string, google.maps.Polygon>>(new Map());
+    const [mapType, setMapType] = useState<"roadmap" | "hybrid">("hybrid");
 
     // Initialize map
     useEffect(() => {
@@ -58,21 +60,23 @@ function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId
                 center,
                 zoom: 15,
                 mapId: MAP_ID,
-                mapTypeId: 'hybrid', // Use hybrid to show labels on satellite
+                mapTypeId: mapType,
                 disableDefaultUI: true,
                 zoomControl: true,
-                mapTypeControl: true,
+                mapTypeControl: false,
             });
             mapRef.current = newMap;
+        } else if (mapRef.current) {
+            mapRef.current.setMapTypeId(mapType);
         }
-    }, [ref, mapRef, center]);
+    }, [ref, mapRef, center, mapType]);
 
-    // Initialize drawing manager
+    // Initialize drawing manager for dialog
     useEffect(() => {
         const map = mapRef.current;
-        if (map && !drawingManager) {
+        if (map && !drawingManager && isDialog) {
             const manager = new google.maps.drawing.DrawingManager({
-                drawingMode: google.maps.drawing.OverlayType.POLYGON,
+                drawingMode: null,
                 drawingControl: true,
                 drawingControlOptions: {
                     position: google.maps.ControlPosition.TOP_CENTER,
@@ -96,7 +100,7 @@ function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId
                 manager.setDrawingMode(null); // Exit drawing mode
             });
         }
-    }, [mapRef, drawingManager, onPolygonComplete]);
+    }, [mapRef, drawingManager, onPolygonComplete, isDialog]);
     
      // Render initial polygon for editing
     useEffect(() => {
@@ -114,6 +118,9 @@ function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId
             });
             existingPolygon.setMap(map);
             onPolygonComplete(existingPolygon);
+            const bounds = new google.maps.LatLngBounds();
+            initialPolygon.forEach(coord => bounds.extend(coord));
+            map.fitBounds(bounds);
         }
     }, [mapRef, initialPolygon, onPolygonComplete]);
 
@@ -121,7 +128,7 @@ function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId
     // Draw saved fields on map
     useEffect(() => {
         const map = mapRef.current;
-        if (map) {
+        if (map && !isDialog) {
             // Clear old polygons
             drawnPolygonsRef.current.forEach(p => p.setMap(null));
             drawnPolygonsRef.current.clear();
@@ -144,10 +151,20 @@ function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId
                 drawnPolygonsRef.current.set(field.id, polygon);
             });
         }
-    }, [mapRef, fields, onFieldClick, activeFieldId]);
+    }, [mapRef, fields, onFieldClick, activeFieldId, isDialog]);
 
 
-    return <div ref={ref} id="map" className="h-full w-full rounded-lg" />;
+    return (
+        <div className="relative h-full w-full">
+            <div ref={ref} id="map" className="h-full w-full rounded-lg" />
+            {isDialog && (
+                 <div className="absolute top-3 left-3 flex gap-1 bg-background p-1 rounded-md shadow-lg">
+                    <Button size="sm" variant={mapType === 'roadmap' ? 'secondary' : 'ghost'} onClick={() => setMapType('roadmap')}>Map</Button>
+                    <Button size="sm" variant={mapType === 'hybrid' ? 'secondary' : 'ghost'} onClick={() => setMapType('hybrid')}>Satellite</Button>
+                </div>
+            )}
+        </div>
+    );
 }
 // #endregion
 
@@ -412,9 +429,10 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
         updateArea();
 
         // Listen for edits
-        google.maps.event.addListener(polygon.getPath(), 'set_at', updateArea);
-        google.maps.event.addListener(polygon.getPath(), 'insert_at', updateArea);
-
+        const path = polygon.getPath();
+        google.maps.event.addListener(path, 'set_at', updateArea);
+        google.maps.event.addListener(path, 'insert_at', updateArea);
+        google.maps.event.addListener(path, 'remove_at', updateArea);
     }, []);
 
     const updateArea = () => {
@@ -492,6 +510,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
                                     activeFieldId={null}
                                     onFieldClick={() => {}}
                                     initialPolygon={field?.coordinates}
+                                    isDialog={true}
                                 />
                         )}
                     </div>
@@ -543,5 +562,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
     );
 }
 // #endregion
+
+    
 
     
