@@ -43,6 +43,9 @@ export default function LoginPage() {
               case 'auth/cancelled-popup-request':
                   errorMessage = 'Multiple sign-in windows were opened. Please try again.';
                   break;
+              case 'auth/unauthorized-domain':
+                  errorMessage = 'This domain is not authorized for sign-in. Please contact support.';
+                  break;
               default:
                   errorMessage = error.code.replace('auth/', '').replace(/-/g, ' ');
                   break;
@@ -59,41 +62,22 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex flex-col items-center justify-between min-h-dvh p-8 bg-black text-white">
-        <Image
-          src="https://placehold.co/1080x1920.png"
-          data-ai-hint="wheat field sunset"
-          alt="Background wheat field"
-          layout="fill"
-          objectFit="cover"
-          className="z-0 opacity-50"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-10" />
+    <main className="flex flex-col items-center justify-center min-h-dvh p-8 bg-background">
         
-        {/* Spacer to push content down */}
-        <div className="z-20 w-full flex justify-start">
-             {/* This space intentionally left blank, logo is now in the middle */}
-        </div>
-
-        <div className="z-20 flex flex-col items-center text-center space-y-8">
-            <AgrisenceLogo className="h-24 w-24" />
-            <div className="space-y-4">
-                <h1 className="text-5xl font-extrabold tracking-tight">
-                    <span className="text-primary font-light">THE NEW ERA OF</span>
-                    <br/>
-                    AGRICULTURE
+        <div className="z-20 flex flex-col items-center text-center space-y-8 max-w-sm w-full">
+            <AgrisenceLogo className="h-20 w-20" />
+            <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                    Welcome to AgriSence
                 </h1>
-                <p className="text-base text-white/80 max-w-sm mx-auto">
-                    Sustainable farming solutions for a better tomorrow.
+                <p className="text-base text-muted-foreground">
+                    Your AI partner in modern farming.
                 </p>
             </div>
-        </div>
-        
-        <div className="z-20 w-full">
-            <Button
+             <Button
                 onClick={handleGoogleSignIn}
                 size="lg"
-                className="w-full h-14 text-lg font-bold rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20"
+                className="w-full"
                 disabled={isGoogleLoading}
             >
                 {isGoogleLoading ? (
@@ -102,7 +86,10 @@ export default function LoginPage() {
                     Connecting...
                   </>
                 ) : (
-                  'Get Started'
+                  <>
+                    <GoogleIcon />
+                    Continue with Google
+                  </>
                 )}
             </Button>
         </div>
