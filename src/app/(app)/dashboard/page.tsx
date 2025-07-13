@@ -26,13 +26,15 @@ import {
   MapPin,
   RefreshCw,
   Search,
+  MessageCircle,
+  Mic,
+  ChevronRight
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { WeatherWidget } from '@/components/weather-widget';
 import Autoplay from "embla-carousel-autoplay";
-import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 
 interface QuickLink {
@@ -83,6 +85,38 @@ const allTools: QuickLink[] = [
     icon: BrainCircuit,
   },
 ];
+
+const AiToolsCard = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle>AI Hub</CardTitle>
+            <CardDescription>Your intelligent farming assistants.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+            <Link href="/chatbot" className="block">
+                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted">
+                    <MessageCircle className="h-6 w-6 text-primary" />
+                    <div className="flex-1">
+                        <p className="font-semibold">AI Farming Chatbot</p>
+                        <p className="text-sm text-muted-foreground">Get text-based advice.</p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+            </Link>
+             <Link href="/voice" className="block">
+                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted">
+                    <Mic className="h-6 w-6 text-primary" />
+                    <div className="flex-1">
+                        <p className="font-semibold">Voice Assistant</p>
+                        <p className="text-sm text-muted-foreground">Ask questions with your voice.</p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+            </Link>
+        </CardContent>
+    </Card>
+);
+
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -146,31 +180,8 @@ export default function DashboardPage() {
           </CarouselContent>
         </Carousel>
       </div>
-      
-       <Card className="bg-secondary overflow-hidden">
-        <CardHeader>
-            <CardTitle>My Fields</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Link href="/field-mapping">
-             <div className="relative h-40 w-full">
-               <Image 
-                src="https://firebasestudio.googleapis.com/v0/b/agrisence-1dc30.appspot.com/o/placeholders%2Ffield-aerial-view.png?alt=media&token=e937e2d5-4f74-4b82-9a4f-5570a2d5e386" 
-                alt="My Field" 
-                data-ai-hint="field aerial view"
-                fill
-                style={{ objectFit: 'cover' }}
-                className="hover:scale-105 transition-transform duration-300"
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-               <div className="absolute bottom-3 left-4 text-white">
-                  <h4 className="font-bold text-lg">Olive Field</h4>
-                  <p className="text-sm">Chianti Hills</p>
-               </div>
-             </div>
-          </Link>
-        </CardContent>
-       </Card>
+
+      <AiToolsCard />
 
     </div>
   );
