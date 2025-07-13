@@ -155,7 +155,7 @@ export default function DashboardPage() {
           <Link href="/field-mapping">
              <div className="relative h-40 w-full">
                <Image 
-                src="https://placehold.co/600x400.png" 
+                src="https://firebasestudio.googleapis.com/v0/b/agrisence-1dc30.appspot.com/o/placeholders%2Ffield-aerial-view.png?alt=media&token=e937e2d5-4f74-4b82-9a4f-5570a2d5e386" 
                 alt="My Field" 
                 data-ai-hint="field aerial view"
                 fill
