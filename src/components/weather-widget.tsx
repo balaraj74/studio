@@ -14,31 +14,11 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { RealTimeClock } from './real-time-clock';
 
-const getTimeBasedGradient = () => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) { // Morning
-    return 'bg-gradient-to-r from-orange-400 to-yellow-300 text-white';
-  }
-  if (hour >= 12 && hour < 17) { // Daytime
-    return 'bg-gradient-to-r from-sky-500 to-cyan-400 text-white';
-  }
-  if (hour >= 17 && hour < 20) { // Evening
-    return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
-  }
-  // Night
-  return 'bg-gradient-to-r from-indigo-800 to-slate-900 text-white';
-};
-
 export function WeatherWidget() {
   const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [gradientClass, setGradientClass] = useState('');
-  
-  useEffect(() => {
-    setGradientClass(getTimeBasedGradient());
-  }, []);
 
   useEffect(() => {
     const fetchWeather = () => {
@@ -91,11 +71,11 @@ export function WeatherWidget() {
   }
 
   return (
-    <Card className={cn("w-full transition-colors duration-1000", gradientClass)}>
+    <Card className="w-full bg-secondary/30 hover:bg-secondary/50 transition-colors">
         <Link href="/weather" className="block h-full">
             <CardContent className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-4">
-                    <WeatherIcon code={weatherData.current.weatherCode} className="h-16 w-16" />
+                    <WeatherIcon code={weatherData.current.weatherCode} className="h-16 w-16 text-accent" />
                     <div>
                         <p className="text-5xl font-bold">{weatherData.current.temperature}°</p>
                         <p className="font-medium">{WeatherIcon.getDescription(weatherData.current.weatherCode)}</p>
