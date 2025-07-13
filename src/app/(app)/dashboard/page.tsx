@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import {
   Card,
@@ -33,6 +34,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { WeatherWidget } from '@/components/weather-widget';
+import Autoplay from "embla-carousel-autoplay";
 import Image from 'next/image';
 
 interface QuickLink {
@@ -95,6 +97,9 @@ const allTools: QuickLink[] = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const plugin = React.useRef(
+    Autoplay({ delay: 2000, stopOnInteraction: true })
+  );
 
   return (
     <div className="space-y-6">
@@ -115,12 +120,14 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-lg font-semibold mb-3">All Tools</h2>
         <Carousel 
+          plugins={[plugin.current]}
           opts={{
             align: "start",
-            loop: false,
-            dragFree: true,
+            loop: true,
           }}
           className="w-full"
+          onMouseEnter={plugin.current.stop}
+          onMouseLeave={plugin.current.reset}
         >
           <CarouselContent className="-ml-2">
             {allTools.map((link) => (
