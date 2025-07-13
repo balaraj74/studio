@@ -11,10 +11,12 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash, LocateFixed } from 'lucide-react';
-import type { Field } from '@/types';
+import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash, LocateFixed, Leaf } from 'lucide-react';
+import type { Field, Crop } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
+import { getCrops } from '@/lib/actions/crops';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // TODO: PASTE YOUR NEW MAP ID FROM GOOGLE CLOUD CONSOLE HERE
 const MAP_ID = "YOUR_NEW_MAP_ID_HERE";
@@ -173,6 +175,7 @@ export default function FieldMappingClient() {
     const { user } = useAuth();
     const { toast } = useToast();
     const [fields, setFields] = useState<Field[]>([]);
+    const [crops, setCrops] = useState<Crop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral>({ lat: 20.5937, lng: 78.9629 }); // Default to India center
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -199,23 +202,31 @@ export default function FieldMappingClient() {
         }
     }, []);
 
-    // Fetch saved fields from Firestore
+    // Fetch saved fields and crops from Firestore
     useEffect(() => {
-        async function fetchFields() {
+        async function fetchData() {
             if (user) {
                 setIsLoading(true);
-                const fetchedFields = await getFields(user.uid);
+                const [fetchedFields, fetchedCrops] = await Promise.all([
+                    getFields(user.uid),
+                    getCrops(user.uid)
+                ]);
                 setFields(fetchedFields);
+                setCrops(fetchedCrops);
                 setIsLoading(false);
             }
         }
-        fetchFields();
+        fetchData();
     }, [user]);
     
-    const refreshFields = useCallback(async () => {
+    const refreshData = useCallback(async () => {
         if (user) {
-            const fetchedFields = await getFields(user.uid);
+            const [fetchedFields, fetchedCrops] = await Promise.all([
+                getFields(user.uid),
+                getCrops(user.uid)
+            ]);
             setFields(fetchedFields);
+            setCrops(fetchedCrops);
         }
     }, [user]);
 
@@ -236,7 +247,7 @@ export default function FieldMappingClient() {
         const result = await deleteField(user.uid, fieldId);
         if (result.success) {
             toast({ title: "Field deleted successfully." });
-            refreshFields();
+            refreshData();
         } else {
             toast({ variant: "destructive", title: "Error", description: result.error });
         }
@@ -350,6 +361,9 @@ export default function FieldMappingClient() {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="font-semibold">{field.fieldName}</p>
+                                                    {field.cropName && (
+                                                        <p className="text-sm text-primary font-medium flex items-center gap-1.5"><Leaf className="h-3 w-3" /> {field.cropName}</p>
+                                                    )}
                                                     <p className="text-sm text-muted-foreground">Survey #: {field.surveyNumber}</p>
                                                     <p className="text-sm text-muted-foreground">{field.area.toFixed(2)} acres</p>
                                                 </div>
@@ -381,8 +395,9 @@ export default function FieldMappingClient() {
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 field={editingField}
-                onFormSubmit={refreshFields}
+                onFormSubmit={refreshData}
                 center={userLocation}
+                availableCrops={crops}
             />
         </div>
     );
@@ -396,14 +411,16 @@ interface FieldFormDialogProps {
   field: Field | null;
   onFormSubmit: () => void;
   center: google.maps.LatLngLiteral;
+  availableCrops: Crop[];
 }
 
-function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: FieldFormDialogProps) {
+function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, availableCrops }: FieldFormDialogProps) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [fieldName, setFieldName] = useState('');
     const [surveyNumber, setSurveyNumber] = useState('');
     const [village, setVillage] = useState('');
+    const [cropId, setCropId] = useState<string | null>(null);
     const [area, setArea] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const dialogMapRef = useRef<google.maps.Map | null>(null);
@@ -414,6 +431,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
             setFieldName(field?.fieldName || '');
             setSurveyNumber(field?.surveyNumber || '');
             setVillage(field?.village || '');
+            setCropId(field?.cropId || null);
             setArea(field?.area || 0);
             drawnPolygonRef.current = null;
             dialogMapRef.current = null; // Reset map instance on open
@@ -469,6 +487,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
         
         const coordinates = drawnPolygonRef.current.getPath().getArray().map(p => p.toJSON());
         const centroid = calculatePolygonCentroid(coordinates);
+        const selectedCrop = availableCrops.find(c => c.id === cropId);
 
         const fieldData = {
             fieldName,
@@ -476,7 +495,9 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
             village,
             area,
             coordinates,
-            centroid
+            centroid,
+            cropId: selectedCrop?.id || null,
+            cropName: selectedCrop?.name || null,
         };
 
         const result = field ? await updateField(user.uid, field.id, fieldData) : await addField(user.uid, fieldData);
@@ -532,6 +553,20 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
                                             <Label htmlFor="village">Village</Label>
                                             <Input id="village" value={village} onChange={(e) => setVillage(e.target.value)} placeholder="e.g., Rampur" disabled={isSubmitting} />
                                         </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="crop">Crop (Optional)</Label>
+                                            <Select onValueChange={(v) => setCropId(v)} value={cropId || ""} disabled={isSubmitting}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select a crop" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="">None</SelectItem>
+                                                    {availableCrops.map(crop => (
+                                                        <SelectItem key={crop.id} value={crop.id}>{crop.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </CardContent>
                                 </Card>
                                 <Card>
@@ -562,7 +597,3 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
     );
 }
 // #endregion
-
-    
-
-    

@@ -58,4 +58,6 @@ export interface Field {
     area: number; // in acres
     coordinates: google.maps.LatLngLiteral[];
     centroid: google.maps.LatLngLiteral;
+    cropId?: string | null;
+    cropName?: string | null;
 }

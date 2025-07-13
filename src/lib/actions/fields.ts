@@ -22,6 +22,8 @@ const fieldConverter = {
             area: data.area,
             coordinates: data.coordinates,
             centroid: data.centroid,
+            cropId: data.cropId || null,
+            cropName: data.cropName || null,
         };
     }
 };
