@@ -11,7 +11,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash } from 'lucide-react';
+import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash, LocateFixed } from 'lucide-react';
 import type { Field } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
 
@@ -36,7 +36,8 @@ function calculatePolygonCentroid(coordinates: google.maps.LatLngLiteral[]): goo
 // #endregion
 
 // #region MapComponent
-function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFieldClick, initialPolygon }: {
+function MapComponent({ mapRef, center, fields, onPolygonComplete, activeFieldId, onFieldClick, initialPolygon }: {
+    mapRef: React.MutableRefObject<google.maps.Map | null>;
     center: google.maps.LatLngLiteral,
     fields: Field[],
     onPolygonComplete: (polygon: google.maps.Polygon) => void,
@@ -45,28 +46,28 @@ function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFiel
     initialPolygon?: google.maps.LatLngLiteral[]
 }) {
     const ref = useRef<HTMLDivElement>(null);
-    const [map, setMap] = useState<google.maps.Map>();
     const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager>();
     const drawnPolygonsRef = useRef<Map<string, google.maps.Polygon>>(new Map());
 
     // Initialize map
     useEffect(() => {
-        if (ref.current && !map) {
+        if (ref.current && !mapRef.current) {
             const newMap = new window.google.maps.Map(ref.current, {
                 center,
                 zoom: 15,
                 mapId: MAP_ID,
-                mapTypeId: 'satellite',
+                mapTypeId: 'hybrid', // Use hybrid to show labels on satellite
                 disableDefaultUI: true,
                 zoomControl: true,
                 mapTypeControl: true,
             });
-            setMap(newMap);
+            mapRef.current = newMap;
         }
-    }, [ref, map, center]);
+    }, [ref, mapRef, center]);
 
     // Initialize drawing manager
     useEffect(() => {
+        const map = mapRef.current;
         if (map && !drawingManager) {
             const manager = new google.maps.drawing.DrawingManager({
                 drawingMode: google.maps.drawing.OverlayType.POLYGON,
@@ -93,10 +94,11 @@ function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFiel
                 manager.setDrawingMode(null); // Exit drawing mode
             });
         }
-    }, [map, drawingManager, onPolygonComplete]);
+    }, [mapRef, drawingManager, onPolygonComplete]);
     
      // Render initial polygon for editing
     useEffect(() => {
+        const map = mapRef.current;
         if (map && initialPolygon && initialPolygon.length > 0) {
             const existingPolygon = new google.maps.Polygon({
                 paths: initialPolygon,
@@ -111,11 +113,12 @@ function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFiel
             existingPolygon.setMap(map);
             onPolygonComplete(existingPolygon);
         }
-    }, [map, initialPolygon, onPolygonComplete]);
+    }, [mapRef, initialPolygon, onPolygonComplete]);
 
 
     // Draw saved fields on map
     useEffect(() => {
+        const map = mapRef.current;
         if (map) {
             // Clear old polygons
             drawnPolygonsRef.current.forEach(p => p.setMap(null));
@@ -139,7 +142,7 @@ function MapComponent({ center, fields, onPolygonComplete, activeFieldId, onFiel
                 drawnPolygonsRef.current.set(field.id, polygon);
             });
         }
-    }, [map, fields, onFieldClick, activeFieldId]);
+    }, [mapRef, fields, onFieldClick, activeFieldId]);
 
 
     return <div ref={ref} id="map" className="h-full w-full rounded-lg" />;
@@ -157,6 +160,7 @@ export default function FieldMappingClient() {
     const [editingField, setEditingField] = useState<Field | null>(null);
     const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
+    const userMarkerRef = useRef<google.maps.Marker | null>(null);
 
     // Get user's current location once
     useEffect(() => {
@@ -169,7 +173,6 @@ export default function FieldMappingClient() {
                     });
                 },
                 () => {
-                    // Keep default location if user denies access
                     console.log("Location access denied by user.");
                 },
                 { enableHighAccuracy: true }
@@ -229,17 +232,60 @@ export default function FieldMappingClient() {
         }
     };
 
+    const handleTrackLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                mapRef.current?.setCenter(pos);
+                mapRef.current?.setZoom(18);
+
+                if (userMarkerRef.current) {
+                    userMarkerRef.current.setPosition(pos);
+                } else {
+                    userMarkerRef.current = new google.maps.Marker({
+                        position: pos,
+                        map: mapRef.current,
+                        title: "Your Location",
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 7,
+                            fillColor: "#4285F4",
+                            fillOpacity: 1,
+                            strokeWeight: 2,
+                            strokeColor: "white",
+                        },
+                    });
+                }
+                toast({ title: "Location Found", description: "Map centered on your current location." });
+            }, () => {
+                toast({ variant: "destructive", title: "Location Error", description: "Unable to retrieve your location. Please check browser permissions." });
+            });
+        }
+    };
+
 
     const renderWrapperContent = () => {
         return (
-            <div className="h-[calc(100vh-20rem)] lg:h-full w-full">
+            <div className="relative h-[calc(100vh-20rem)] lg:h-full w-full">
                 <MapComponent 
+                    mapRef={mapRef}
                     center={userLocation} 
                     fields={fields}
                     activeFieldId={activeFieldId}
                     onFieldClick={handleFieldClick}
                     onPolygonComplete={() => {}} // This is handled inside the dialog
                 />
+                <Button 
+                    size="icon" 
+                    className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg"
+                    onClick={handleTrackLocation}
+                    aria-label="Find my location"
+                >
+                    <LocateFixed className="h-5 w-5" />
+                </Button>
             </div>
         );
     }
@@ -341,7 +387,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
     const [village, setVillage] = useState('');
     const [area, setArea] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+    const dialogMapRef = useRef<google.maps.Map | null>(null);
     const drawnPolygonRef = useRef<google.maps.Polygon | null>(null);
 
     useEffect(() => {
@@ -351,6 +397,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
             setVillage(field?.village || '');
             setArea(field?.area || 0);
             drawnPolygonRef.current = null;
+            dialogMapRef.current = null; // Reset map instance on open
         }
     }, [isOpen, field]);
 
@@ -436,6 +483,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
                     <div className="md:col-span-2 h-full rounded-lg bg-muted flex items-center justify-center">
                         {isOpen && (
                                 <MapComponent 
+                                    mapRef={dialogMapRef}
                                     center={field?.centroid || center} 
                                     fields={[]}
                                     onPolygonComplete={handlePolygonComplete}
@@ -489,3 +537,5 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
     );
 }
 // #endregion
+
+    
