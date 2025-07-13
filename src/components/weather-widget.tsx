@@ -1,12 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherInfo, type GetWeatherInfoOutput } from '@/ai/flows/weather-search';
@@ -14,20 +12,21 @@ import { WeatherIcon } from '@/components/weather-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { RealTimeClock } from './real-time-clock';
 
 const getTimeBasedGradient = () => {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) { // Morning
-    return 'bg-gradient-to-br from-amber-400/80 via-orange-500/80 to-yellow-500/80 text-white';
+    return 'bg-gradient-to-r from-orange-400 to-yellow-300 text-white';
   }
   if (hour >= 12 && hour < 17) { // Daytime
-    return 'bg-gradient-to-br from-sky-400/80 to-blue-600/80 text-white';
+    return 'bg-gradient-to-r from-sky-500 to-cyan-400 text-white';
   }
   if (hour >= 17 && hour < 20) { // Evening
-    return 'bg-gradient-to-br from-purple-500/80 via-pink-500/80 to-red-500/80 text-white';
+    return 'bg-gradient-to-r from-purple-500 to-pink-500 text-white';
   }
   // Night
-  return 'bg-gradient-to-br from-indigo-800/80 to-slate-900/80 text-white';
+  return 'bg-gradient-to-r from-indigo-800 to-slate-900 text-white';
 };
 
 export function WeatherWidget() {
@@ -67,7 +66,7 @@ export function WeatherWidget() {
           setError('Location access denied.');
           setIsLoading(false);
         },
-        { timeout: 5000 }
+        { timeout: 10000 }
       );
     };
 
@@ -83,10 +82,10 @@ export function WeatherWidget() {
   if (error || !weatherData) {
     return (
        <Card className="bg-destructive/20 border-destructive">
-            <CardHeader>
-                <CardTitle>Weather Unavailable</CardTitle>
-                <CardDescription className="text-destructive-foreground/80">{error || 'Could not load weather data.'}</CardDescription>
-            </CardHeader>
+            <CardContent className="p-4">
+                <p className="font-semibold">Weather Unavailable</p>
+                <p className="text-sm text-destructive-foreground/80">{error || 'Could not load weather data.'}</p>
+            </CardContent>
         </Card>
     );
   }
@@ -94,14 +93,19 @@ export function WeatherWidget() {
   return (
     <Card className={cn("w-full transition-colors duration-1000", gradientClass)}>
         <Link href="/weather" className="block h-full">
-            <CardHeader className="flex flex-row items-center justify-between p-4">
-                <div className="space-y-1">
-                    <CardTitle className="text-xl font-bold">{weatherData.location.name}</CardTitle>
-                    <p className="text-5xl font-bold pt-2">{weatherData.current.temperature}°C</p>
-                    <CardDescription className="text-white/90 font-medium">{weatherData.summary}</CardDescription>
+            <CardContent className="flex flex-row items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                    <WeatherIcon code={weatherData.current.weatherCode} className="h-16 w-16" />
+                    <div>
+                        <p className="text-5xl font-bold">{weatherData.current.temperature}°</p>
+                        <p className="font-medium">{WeatherIcon.getDescription(weatherData.current.weatherCode)}</p>
+                    </div>
                 </div>
-                <WeatherIcon code={weatherData.current.weatherCode} className="h-24 w-24" />
-            </CardHeader>
+                 <div className="text-right">
+                    <RealTimeClock />
+                    <p className="opacity-90 mt-1">{weatherData.location.name}</p>
+                </div>
+            </CardContent>
         </Link>
     </Card>
   );
