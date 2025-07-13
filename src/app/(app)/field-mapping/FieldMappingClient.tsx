@@ -15,7 +15,8 @@ import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, 
 import type { Field } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
 
-const MAP_ID = "AGRISENCE_FIELD_MAP";
+// TODO: PASTE YOUR NEW MAP ID FROM GOOGLE CLOUD CONSOLE HERE
+const MAP_ID = "YOUR_NEW_MAP_ID_HERE";
 const ACRES_PER_SQ_METER = 0.000247105;
 
 // #region Helper Functions
