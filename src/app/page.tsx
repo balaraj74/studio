@@ -102,75 +102,71 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4 bg-background">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center text-center mb-8">
-          <AgrisenceLogo className="h-20 w-20 mb-2" />
-          <p className="text-muted-foreground mt-1">Your AI-powered agriculture assistant</p>
+    <main className="flex items-center justify-center min-h-screen p-4 bg-background">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center text-center">
+          <AgrisenceLogo className="h-24 w-24" />
+          <h1 className="text-4xl font-bold mt-4 font-headline">AgriSence</h1>
+          <p className="text-muted-foreground mt-2">The future of farming is here.</p>
         </div>
-        <Tabs defaultValue="sign-in" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="sign-in">Sign In</TabsTrigger>
-            <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
-          </TabsList>
-          <TabsContent value="sign-in">
-            <Card>
-              <CardHeader>
-                <CardTitle>Welcome Back</CardTitle>
-                <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email-in">Email</Label>
-                  <Input id="email-in" type="email" placeholder="farmer@example.com" value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
+
+        <Card className="bg-card/80 backdrop-blur-sm border-white/10">
+            <CardHeader>
+                <CardTitle>Welcome</CardTitle>
+                <CardDescription>Sign in or create an account to continue</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Tabs defaultValue="sign-in" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="sign-in">Sign In</TabsTrigger>
+                        <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="sign-in" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email-in">Email</Label>
+                            <Input id="email-in" type="email" placeholder="farmer@example.com" value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password-in">Password</Label>
+                            <Input id="password-in" type="password" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
+                        </div>
+                        <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || isGoogleLoading}>
+                            {isLoading ? 'Signing In...' : 'Sign In'}
+                        </Button>
+                    </TabsContent>
+                    <TabsContent value="sign-up" className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="email-up">Email</Label>
+                            <Input id="email-up" type="email" placeholder="farmer@example.com" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="password-up">Password</Label>
+                            <Input id="password-up" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
+                        </div>
+                        <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || isGoogleLoading}>
+                            {isLoading ? 'Signing Up...' : 'Sign Up'}
+                        </Button>
+                    </TabsContent>
+                </Tabs>
+                
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-white/10" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                        Or continue with
+                        </span>
+                    </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-in">Password</Label>
-                  <Input id="password-in" type="password" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
-                </div>
-                <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold" disabled={isLoading || isGoogleLoading}>
-                  {isLoading ? 'Signing In...' : 'Sign In'}
+
+                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                    {isGoogleLoading ? <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <GoogleIcon />}
+                    {isGoogleLoading ? 'Redirecting...' : 'Sign In with Google'}
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="sign-up">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create an Account</CardTitle>
-                <CardDescription>Join our community to get started.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                 <div className="space-y-2">
-                  <Label htmlFor="email-up">Email</Label>
-                  <Input id="email-up" type="email" placeholder="farmer@example.com" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password-up">Password</Label>
-                  <Input id="password-up" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
-                </div>
-                <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold" disabled={isLoading || isGoogleLoading}>
-                  {isLoading ? 'Signing Up...' : 'Sign Up'}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-          {isGoogleLoading ? <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <GoogleIcon />}
-          {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
-        </Button>
+            </CardContent>
+        </Card>
       </div>
-    </div>
+    </main>
   );
 }

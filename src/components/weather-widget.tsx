@@ -10,15 +10,13 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherInfo, type GetWeatherInfoOutput } from '@/ai/flows/weather-search';
-import { Loader2, Wind, Droplets, CloudSun, AlertCircle } from 'lucide-react';
+import { Wind, Droplets, AlertCircle } from 'lucide-react';
 import { WeatherIcon } from '@/components/weather-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
 export function WeatherWidget() {
-  const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(
-    null
-  );
+  const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -41,11 +39,6 @@ export function WeatherWidget() {
           } catch (err) {
             console.error('AI weather error:', err);
             setError('Could not fetch weather data.');
-            toast({
-              variant: 'destructive',
-              title: 'Weather Service Failed',
-              description: 'Please try again later.',
-            });
           } finally {
             setIsLoading(false);
           }
@@ -53,83 +46,77 @@ export function WeatherWidget() {
         () => {
           setError('Location access denied.');
           setIsLoading(false);
-        }
+        },
+        { timeout: 5000 }
       );
     };
 
     fetchWeather();
-  }, [toast]);
+  }, []);
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-1/2" />
-          <Skeleton className="h-4 w-1/3" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+        <div className="grid grid-cols-2 gap-4">
+            <Card className="bg-card/80">
+                <CardHeader>
+                    <Skeleton className="h-5 w-20 mb-2" />
+                    <Skeleton className="h-8 w-16" />
+                </CardHeader>
+            </Card>
+            <Card className="bg-card/80">
+                 <CardHeader>
+                    <Skeleton className="h-5 w-16 mb-2" />
+                    <Skeleton className="h-8 w-20" />
+                </CardHeader>
+            </Card>
+        </div>
     );
   }
 
   if (error || !weatherData) {
     return (
-        <Card>
+       <div className="grid grid-cols-2 gap-4">
+        <Card className="bg-destructive/20 border-destructive">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-destructive" />
-                    <span>Weather Unavailable</span>
-                </CardTitle>
-                <CardDescription>{error || 'Could not load weather information.'}</CardDescription>
+                <CardTitle className="text-base">Weather</CardTitle>
+                <CardDescription className="text-xs">{error || 'Unavailable'}</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Link href="/weather" className="text-sm text-primary hover:underline">
-                    Try reloading on the Weather page
-                </Link>
-            </CardContent>
         </Card>
+         <Card className="bg-card/80">
+            <CardHeader>
+                 <CardTitle className="text-base">Tasks</CardTitle>
+                 <CardDescription className="text-xs">0 pending</CardDescription>
+            </CardHeader>
+        </Card>
+       </div>
     );
   }
 
   return (
-    <Card className="hover:bg-muted/50 transition-colors">
-      <Link href="/weather">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-             <CloudSun className="h-5 w-5 text-primary"/>
-            <span>Weather in {weatherData.location.name}</span>
-          </CardTitle>
-          <CardDescription>{weatherData.summary}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <WeatherIcon
-              code={weatherData.current.weatherCode}
-              className="h-16 w-16 text-yellow-400"
-            />
-            <div>
-              <p className="text-4xl font-bold">
-                {weatherData.current.temperature}°C
-              </p>
-              <p className="text-muted-foreground font-medium">
-                {WeatherIcon.getDescription(weatherData.current.weatherCode)}
-              </p>
-            </div>
-          </div>
-          <div className="hidden sm:flex flex-col gap-2 text-sm">
-             <div className="flex items-center gap-2">
-                <Droplets className="h-5 w-5 text-primary"/>
-                <span>Humidity: {weatherData.current.humidity}%</span>
-             </div>
-             <div className="flex items-center gap-2">
-                <Wind className="h-5 w-5 text-primary"/>
-                <span>Wind: {weatherData.current.windSpeed} km/h</span>
-            </div>
-          </div>
-        </CardContent>
-      </Link>
-    </Card>
+    <div className="grid grid-cols-2 gap-4">
+        <Card className="bg-card/80 hover:bg-secondary/60 transition-colors">
+            <Link href="/weather" className="block h-full">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="text-base">Weather</CardTitle>
+                        <WeatherIcon code={weatherData.current.weatherCode} className="h-6 w-6 text-amber-400" />
+                    </div>
+                     <p className="text-3xl font-bold pt-2">{weatherData.current.temperature}°C</p>
+                    <CardDescription className="text-xs">{weatherData.location.name}</CardDescription>
+                </CardHeader>
+            </Link>
+        </Card>
+         <Card className="bg-card/80 hover:bg-secondary/60 transition-colors">
+            <Link href="/records" className="block h-full">
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="text-base">Tasks</CardTitle>
+                    </div>
+                     <p className="text-3xl font-bold pt-2">12</p>
+                    <CardDescription className="text-xs">Season 2024</CardDescription>
+                </CardHeader>
+            </Link>
+        </Card>
+    </div>
   );
 }
