@@ -69,20 +69,24 @@ export default function LoginPage() {
           className="z-0 opacity-50"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-10" />
-
+        
+        {/* Spacer to push content down */}
         <div className="z-20 w-full flex justify-start">
-            <AgrisenceLogo className="h-12 w-12" />
+             {/* This space intentionally left blank, logo is now in the middle */}
         </div>
 
-        <div className="z-20 w-full flex flex-col items-start text-left space-y-4">
-            <h1 className="text-5xl font-extrabold tracking-tight">
-                <span className="text-primary font-light">THE NEW ERA OF</span>
-                <br/>
-                AGRICULTURE
-            </h1>
-            <p className="text-base text-white/80 max-w-sm">
-                Sustainable farming solutions for a better tomorrow.
-            </p>
+        <div className="z-20 flex flex-col items-center text-center space-y-8">
+            <AgrisenceLogo className="h-24 w-24" />
+            <div className="space-y-4">
+                <h1 className="text-5xl font-extrabold tracking-tight">
+                    <span className="text-primary font-light">THE NEW ERA OF</span>
+                    <br/>
+                    AGRICULTURE
+                </h1>
+                <p className="text-base text-white/80 max-w-sm mx-auto">
+                    Sustainable farming solutions for a better tomorrow.
+                </p>
+            </div>
         </div>
         
         <div className="z-20 w-full">
