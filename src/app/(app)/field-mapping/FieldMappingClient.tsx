@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash, LocateFixed } from 'lucide-react';
 import type { Field } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // TODO: PASTE YOUR NEW MAP ID FROM GOOGLE CLOUD CONSOLE HERE
 const MAP_ID = "YOUR_NEW_MAP_ID_HERE";
@@ -494,36 +495,40 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center }: 
                                 />
                         )}
                     </div>
-                    <div className="md:col-span-1 space-y-4 flex flex-col">
-                        <Card>
-                            <CardHeader><CardTitle>Field Details</CardTitle></CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="space-y-1">
-                                    <Label htmlFor="fieldName">Field Name</Label>
-                                    <Input id="fieldName" value={fieldName} onChange={(e) => setFieldName(e.target.value)} placeholder="e.g., North Field" disabled={isSubmitting} />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="surveyNumber">Survey Number</Label>
-                                    <Input id="surveyNumber" value={surveyNumber} onChange={(e) => setSurveyNumber(e.target.value)} placeholder="e.g., 123/4A" disabled={isSubmitting} />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="village">Village</Label>
-                                    <Input id="village" value={village} onChange={(e) => setVillage(e.target.value)} placeholder="e.g., Rampur" disabled={isSubmitting} />
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="flex-grow">
-                             <CardHeader><CardTitle>Area Measurement</CardTitle></CardHeader>
-                             <CardContent className="text-center">
-                                <p className="text-4xl font-bold text-primary">{area.toFixed(3)}</p>
-                                <p className="text-muted-foreground">acres</p>
-                             </CardContent>
-                             <CardFooter>
-                                <Button variant="outline" className="w-full" onClick={handleResetDrawing} disabled={isSubmitting}>
-                                    <Redo className="mr-2 h-4 w-4"/> Clear Drawing
-                                </Button>
-                             </CardFooter>
-                        </Card>
+                    <div className="md:col-span-1 flex flex-col h-full min-h-0">
+                         <ScrollArea className="h-full">
+                            <div className="space-y-4 pr-3">
+                                <Card>
+                                    <CardHeader><CardTitle>Field Details</CardTitle></CardHeader>
+                                    <CardContent className="space-y-3">
+                                        <div className="space-y-1">
+                                            <Label htmlFor="fieldName">Field Name</Label>
+                                            <Input id="fieldName" value={fieldName} onChange={(e) => setFieldName(e.target.value)} placeholder="e.g., North Field" disabled={isSubmitting} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="surveyNumber">Survey Number</Label>
+                                            <Input id="surveyNumber" value={surveyNumber} onChange={(e) => setSurveyNumber(e.target.value)} placeholder="e.g., 123/4A" disabled={isSubmitting} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label htmlFor="village">Village</Label>
+                                            <Input id="village" value={village} onChange={(e) => setVillage(e.target.value)} placeholder="e.g., Rampur" disabled={isSubmitting} />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                    <CardHeader><CardTitle>Area Measurement</CardTitle></CardHeader>
+                                    <CardContent className="text-center">
+                                        <p className="text-4xl font-bold text-primary">{area.toFixed(3)}</p>
+                                        <p className="text-muted-foreground">acres</p>
+                                    </CardContent>
+                                    <CardFooter>
+                                        <Button variant="outline" className="w-full" onClick={handleResetDrawing} disabled={isSubmitting}>
+                                            <Redo className="mr-2 h-4 w-4"/> Clear Drawing
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </div>
+                        </ScrollArea>
                     </div>
                 </div>
 
