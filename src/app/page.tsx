@@ -3,10 +3,6 @@
 
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
@@ -16,6 +12,7 @@ import {
 import { auth } from '@/lib/firebase/config';
 import { useToast } from "@/hooks/use-toast";
 import { AgrisenceLogo } from '@/components/agrisence-logo';
+import Image from 'next/image';
 
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -26,48 +23,8 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const { toast } = useToast();
-  
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
-  const [signUpEmail, setSignUpEmail] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-
-  const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  const handleAuthAction = async (action: 'signIn' | 'signUp') => {
-    setIsLoading(true);
-    const email = action === 'signIn' ? signInEmail : signUpEmail;
-    const password = action === 'signIn' ? signInPassword : signUpPassword;
-
-    if (!email || !password) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Email and password cannot be empty.',
-      });
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      if (action === 'signUp') {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      // The auth provider will handle the redirect
-    } catch (error: any) {
-      const errorMessage = error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unknown error occurred';
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
@@ -102,71 +59,49 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen p-4 bg-background">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center text-center">
-          <AgrisenceLogo className="h-24 w-24" />
-          <h1 className="text-4xl font-bold mt-4 font-headline">AgriSence</h1>
-          <p className="text-muted-foreground mt-2">The future of farming is here.</p>
+    <main className="relative flex flex-col items-center justify-between min-h-dvh p-8 bg-black text-white">
+        <Image
+          src="https://placehold.co/1080x1920.png"
+          data-ai-hint="wheat field sunset"
+          alt="Background wheat field"
+          layout="fill"
+          objectFit="cover"
+          className="z-0 opacity-50"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent z-10" />
+
+        <div className="z-20 w-full flex justify-start">
+            <AgrisenceLogo className="h-12 w-12" />
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-sm border-white/10">
-            <CardHeader>
-                <CardTitle>Welcome</CardTitle>
-                <CardDescription>Sign in or create an account to continue</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <Tabs defaultValue="sign-in" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="sign-in">Sign In</TabsTrigger>
-                        <TabsTrigger value="sign-up">Sign Up</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="sign-in" className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email-in">Email</Label>
-                            <Input id="email-in" type="email" placeholder="farmer@example.com" value={signInEmail} onChange={(e) => setSignInEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password-in">Password</Label>
-                            <Input id="password-in" type="password" value={signInPassword} onChange={(e) => setSignInPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
-                        </div>
-                        <Button onClick={() => handleAuthAction('signIn')} className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || isGoogleLoading}>
-                            {isLoading ? 'Signing In...' : 'Sign In'}
-                        </Button>
-                    </TabsContent>
-                    <TabsContent value="sign-up" className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="email-up">Email</Label>
-                            <Input id="email-up" type="email" placeholder="farmer@example.com" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} disabled={isLoading || isGoogleLoading} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="password-up">Password</Label>
-                            <Input id="password-up" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isLoading || isGoogleLoading}/>
-                        </div>
-                        <Button onClick={() => handleAuthAction('signUp')} className="w-full font-bold bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoading || isGoogleLoading}>
-                            {isLoading ? 'Signing Up...' : 'Sign Up'}
-                        </Button>
-                    </TabsContent>
-                </Tabs>
-                
-                <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-white/10" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card px-2 text-muted-foreground">
-                        Or continue with
-                        </span>
-                    </div>
-                </div>
-
-                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                    {isGoogleLoading ? <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <GoogleIcon />}
-                    {isGoogleLoading ? 'Redirecting...' : 'Sign In with Google'}
-                </Button>
-            </CardContent>
-        </Card>
-      </div>
+        <div className="z-20 w-full flex flex-col items-start text-left space-y-4">
+            <h1 className="text-5xl font-extrabold tracking-tight">
+                <span className="text-primary font-light">THE NEW ERA OF</span>
+                <br/>
+                AGRICULTURE
+            </h1>
+            <p className="text-base text-white/80 max-w-sm">
+                Sustainable farming solutions for a better tomorrow.
+            </p>
+        </div>
+        
+        <div className="z-20 w-full">
+            <Button
+                onClick={handleGoogleSignIn}
+                size="lg"
+                className="w-full h-14 text-lg font-bold rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20"
+                disabled={isGoogleLoading}
+            >
+                {isGoogleLoading ? (
+                  <>
+                    <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Connecting...
+                  </>
+                ) : (
+                  'Get Started'
+                )}
+            </Button>
+        </div>
     </main>
   );
 }

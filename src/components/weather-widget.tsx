@@ -6,19 +6,15 @@ import {
   Card,
   CardContent,
 } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import { getWeatherInfo, type GetWeatherInfoOutput } from '@/ai/flows/weather-search';
 import { WeatherIcon } from '@/components/weather-icon';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { RealTimeClock } from './real-time-clock';
 
 export function WeatherWidget() {
   const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     const fetchWeather = () => {
@@ -55,13 +51,13 @@ export function WeatherWidget() {
 
   if (isLoading) {
     return (
-        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[90px] w-full rounded-2xl" />
     );
   }
 
   if (error || !weatherData) {
     return (
-       <Card className="bg-destructive/20 border-destructive">
+       <Card className="bg-destructive/20 border-destructive rounded-2xl">
             <CardContent className="p-4">
                 <p className="font-semibold">Weather Unavailable</p>
                 <p className="text-sm text-destructive-foreground/80">{error || 'Could not load weather data.'}</p>
@@ -71,20 +67,30 @@ export function WeatherWidget() {
   }
 
   return (
-    <Card className="w-full bg-secondary/30 hover:bg-secondary/50 transition-colors">
+    <Card className="w-full bg-secondary rounded-2xl">
         <Link href="/weather" className="block h-full">
             <CardContent className="flex flex-row items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                    <WeatherIcon code={weatherData.current.weatherCode} className="h-16 w-16 text-accent" />
+                <div className="flex items-center gap-3">
+                    <WeatherIcon code={weatherData.current.weatherCode} className="h-10 w-10 text-primary" />
                     <div>
-                        <p className="text-5xl font-bold">{weatherData.current.temperature}°</p>
-                        <p className="font-medium">{WeatherIcon.getDescription(weatherData.current.weatherCode)}</p>
+                        <p className="font-medium text-muted-foreground">{weatherData.location.name}</p>
+                        <p className="text-2xl font-bold">{weatherData.current.temperature}°C</p>
                     </div>
                 </div>
-                 <div className="text-right">
-                    <RealTimeClock />
-                    <p className="opacity-90 mt-1">{weatherData.location.name}</p>
-                </div>
+                 <div className="grid grid-cols-3 gap-x-4 text-center text-xs">
+                    <div>
+                      <p className="font-bold">{weatherData.current.humidity}%</p>
+                      <p className="text-muted-foreground">Humidity</p>
+                    </div>
+                     <div>
+                      <p className="font-bold">{weatherData.current.windSpeed} km/h</p>
+                      <p className="text-muted-foreground">Wind</p>
+                    </div>
+                    <div>
+                      <p className="font-bold">{weatherData.daily[0].maxTemp}°C</p>
+                      <p className="text-muted-foreground">Max</p>
+                    </div>
+                 </div>
             </CardContent>
         </Link>
     </Card>

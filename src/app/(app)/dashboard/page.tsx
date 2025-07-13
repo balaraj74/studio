@@ -14,8 +14,6 @@ import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel"
 import {
   Leaf,
@@ -23,12 +21,11 @@ import {
   CloudSun,
   LineChart,
   ScrollText,
-  MessageCircle,
-  Mic,
-  Plus,
   BrainCircuit,
   FileText,
   MapPin,
+  RefreshCw,
+  Search,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -36,61 +33,53 @@ import { Button } from '@/components/ui/button';
 import { WeatherWidget } from '@/components/weather-widget';
 import Autoplay from "embla-carousel-autoplay";
 import Image from 'next/image';
+import { Input } from '@/components/ui/input';
 
 interface QuickLink {
   href: string;
   title: string;
-  description: string;
   icon: LucideIcon;
 }
 
 const allTools: QuickLink[] = [
   {
     href: '/records',
-    title: 'My Farm Records',
-    description: 'Crops, expenses, and harvests.',
+    title: 'Records',
     icon: Leaf,
   },
   {
     href: '/disease-check',
-    title: 'Crop Diagnosis',
-    description: 'Diagnose diseases from images.',
+    title: 'Diagnosis',
     icon: Stethoscope,
   },
    {
     href: '/market',
-    title: 'Market Prices',
-    description: 'View latest prices for crops.',
+    title: 'Market',
     icon: LineChart,
   },
   {
     href: '/schemes',
-    title: 'Govt. Schemes',
-    description: 'Find agricultural schemes.',
+    title: 'Schemes',
     icon: ScrollText,
   },
   {
     href: '/weather',
     title: 'Weather',
-    description: 'Get detailed local forecasts.',
     icon: CloudSun,
   },
   {
     href: '/land-records',
-    title: 'Land Records',
-    description: 'Access official land portals.',
+    title: 'Land',
     icon: FileText,
   },
   {
     href: '/fertilizer-finder',
-    title: 'Fertilizer Finder',
-    description: 'Locate nearby shops.',
+    title: 'Fertilizer',
     icon: MapPin,
   },
   {
     href: '/ai',
     title: 'AI Hub',
-    description: 'Chat & voice assistants.',
     icon: BrainCircuit,
   },
 ];
@@ -98,27 +87,41 @@ const allTools: QuickLink[] = [
 export default function DashboardPage() {
   const { user } = useAuth();
   const plugin = React.useRef(
-    Autoplay({ delay: 2000, stopOnInteraction: true })
+    Autoplay({ delay: 2500, stopOnInteraction: true })
   );
+  const date = new Date();
+  const formattedDate = date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-            <p className="text-muted-foreground">Welcome Back,</p>
             <h1 className="text-2xl font-bold">
-            {user?.displayName || 'Farmer'}
+            Hello, {user?.displayName || 'Farmer'}
             </h1>
+            <p className="text-sm text-muted-foreground">{formattedDate}</p>
         </div>
         <div>
-            {/* Search button can be added here */}
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <RefreshCw className="h-5 w-5"/>
+            </Button>
         </div>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input placeholder="Search here..." className="pl-10 h-12 rounded-full bg-secondary text-base" />
       </div>
       
       <WeatherWidget />
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">All Tools</h2>
+        <h2 className="text-lg font-semibold mb-3">Commodities and Food</h2>
         <Carousel 
           plugins={[plugin.current]}
           opts={{
@@ -131,21 +134,12 @@ export default function DashboardPage() {
         >
           <CarouselContent className="-ml-2">
             {allTools.map((link) => (
-              <CarouselItem key={link.href} className="pl-2 basis-2/5 md:basis-1/4">
+              <CarouselItem key={link.href} className="pl-3 basis-1/4">
                 <Link href={link.href} className="block h-full">
-                  <Card className="h-full bg-card/80 hover:bg-secondary/60 transition-colors active:scale-[0.98]">
-                    <CardHeader className="p-4">
-                      <div className="flex flex-col items-center text-center gap-2">
-                        <div className="p-3 bg-primary/20 rounded-lg">
-                          <link.icon className="h-6 w-6 text-accent" />
-                        </div>
-                        <div className="space-y-1">
-                          <CardTitle className="text-sm">{link.title}</CardTitle>
-                          <CardDescription className="text-xs">{link.description}</CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </Card>
+                  <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-2 bg-secondary rounded-2xl hover:bg-primary/20 transition-colors active:scale-[0.98]">
+                      <link.icon className="h-7 w-7 text-primary" />
+                      <p className="text-xs font-medium">{link.title}</p>
+                  </div>
                 </Link>
               </CarouselItem>
             ))}
@@ -153,24 +147,28 @@ export default function DashboardPage() {
         </Carousel>
       </div>
       
-       <Card className="bg-gradient-to-br from-secondary/50 to-secondary/80">
+       <Card className="bg-secondary overflow-hidden">
         <CardHeader>
-            <CardTitle>AI-Powered Assistants</CardTitle>
-            <CardDescription className="text-muted-foreground">Get instant help using text or voice.</CardDescription>
+            <CardTitle>My Fields</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4">
-            <Button asChild variant="ghost" className="justify-start gap-4 text-base py-6 flex-1 bg-background/50 hover:bg-background">
-                <Link href="/chatbot">
-                    <MessageCircle className="h-5 w-5 text-accent" />
-                    <span>AI Chatbot</span>
-                </Link>
-            </Button>
-            <Button asChild variant="ghost" className="justify-start gap-4 text-base py-6 flex-1 bg-background/50 hover:bg-background">
-                <Link href="/voice">
-                    <Mic className="h-5 w-5 text-accent" />
-                    <span>Voice Assistant</span>
-                </Link>
-            </Button>
+        <CardContent className="p-0">
+          <Link href="/field-mapping">
+             <div className="relative h-40 w-full">
+               <Image 
+                src="https://placehold.co/600x400.png" 
+                alt="My Field" 
+                data-ai-hint="field aerial view"
+                fill
+                style={{ objectFit: 'cover' }}
+                className="hover:scale-105 transition-transform duration-300"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+               <div className="absolute bottom-3 left-4 text-white">
+                  <h4 className="font-bold text-lg">Olive Field</h4>
+                  <p className="text-sm">Chianti Hills</p>
+               </div>
+             </div>
+          </Link>
         </CardContent>
        </Card>
 
