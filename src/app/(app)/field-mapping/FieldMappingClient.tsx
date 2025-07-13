@@ -555,12 +555,16 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                                         </div>
                                         <div className="space-y-1">
                                             <Label htmlFor="crop">Crop (Optional)</Label>
-                                            <Select onValueChange={(v) => setCropId(v)} value={cropId || ""} disabled={isSubmitting}>
+                                            <Select
+                                                onValueChange={(v) => setCropId(v === 'none' ? null : v)}
+                                                value={cropId || 'none'}
+                                                disabled={isSubmitting}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select a crop" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="">None</SelectItem>
+                                                    <SelectItem value="none">None</SelectItem>
                                                     {availableCrops.map(crop => (
                                                         <SelectItem key={crop.id} value={crop.id}>{crop.name}</SelectItem>
                                                     ))}
