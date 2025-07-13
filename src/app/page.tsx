@@ -1,18 +1,23 @@
+
 "use client"
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useToast } from "@/hooks/use-toast";
 import { AgrisenceLogo } from '@/components/agrisence-logo';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -23,8 +28,45 @@ const GoogleIcon = () => (
 
 export default function LoginPage() {
   const { toast } = useToast();
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
+  
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+        if (authMode === 'signup') {
+            if (!name) {
+                toast({ variant: 'destructive', title: 'Name is required for sign up.'});
+                setIsLoading(false);
+                return;
+            }
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: name });
+            toast({ title: 'Sign up successful!', description: 'Welcome to AgriSence.' });
+        } else {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast({ title: 'Sign in successful!', description: 'Welcome back.' });
+        }
+        router.push('/dashboard');
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: error.message.replace('Firebase: ', ''),
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
@@ -32,29 +74,12 @@ export default function LoginPage() {
     provider.setCustomParameters({ prompt: 'select_account' });
     try {
       await signInWithPopup(auth, provider);
-      // The auth provider will handle the redirect on success.
+      // Auth provider handles redirect on success
     } catch (error: any) {
-      let errorMessage = 'An unknown error occurred.';
-      if (error.code) {
-          switch (error.code) {
-              case 'auth/popup-closed-by-user':
-                  errorMessage = 'Sign-in window was closed before completion.';
-                  break;
-              case 'auth/cancelled-popup-request':
-                  errorMessage = 'Multiple sign-in windows were opened. Please try again.';
-                  break;
-              case 'auth/unauthorized-domain':
-                  errorMessage = 'This domain is not authorized for sign-in. Please contact support.';
-                  break;
-              default:
-                  errorMessage = error.code.replace('auth/', '').replace(/-/g, ' ');
-                  break;
-          }
-      }
-      toast({
+       toast({
         variant: 'destructive',
         title: 'Google Sign-In Error',
-        description: errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1)
+        description: error.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : 'An unknown error occurred.',
       });
     } finally {
       setIsGoogleLoading(false);
@@ -62,23 +87,56 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-dvh p-8 bg-background">
-        
-        <div className="z-20 flex flex-col items-center text-center space-y-8 max-w-sm w-full">
-            <AgrisenceLogo className="h-20 w-20" />
-            <div className="space-y-2">
+    <main className="flex flex-col items-center justify-center min-h-dvh p-4 bg-background">
+        <div className="z-20 flex flex-col items-center text-center space-y-6 max-w-sm w-full">
+            <AgrisenceLogo className="h-16 w-16" />
+            <div className="space-y-1">
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                    Welcome to AgriSence
+                    {authMode === 'signin' ? 'Welcome Back' : 'Create an Account'}
                 </h1>
                 <p className="text-base text-muted-foreground">
                     Your AI partner in modern farming.
                 </p>
             </div>
+            
+            <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
+                {authMode === 'signup' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input id="name" type="text" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} required disabled={isLoading} />
+                    </div>
+                )}
+                 <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={isLoading} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={isLoading} minLength={6}/>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                        authMode === 'signin' ? 'Sign In' : 'Create Account'
+                    )}
+                </Button>
+            </form>
+
+            <div className="relative w-full">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+            </div>
+
              <Button
                 onClick={handleGoogleSignIn}
-                size="lg"
+                variant="outline"
                 className="w-full"
-                disabled={isGoogleLoading}
+                disabled={isGoogleLoading || isLoading}
             >
                 {isGoogleLoading ? (
                   <>
@@ -92,6 +150,13 @@ export default function LoginPage() {
                   </>
                 )}
             </Button>
+
+            <p className="text-sm text-muted-foreground">
+                {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                <Button variant="link" className="px-1" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
+                    {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
+                </Button>
+            </p>
         </div>
     </main>
   );
