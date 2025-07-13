@@ -110,22 +110,6 @@ export default function DashboardPage() {
         </div>
       </div>
       
-      <Card className="relative h-48 w-full overflow-hidden">
-        <Image
-            src="https://placehold.co/600x400.png"
-            data-ai-hint="farm fields aerial"
-            alt="Farm aerial view"
-            layout="fill"
-            objectFit="cover"
-            className="opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-        <CardContent className="absolute bottom-0 left-0 right-0 p-4">
-            <h2 className="text-lg font-semibold">GreenField</h2>
-            <p className="text-sm text-muted-foreground">12 Active Tasks</p>
-        </CardContent>
-      </Card>
-      
       <WeatherWidget />
 
       <div>
