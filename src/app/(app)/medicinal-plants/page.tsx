@@ -281,7 +281,7 @@ export default function MedicinalPlantPage() {
                         <Label className="flex items-center gap-2 font-semibold text-base"><Languages className="h-5 w-5 text-primary" /> Regional Names</Label>
                         <p className="text-sm text-muted-foreground pl-7">{result.regionalNames}</p>
                     </div>
-                    <Alert variant={result.precautions.toLowerCase() === 'none' ? 'default' : 'destructive'}>
+                    <Alert variant={result.precautions?.toLowerCase().trim() === 'none' ? 'default' : 'destructive'}>
                         <AlertTriangle className="h-4 w-4"/>
                         <AlertTitle>Precautions & Warnings</AlertTitle>
                         <AlertDescription>{result.precautions}</AlertDescription>

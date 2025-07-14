@@ -24,7 +24,7 @@ const IdentifyMedicinalPlantOutputSchema = z.object({
   medicinalUses: z.string().describe("A detailed summary of the plant's medicinal uses."),
   partsUsed: z.string().describe("The parts of the plant that are used for medicinal purposes (e.g., leaves, root, stem)."),
   preparationMethods: z.string().describe("Common methods for preparing the plant for medicinal use (e.g., tea, powder, extract)."),
-  precautions: z.string().describe("Any precautions or warnings associated with the plant's use. 'None' if there are no known major precautions."),
+  precautions: z.string().describe("A detailed list of specific precautions, potential side effects, contraindications, or dosage warnings associated with the plant's use. Be very specific. If there are no known major precautions, return only the word 'None'."),
   regionalNames: z.string().describe("A list of regional names for the plant (e.g., in Hindi, Kannada, Tamil)."),
 });
 export type IdentifyMedicinalPlantOutput = z.infer<typeof IdentifyMedicinalPlantOutputSchema>;
@@ -46,7 +46,7 @@ If you identify a medicinal plant, provide the following details:
 - Medicinal Uses: Provide a detailed summary.
 - Parts Used: (e.g., leaves, root, stem)
 - Preparation Methods: (e.g., tea, powder, extract)
-- Precautions or Warnings: Note any potential side effects or contraindications. If none are significant, state "None".
+- Precautions or Warnings: Provide a detailed list of specific precautions, potential side effects, contraindications, or dosage warnings. Be very specific. If there are no known major precautions, you must return only the word "None".
 - Regional Names: (e.g., Hindi, Kannada, Tamil, Malayalam)
 
 If the image does not contain a recognizable medicinal plant from India or is not a plant at all, set 'isMedicinal' to false and fill the other fields with 'Not Applicable' or similar text.
