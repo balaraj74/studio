@@ -11,17 +11,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UploadCloud, Leaf, AlertCircle, Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered,thermometer, TestTube2, Wind, Droplets } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout } from "lucide-react";
 import Image from "next/image";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
 } from "@/ai/flows/crop-disease-detection";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 const MAX_IMAGES = 5;
@@ -29,7 +27,6 @@ const MAX_IMAGES = 5;
 export default function DiseaseCheckPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [cropType, setCropType] = useState("");
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,8 +102,8 @@ export default function DiseaseCheckPage() {
   }
 
   const handleDiagnose = async () => {
-    if (imageFiles.length === 0 || !cropType || !location) {
-      setError("Please provide at least one image, a crop type, and your location.");
+    if (imageFiles.length === 0 || !location) {
+      setError("Please provide at least one image and your location.");
       return;
     }
 
@@ -124,9 +121,15 @@ export default function DiseaseCheckPage() {
       setStatusText("Analyzing with AI...");
       const diagnosisResult = await diagnoseCropDisease({ 
           imageUris,
-          cropType,
           geolocation: location
       });
+
+      if (!diagnosisResult.plantIdentification.isPlant) {
+        setError("The AI could not identify a plant in the uploaded images. Please try again with a clearer picture.");
+        setIsLoading(false);
+        return;
+      }
+
       setResult(diagnosisResult);
       setStatusText("Diagnosis complete!");
 
@@ -149,7 +152,6 @@ export default function DiseaseCheckPage() {
     setImageFiles([]);
     previewUrls.forEach(URL.revokeObjectURL);
     setPreviewUrls([]);
-    setCropType("");
     setLocation(null);
     setResult(null);
     setError(null);
@@ -167,7 +169,7 @@ export default function DiseaseCheckPage() {
         <div>
           <h1 className="text-3xl font-bold font-headline">Advanced Crop Diagnosis</h1>
           <p className="text-muted-foreground">
-            Upload leaf images and provide context for a detailed AI analysis.
+            Upload leaf images for a detailed AI analysis and identification.
           </p>
         </div>
       </div>
@@ -177,21 +179,10 @@ export default function DiseaseCheckPage() {
             <CardHeader>
             <CardTitle>1. Provide Inputs</CardTitle>
             <CardDescription>
-                Add up to 5 clear leaf images, crop type, and location.
+                Add up to 5 clear leaf images and your location.
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="crop-type">Crop Type</Label>
-                <Input 
-                  id="crop-type" 
-                  placeholder="e.g., Tomato, Rice, Wheat"
-                  value={cropType}
-                  onChange={(e) => setCropType(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label>Location</Label>
                 <Button 
@@ -245,9 +236,8 @@ export default function DiseaseCheckPage() {
 
             {error && (
                 <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
             </CardContent>
@@ -256,7 +246,7 @@ export default function DiseaseCheckPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset
             </Button>
-            <Button onClick={handleDiagnose} disabled={imageFiles.length === 0 || !cropType || !location || isLoading}>
+            <Button onClick={handleDiagnose} disabled={imageFiles.length === 0 || !location || isLoading}>
                 {isLoading ? (
                 <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -278,35 +268,48 @@ export default function DiseaseCheckPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">
                       <div className="bg-primary/10 p-2 rounded-lg">
-                        <Leaf className="text-primary" />
+                        <Sprout className="text-primary" />
                       </div>
-                      <span>Diagnosis: {result.diseaseName}</span>
+                      <span>{result.plantIdentification.plantName}</span>
                     </CardTitle>
-                     <div className="flex items-center pt-2">
-                          <BadgePercent className="mr-2 h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm font-medium text-muted-foreground">Confidence: </p>
-                          <Progress value={result.confidenceScore * 100} className="w-1/3 ml-2" />
-                           <span className="ml-2 font-semibold text-sm">{(result.confidenceScore * 100).toFixed(0)}%</span>
-                      </div>
+                    <CardDescription>
+                        Disease Diagnosis: {result.diseaseDiagnosis.diseaseName}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
+                      <div>
+                          <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Diagnosis Confidence</Label>
+                          <div className="flex items-center gap-2 pt-1">
+                            <Progress value={result.diseaseDiagnosis.confidenceScore * 100} className="w-2/3" />
+                            <span className="font-semibold text-sm">{(result.diseaseDiagnosis.confidenceScore * 100).toFixed(0)}%</span>
+                          </div>
+                      </div>
+                       <div>
+                          <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Plant Confidence</Label>
+                          <div className="flex items-center gap-2 pt-1">
+                            <Progress value={result.plantIdentification.confidence * 100} className="w-2/3" />
+                            <span className="font-semibold text-sm">{(result.plantIdentification.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <Label className="flex items-center gap-2 text-muted-foreground"><TestTube2 className="h-4 w-4" /> Severity</Label>
-                            <p className="font-semibold">{result.severity}</p>
+                            <p className="font-semibold">{result.diseaseDiagnosis.severity}</p>
                         </div>
                         <div className="space-y-1">
                             <Label className="flex items-center gap-2 text-muted-foreground"><ListOrdered className="h-4 w-4" /> Affected Parts</Label>
-                            <p className="font-semibold">{result.affectedParts.join(', ')}</p>
+                            <p className="font-semibold">{result.diseaseDiagnosis.affectedParts.join(', ')}</p>
                         </div>
                     </div>
                     <div>
                         <Label className="text-lg font-semibold flex items-center gap-2"><ListOrdered className="h-5 w-5 text-primary" /> Suggested Remedy</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.suggestedRemedy}</p>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.suggestedRemedy}</p>
                     </div>
                      <div>
                         <Label className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Preventive Measures</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.preventiveMeasures}</p>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.preventiveMeasures}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -316,7 +319,7 @@ export default function DiseaseCheckPage() {
                         <Wand2 className="mx-auto h-12 w-12 text-muted-foreground" />
                         <h3 className="mt-4 text-lg font-medium">Awaiting Diagnosis</h3>
                         <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
-                            Provide your crop images, type, and location, then click "Diagnose" to see the AI analysis here.
+                            Provide your crop images and location, then click "Diagnose" to see the AI analysis here.
                         </p>
                     </div>
                 </Card>

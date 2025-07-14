@@ -2,9 +2,9 @@
 'use server';
 
 /**
- * @fileOverview Diagnoses crop diseases from uploaded leaf images and provides treatment advice.
+ * @fileOverview Identifies a plant from an image and diagnoses any diseases, providing treatment advice.
  *
- * - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
+ * - diagnoseCropDisease - A function that handles the plant identification and diagnosis process.
  * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
  * - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
  */
@@ -14,8 +14,7 @@ import {z} from 'genkit';
 import { getWeatherInfo } from './weather-search';
 
 const DiagnoseCropDiseaseInputSchema = z.object({
-  imageUris: z.array(z.string()).describe("A list of photos of a diseased plant leaf, as data URIs. Up to 5 images. Format: 'data:<mimetype>;base64,<encoded_data>'."),
-  cropType: z.string().describe("The type of crop being analyzed, e.g., 'Tomato', 'Rice'."),
+  imageUris: z.array(z.string()).describe("A list of photos of a plant leaf, as data URIs. Up to 5 images. Format: 'data:<mimetype>;base64,<encoded_data>'."),
   geolocation: z.object({
     latitude: z.number(),
     longitude: z.number(),
@@ -24,12 +23,19 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
-  diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency. 'Healthy' if no issue is found."),
-  severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
-  affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
-  suggestedRemedy: z.string().describe("A detailed, step-by-step suggested treatment or remedy plan."),
-  preventiveMeasures: z.string().describe("A list of preventive measures to avoid this issue in the future."),
-  confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
+  plantIdentification: z.object({
+      isPlant: z.boolean().describe("Confirms if the image contains a plant."),
+      plantName: z.string().describe("The common name of the identified plant. 'Unknown' if not identifiable."),
+      confidence: z.number().min(0).max(1).describe("The AI's confidence in the plant identification, from 0.0 to 1.0."),
+  }),
+  diseaseDiagnosis: z.object({
+    diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency. 'Healthy' if no issue is found."),
+    severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
+    affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
+    suggestedRemedy: z.string().describe("A detailed, step-by-step suggested treatment or remedy plan."),
+    preventiveMeasures: z.string().describe("A list of preventive measures to avoid this issue in the future."),
+    confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
+  }),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -42,26 +48,22 @@ const prompt = ai.definePrompt({
   input: {
     schema: z.object({
         imageUris: DiagnoseCropDiseaseInputSchema.shape.imageUris,
-        cropType: DiagnoseCropDiseaseInputSchema.shape.cropType,
         geolocation: DiagnoseCropDiseaseInputSchema.shape.geolocation,
         weather: z.any().optional().describe("Current weather conditions at the location."),
     })
   },
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert plant pathologist AI. Analyze the uploaded plant image(s) and detect any visible signs of disease, stress, or nutrient deficiency. 
-  
-  Return a detailed diagnosis with:
-    - Disease name (if any). If none, state 'Healthy'.
-    - Severity level (Low/Medium/High/Unknown).
-    - Affected plant parts (e.g., leaves, stem, fruit).
-    - A detailed suggested treatment or remedy.
-    - A detailed list of preventive measures.
-    - Accuracy/confidence score (from 0.0 to 1.0).
+  prompt: `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
+  1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
+  2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
 
-  Use the following information to refine the result. The weather context is especially important.
+  Return a detailed diagnosis with:
+    - Plant Identification: { isPlant, plantName, confidence }
+    - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, confidenceScore }
+
+  Use the following contextual information to refine your analysis, especially the weather conditions.
 
   CONTEXT:
-  - Crop Type: {{{cropType}}}
   - Geolocation: Latitude {{{geolocation.latitude}}}, Longitude {{{geolocation.longitude}}}
   - Current Weather: {{{json weather}}}
   - Images: 
@@ -94,7 +96,6 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
       // 2. Call the AI model with all the context
       const { output } = await prompt({
           imageUris: input.imageUris,
-          cropType: input.cropType,
           geolocation: input.geolocation,
           weather: weatherData,
       });
