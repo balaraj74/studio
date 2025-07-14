@@ -32,8 +32,9 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
     diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency. 'Healthy' if no issue is found."),
     severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
     affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
-    suggestedRemedy: z.string().describe("A detailed, step-by-step suggested treatment or remedy plan."),
-    preventiveMeasures: z.string().describe("A list of preventive measures to avoid this issue in the future."),
+    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan."),
+    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future."),
+    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried."),
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
 });
@@ -59,7 +60,9 @@ const prompt = ai.definePrompt({
 
   Return a detailed diagnosis with:
     - Plant Identification: { isPlant, plantName, confidence }
-    - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, confidenceScore }
+    - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
+
+  IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
 
   Use the following contextual information to refine your analysis, especially the weather conditions.
 

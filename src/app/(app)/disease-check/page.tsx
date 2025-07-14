@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf } from "lucide-react";
 import Image from "next/image";
 import {
   diagnoseCropDisease,
@@ -307,6 +307,10 @@ export default function DiseaseCheckPage() {
                     <div>
                         <Label className="text-lg font-semibold flex items-center gap-2"><ListOrdered className="h-5 w-5 text-primary" /> Suggested Remedy</Label>
                         <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.suggestedRemedy}</p>
+                    </div>
+                     <div>
+                        <Label className="text-lg font-semibold flex items-center gap-2"><Leaf className="h-5 w-5 text-primary" /> Alternative Home Remedies</Label>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.alternativeRemedies}</p>
                     </div>
                      <div>
                         <Label className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Preventive Measures</Label>
