@@ -144,12 +144,6 @@ export default function FertilizerFinderPage() {
 
     placesService.nearbySearch(request, (results, searchStatus) => {
       if (searchStatus === google.maps.places.PlacesServiceStatus.OK && results) {
-        if (results.length === 0) {
-           setError("No fertilizer shops found within a 5km radius.");
-           setStatus('error');
-           return;
-        }
-        
         const shopsWithDistance = results.map(shop => ({
           ...shop,
           distance: getDistance(location.lat, location.lng, shop.geometry!.location!.lat(), shop.geometry!.location!.lng())
@@ -157,6 +151,9 @@ export default function FertilizerFinderPage() {
         
         setShops(shopsWithDistance as Shop[]);
         setStatus('success');
+      } else if (searchStatus === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+        setError("No fertilizer shops found within a 5km radius.");
+        setStatus('error');
       } else {
         setError("Could not find nearby shops. Please try again later.");
         setStatus('error');
