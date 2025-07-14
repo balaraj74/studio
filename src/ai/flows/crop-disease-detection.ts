@@ -44,37 +44,37 @@ export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Prom
   return diagnoseCropDiseaseFlow(input);
 }
 
+const diagnoseCropDiseasePromptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
+1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
+2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
+
+Return a detailed diagnosis with:
+  - Plant Identification: { isPlant, plantName, confidence }
+  - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
+
+IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
+
+Use the following contextual information to refine your analysis, especially the weather conditions.
+
+CONTEXT:
+- Geolocation: Latitude {{geolocation.latitude}}, Longitude {{geolocation.longitude}}
+- Current Weather: {{json weather}}
+`;
+
 const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {
     schema: z.object({
-        imageUris: DiagnoseCropDiseaseInputSchema.shape.imageUris,
+        // The prompt text is now a template string
         geolocation: DiagnoseCropDiseaseInputSchema.shape.geolocation,
         weather: z.any().optional().describe("Current weather conditions at the location."),
     })
   },
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
-  1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
-  2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
-
-  Return a detailed diagnosis with:
-    - Plant Identification: { isPlant, plantName, confidence }
-    - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
-
-  IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
-
-  Use the following contextual information to refine your analysis, especially the weather conditions.
-
-  CONTEXT:
-  - Geolocation: Latitude {{{geolocation.latitude}}}, Longitude {{{geolocation.longitude}}}
-  - Current Weather: {{{json weather}}}
-  - Images: 
-    {{#each imageUris}}
-      {{media url=this}}
-    {{/each}}
-  `,
+  // The prompt text is now defined outside and passed in
+  prompt: diagnoseCropDiseasePromptText,
 });
+
 
 const diagnoseCropDiseaseFlow = ai.defineFlow(
   {
@@ -96,11 +96,20 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
           // Proceed without weather data if it fails
       }
       
-      // 2. Call the AI model with all the context
-      const { output } = await prompt({
-          imageUris: input.imageUris,
-          geolocation: input.geolocation,
-          weather: weatherData,
+      // 2. Construct the multimodal prompt payload
+      const promptPayload = [
+        ...input.imageUris.map(uri => ({ media: { url: uri } })),
+        { text: ai.promptText(prompt, { 
+            geolocation: input.geolocation,
+            weather: weatherData 
+        })},
+      ];
+      
+      // 3. Call the AI model with the constructed payload
+      const { output } = await ai.generate({
+        prompt: promptPayload,
+        model: 'googleai/gemini-2.0-flash',
+        output: { schema: DiagnoseCropDiseaseOutputSchema },
       });
 
       if (!output) {
