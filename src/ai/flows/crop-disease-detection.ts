@@ -65,13 +65,11 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {
     schema: z.object({
-        // The prompt text is now a template string
         geolocation: DiagnoseCropDiseaseInputSchema.shape.geolocation,
         weather: z.any().optional().describe("Current weather conditions at the location."),
     })
   },
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  // The prompt text is now defined outside and passed in
   prompt: diagnoseCropDiseasePromptText,
 });
 
@@ -84,7 +82,7 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      // 1. Fetch weather data using the provided geolocation
+      // 1. Fetch weather data
       let weatherData = null;
       try {
         weatherData = await getWeatherInfo({
@@ -93,19 +91,34 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
         });
       } catch (weatherError) {
           console.warn("Could not fetch weather data, proceeding without it.", weatherError);
-          // Proceed without weather data if it fails
       }
       
-      // 2. Construct the multimodal prompt payload
+      // 2. Build the final text prompt with weather data
+      const weatherInfo = weatherData ? JSON.stringify(weatherData, null, 2) : "Not available";
+      const promptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
+1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
+2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
+
+Return a detailed diagnosis with:
+  - Plant Identification: { isPlant, plantName, confidence }
+  - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
+
+IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
+
+Use the following contextual information to refine your analysis, especially the weather conditions.
+
+CONTEXT:
+- Geolocation: Latitude ${input.geolocation.latitude}, Longitude ${input.geolocation.longitude}
+- Current Weather: ${weatherInfo}
+`;
+      
+      // 3. Construct the multimodal prompt payload
       const promptPayload = [
         ...input.imageUris.map(uri => ({ media: { url: uri } })),
-        { text: ai.promptText(prompt, { 
-            geolocation: input.geolocation,
-            weather: weatherData 
-        })},
+        { text: promptText },
       ];
       
-      // 3. Call the AI model with the constructed payload
+      // 4. Call the AI model with the constructed payload
       const { output } = await ai.generate({
         prompt: promptPayload,
         model: 'googleai/gemini-2.0-flash',
