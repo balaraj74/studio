@@ -1,3 +1,4 @@
+
 'use server';
 
 import { revalidatePath } from 'next/cache';
@@ -12,7 +13,7 @@ export type HarvestFormInput = Omit<Harvest, 'id' | 'harvestDate'> & {
 const harvestConverter = {
     toFirestore: (harvest: Omit<Harvest, 'id'>) => ({
         ...harvest,
-        harvestDate: Timestamp.fromDate(harvest.harvestDate),
+        harvestDate: Timestamp.fromDate(new Date(harvest.harvestDate)),
     }),
     fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Harvest => {
         const data = snapshot.data();
