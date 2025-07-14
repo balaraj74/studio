@@ -21,6 +21,7 @@ import {
 } from "@/ai/flows/crop-disease-detection";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 
 const MAX_IMAGES = 5;
 
@@ -300,7 +301,7 @@ export default function DiseaseCheckPage() {
                         </div>
                         <div className="space-y-1">
                             <Label className="flex items-center gap-2 text-muted-foreground"><ListOrdered className="h-4 w-4" /> Affected Parts</Label>
-                            <p className="font-semibold">{result.diseaseDiagnosis.affectedParts.join(', ')}</p>
+                            <p className="font-semibold">{result.diseaseDiagnosis.affectedParts?.join(', ') || 'N/A'}</p>
                         </div>
                     </div>
                     <div>
