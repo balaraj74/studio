@@ -29,7 +29,7 @@ export interface Crop {
 export type ExpenseCategory = "Seeds" | "Fertilizer" | "Labor" | "Equipment" | "Other";
 
 export interface Expense {
-  id: string;
+  id:string;
   name: string;
   category: ExpenseCategory;
   amount: number;

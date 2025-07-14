@@ -15,6 +15,7 @@ import {
   FileText,
   MapPin,
   ChevronRight,
+  HeartPulse
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -31,6 +32,12 @@ const toolItems: ToolItem[] = [
     title: 'Crop Diagnosis',
     description: 'Identify crop diseases from images.',
     icon: Stethoscope,
+  },
+  {
+    href: '/medicinal-plants',
+    title: 'Medicinal Plants',
+    description: 'Identify medicinal plants with your camera.',
+    icon: HeartPulse,
   },
   {
     href: '/weather',
