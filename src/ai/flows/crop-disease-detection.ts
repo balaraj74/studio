@@ -11,22 +11,25 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getWeatherInfo } from './weather-search';
 
 const DiagnoseCropDiseaseInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a diseased plant leaf, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+  imageUris: z.array(z.string()).describe("A list of photos of a diseased plant leaf, as data URIs. Up to 5 images. Format: 'data:<mimetype>;base64,<encoded_data>'."),
+  cropType: z.string().describe("The type of crop being analyzed, e.g., 'Tomato', 'Rice'."),
+  geolocation: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }).describe("The geolocation where the images were taken."),
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
-  diseaseName: z.string().describe('The name of the identified disease.'),
-  description: z.string().describe('A detailed description of the disease, its symptoms, and causes.'),
-  diseaseStage: z.string().describe('The likely stage of the disease (e.g., Early, Mid, Advanced).'),
-  remedyType: z.string().describe('The type of remedy suggested (e.g., Fungicide, Pesticide, Cultural Practice).'),
-  suggestedRemedy: z.string().describe('A detailed suggested remedy and treatment plan for the disease.'),
+  diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency. 'Healthy' if no issue is found."),
+  severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
+  affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
+  suggestedRemedy: z.string().describe("A detailed, step-by-step suggested treatment or remedy plan."),
+  preventiveMeasures: z.string().describe("A list of preventive measures to avoid this issue in the future."),
+  confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -36,18 +39,36 @@ export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Prom
 
 const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
-  input: {schema: DiagnoseCropDiseaseInputSchema},
+  input: {
+    schema: z.object({
+        imageUris: DiagnoseCropDiseaseInputSchema.shape.imageUris,
+        cropType: DiagnoseCropDiseaseInputSchema.shape.cropType,
+        geolocation: DiagnoseCropDiseaseInputSchema.shape.geolocation,
+        weather: z.any().optional().describe("Current weather conditions at the location."),
+    })
+  },
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert in plant pathology, skilled in diagnosing crop diseases from leaf images. Analyze the provided image and identify the disease.
-
-  Photo: {{media url=photoDataUri}}
+  prompt: `You are an expert plant pathologist AI. Analyze the uploaded plant image(s) and detect any visible signs of disease, stress, or nutrient deficiency. 
   
-  Provide a comprehensive diagnosis including:
-  - The disease name.
-  - A detailed description of the disease, its common symptoms, and what might cause it.
-  - The likely stage of the disease (e.g., Early, Mid, Advanced).
-  - The type of remedy required (e.g., Fungicide, Pesticide, Cultural Practice, Nutrient Management).
-  - A detailed step-by-step suggested remedy and treatment plan for the farmer.`,
+  Return a detailed diagnosis with:
+    - Disease name (if any). If none, state 'Healthy'.
+    - Severity level (Low/Medium/High/Unknown).
+    - Affected plant parts (e.g., leaves, stem, fruit).
+    - A detailed suggested treatment or remedy.
+    - A detailed list of preventive measures.
+    - Accuracy/confidence score (from 0.0 to 1.0).
+
+  Use the following information to refine the result. The weather context is especially important.
+
+  CONTEXT:
+  - Crop Type: {{{cropType}}}
+  - Geolocation: Latitude {{{geolocation.latitude}}}, Longitude {{{geolocation.longitude}}}
+  - Current Weather: {{{json weather}}}
+  - Images: 
+    {{#each imageUris}}
+      {{media url=this}}
+    {{/each}}
+  `,
 });
 
 const diagnoseCropDiseaseFlow = ai.defineFlow(
@@ -56,13 +77,33 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     inputSchema: DiagnoseCropDiseaseInputSchema,
     outputSchema: DiagnoseCropDiseaseOutputSchema,
   },
-  async input => {
+  async (input) => {
     try {
-      const {output} = await prompt(input);
+      // 1. Fetch weather data using the provided geolocation
+      let weatherData = null;
+      try {
+        weatherData = await getWeatherInfo({
+            lat: input.geolocation.latitude,
+            lon: input.geolocation.longitude
+        });
+      } catch (weatherError) {
+          console.warn("Could not fetch weather data, proceeding without it.", weatherError);
+          // Proceed without weather data if it fails
+      }
+      
+      // 2. Call the AI model with all the context
+      const { output } = await prompt({
+          imageUris: input.imageUris,
+          cropType: input.cropType,
+          geolocation: input.geolocation,
+          weather: weatherData,
+      });
+
       if (!output) {
         throw new Error("No output was generated by the AI model.");
       }
       return output;
+
     } catch (error) {
        console.error("Error in diagnoseCropDiseaseFlow:", error);
        // Re-throw a more user-friendly error to be caught by the frontend.

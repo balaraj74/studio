@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { UploadCloud, Leaf, AlertCircle, Wand2, RefreshCw, Stethoscope } from "lucide-react";
+import { UploadCloud, Leaf, AlertCircle, Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered,thermometer, TestTube2, Wind, Droplets } from "lucide-react";
 import Image from "next/image";
 import {
   diagnoseCropDisease,
@@ -21,34 +22,56 @@ import {
 } from "@/ai/flows/crop-disease-detection";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+
+const MAX_IMAGES = 5;
 
 export default function DiseaseCheckPage() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [cropType, setCropType] = useState("");
+  const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [statusText, setStatusText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Clean up preview URLs when component unmounts
+    return () => {
+      previewUrls.forEach(URL.revokeObjectURL);
+    };
+  }, [previewUrls]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 4 * 1024 * 1024) { // 4MB limit
-        setError("File size exceeds 4MB. Please choose a smaller image.");
-        toast({
-          variant: "destructive",
-          title: "Image Too Large",
-          description: "Please upload an image smaller than 4MB.",
-        });
-        return;
-      }
-      setSelectedFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setResult(null);
-      setError(null);
-    }
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const newFiles = [...imageFiles, ...files].slice(0, MAX_IMAGES);
+    const newUrls = newFiles.map(file => URL.createObjectURL(file));
+
+    // Revoke old URLs
+    previewUrls.forEach(URL.revokeObjectURL);
+
+    setImageFiles(newFiles);
+    setPreviewUrls(newUrls);
+    setResult(null);
+    setError(null);
   };
+
+  const removeImage = (index: number) => {
+    const newFiles = [...imageFiles];
+    const newUrls = [...previewUrls];
+    
+    newFiles.splice(index, 1);
+    const removedUrl = newUrls.splice(index, 1)[0];
+    URL.revokeObjectURL(removedUrl);
+
+    setImageFiles(newFiles);
+    setPreviewUrls(newUrls);
+  }
 
   const fileToDataUri = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -58,10 +81,32 @@ export default function DiseaseCheckPage() {
       reader.readAsDataURL(file);
     });
   };
+  
+  const handleGetLocation = () => {
+      if (!navigator.geolocation) {
+          setError("Geolocation is not supported by your browser.");
+          return;
+      }
+      setStatusText("Getting location...");
+      navigator.geolocation.getCurrentPosition(
+          (position) => {
+              setLocation({
+                  latitude: position.coords.latitude,
+                  longitude: position.coords.longitude,
+              });
+              setStatusText("Location found!");
+              toast({ title: "Location Acquired", description: "Your current location has been recorded for analysis." });
+          },
+          () => {
+              setError("Permission to access location was denied. Please enable it in your browser settings.");
+              setStatusText("");
+          }
+      );
+  }
 
   const handleDiagnose = async () => {
-    if (!selectedFile) {
-      setError("Please select an image file first.");
+    if (imageFiles.length === 0 || !cropType || !location) {
+      setError("Please provide at least one image, a crop type, and your location.");
       return;
     }
 
@@ -70,9 +115,21 @@ export default function DiseaseCheckPage() {
     setResult(null);
 
     try {
-      const photoDataUri = await fileToDataUri(selectedFile);
-      const diagnosisResult = await diagnoseCropDisease({ photoDataUri });
+      setStatusText("Converting images...");
+      const imageUris = await Promise.all(imageFiles.map(fileToDataUri));
+      
+      setStatusText("Contacting weather service...");
+      // The flow will handle weather, we just call the main diagnose function
+      
+      setStatusText("Analyzing with AI...");
+      const diagnosisResult = await diagnoseCropDisease({ 
+          imageUris,
+          cropType,
+          geolocation: location
+      });
       setResult(diagnosisResult);
+      setStatusText("Diagnosis complete!");
+
     } catch (e) {
       console.error(e);
       const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
@@ -84,12 +141,16 @@ export default function DiseaseCheckPage() {
       });
     } finally {
       setIsLoading(false);
+      setStatusText("");
     }
   };
   
   const handleReset = () => {
-    setSelectedFile(null);
-    setPreviewUrl(null);
+    setImageFiles([]);
+    previewUrls.forEach(URL.revokeObjectURL);
+    setPreviewUrls([]);
+    setCropType("");
+    setLocation(null);
     setResult(null);
     setError(null);
     if(fileInputRef.current) {
@@ -104,9 +165,9 @@ export default function DiseaseCheckPage() {
           <Stethoscope className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold font-headline">Crop Disease Diagnosis</h1>
+          <h1 className="text-3xl font-bold font-headline">Advanced Crop Diagnosis</h1>
           <p className="text-muted-foreground">
-            Upload a leaf image to identify diseases and get treatment advice.
+            Upload leaf images and provide context for a detailed AI analysis.
           </p>
         </div>
       </div>
@@ -114,60 +175,73 @@ export default function DiseaseCheckPage() {
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-2">
             <CardHeader>
-            <CardTitle>Upload Leaf Image</CardTitle>
+            <CardTitle>1. Provide Inputs</CardTitle>
             <CardDescription>
-                For best results, use a clear image of a single leaf.
+                Add up to 5 clear leaf images, crop type, and location.
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-            <div
-                className="flex items-center justify-center w-full"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    if(fileInputRef.current) fileInputRef.current.files = e.dataTransfer.files;
-                    handleFileChange({ target: { files: e.dataTransfer.files } } as any);
-                }
-                }}
-            >
-                <Label
-                htmlFor="picture"
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
-                >
-                {previewUrl ? (
-                    <div className="relative w-full h-full">
-                    <Image
-                        src={previewUrl}
-                        alt="Selected leaf preview"
-                        fill
-                        style={{ objectFit: 'contain' }}
-                        className="rounded-lg"
-                    />
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                    <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
-                    <p className="mb-2 text-sm text-muted-foreground">
-                        <span className="font-semibold">Click to upload</span> or drag and
-                        drop
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        PNG, JPG, or WEBP (MAX. 4MB)
-                    </p>
-                    </div>
-                )}
-                <Input
-                    id="picture"
-                    type="file"
-                    className="hidden"
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={handleFileChange}
-                    ref={fileInputRef}
-                    disabled={isLoading}
+              <div className="space-y-2">
+                <Label htmlFor="crop-type">Crop Type</Label>
+                <Input 
+                  id="crop-type" 
+                  placeholder="e.g., Tomato, Rice, Wheat"
+                  value={cropType}
+                  onChange={(e) => setCropType(e.target.value)}
+                  disabled={isLoading}
                 />
-                </Label>
-            </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleGetLocation}
+                    disabled={isLoading || !!location}
+                >
+                    <LocateFixed className="mr-2 h-4 w-4" />
+                    {location ? `Location Acquired (${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)})` : "Get Current Location"}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pictures">Leaf Images ({imageFiles.length}/{MAX_IMAGES})</Label>
+                <div className="grid grid-cols-3 gap-2">
+                    {previewUrls.map((url, index) => (
+                      <div key={index} className="relative aspect-square">
+                          <Image src={url} alt={`Preview ${index}`} fill className="rounded-md object-cover"/>
+                           <Button
+                              size="icon"
+                              variant="destructive"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                              onClick={() => removeImage(index)}
+                              disabled={isLoading}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                      </div>
+                    ))}
+                    {imageFiles.length < MAX_IMAGES && (
+                      <Label
+                        htmlFor="pictures"
+                        className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
+                      >
+                        <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                        <Input
+                          id="pictures"
+                          type="file"
+                          multiple
+                          className="hidden"
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleFileChange}
+                          ref={fileInputRef}
+                          disabled={isLoading}
+                        />
+                      </Label>
+                    )}
+                </div>
+              </div>
 
             {error && (
                 <Alert variant="destructive">
@@ -182,11 +256,11 @@ export default function DiseaseCheckPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset
             </Button>
-            <Button onClick={handleDiagnose} disabled={!selectedFile || isLoading}>
+            <Button onClick={handleDiagnose} disabled={imageFiles.length === 0 || !cropType || !location || isLoading}>
                 {isLoading ? (
                 <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Diagnosing...
+                    {statusText || "Diagnosing..."}
                 </>
                 ) : (
                 <>
@@ -206,22 +280,33 @@ export default function DiseaseCheckPage() {
                       <div className="bg-primary/10 p-2 rounded-lg">
                         <Leaf className="text-primary" />
                       </div>
-                      <span>{result.diseaseName}</span>
+                      <span>Diagnosis: {result.diseaseName}</span>
                     </CardTitle>
-                    <CardDescription>A comprehensive diagnosis of the detected issue.</CardDescription>
+                     <div className="flex items-center pt-2">
+                          <BadgePercent className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-muted-foreground">Confidence: </p>
+                          <Progress value={result.confidenceScore * 100} className="w-1/3 ml-2" />
+                           <span className="ml-2 font-semibold text-sm">{(result.confidenceScore * 100).toFixed(0)}%</span>
+                      </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-base py-1 px-3">Stage: {result.diseaseStage}</Badge>
-                        <Badge variant="outline" className="text-base py-1 px-3">Remedy: {result.remedyType}</Badge>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <Label className="flex items-center gap-2 text-muted-foreground"><TestTube2 className="h-4 w-4" /> Severity</Label>
+                            <p className="font-semibold">{result.severity}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="flex items-center gap-2 text-muted-foreground"><ListOrdered className="h-4 w-4" /> Affected Parts</Label>
+                            <p className="font-semibold">{result.affectedParts.join(', ')}</p>
+                        </div>
                     </div>
                     <div>
-                        <Label className="text-lg font-semibold">Description</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{result.description}</p>
+                        <Label className="text-lg font-semibold flex items-center gap-2"><ListOrdered className="h-5 w-5 text-primary" /> Suggested Remedy</Label>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.suggestedRemedy}</p>
                     </div>
-                    <div>
-                        <Label className="text-lg font-semibold">Suggested Remedy</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{result.suggestedRemedy}</p>
+                     <div>
+                        <Label className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Preventive Measures</Label>
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.preventiveMeasures}</p>
                     </div>
                 </CardContent>
             </Card>
@@ -230,8 +315,8 @@ export default function DiseaseCheckPage() {
                     <div className="text-center p-8">
                         <Wand2 className="mx-auto h-12 w-12 text-muted-foreground" />
                         <h3 className="mt-4 text-lg font-medium">Awaiting Diagnosis</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Upload an image and click "Diagnose" to see the AI analysis here.
+                        <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
+                            Provide your crop images, type, and location, then click "Diagnose" to see the AI analysis here.
                         </p>
                     </div>
                 </Card>

@@ -84,11 +84,11 @@ const weatherTool = ai.defineTool(
         locationName = [place, district].filter(Boolean).join(', ');
     }
 
-    const dailyForecasts = weatherData.daily.time.slice(1, 6).map((time: string, index: number) => ({
+    const dailyForecasts = weatherData.daily.time.slice(0, 5).map((time: string, index: number) => ({
         date: new Date(time).toLocaleDateString('en-US', { weekday: 'long' }),
-        weatherCode: weatherData.daily.weather_code[index + 1],
-        maxTemp: Math.round(weatherData.daily.temperature_2m_max[index + 1]),
-        minTemp: Math.round(weatherData.daily.temperature_2m_min[index + 1]),
+        weatherCode: weatherData.daily.weather_code[index],
+        maxTemp: Math.round(weatherData.daily.temperature_2m_max[index]),
+        minTemp: Math.round(weatherData.daily.temperature_2m_min[index]),
     }));
     
     return {
