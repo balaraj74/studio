@@ -29,7 +29,8 @@ import {
   MessageCircle,
   Mic,
   ChevronRight,
-  HeartPulse
+  HeartPulse,
+  BarChart,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -54,6 +55,11 @@ const allTools: QuickLink[] = [
     href: '/disease-check',
     title: 'Diagnosis',
     icon: Stethoscope,
+  },
+  {
+    href: '/analytics',
+    title: 'Analytics',
+    icon: BarChart,
   },
   {
     href: '/medicinal-plants',
