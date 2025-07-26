@@ -579,9 +579,12 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                                         <p className="text-4xl font-bold text-primary">{area.toFixed(3)}</p>
                                         <p className="text-muted-foreground">acres</p>
                                     </CardContent>
-                                    <CardFooter>
-                                        <Button variant="outline" className="w-full" onClick={handleResetDrawing} disabled={isSubmitting}>
+                                    <CardFooter className="grid grid-cols-2 gap-2">
+                                        <Button variant="outline" onClick={handleResetDrawing} disabled={isSubmitting}>
                                             <Redo className="mr-2 h-4 w-4"/> Clear Drawing
+                                        </Button>
+                                         <Button onClick={handleSubmit} disabled={isSubmitting}>
+                                            {isSubmitting ? 'Saving...' : <>{field ? 'Update Field' : 'Add Field'}</>}
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -591,13 +594,12 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                 </div>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? 'Saving...' : <><Save className="mr-2 h-4 w-4"/> Save Field</>}
-                    </Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 // #endregion
+
+    
