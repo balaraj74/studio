@@ -63,26 +63,33 @@ export default function CropsPageClient() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const fetchCrops = async () => {
-    if (user) {
-      setIsLoading(true);
-      try {
-        const fetchedCrops = await getCrops(user.uid);
-        setCrops(fetchedCrops);
-      } catch (error) {
-        console.error("Failed to fetch crops", error);
-        toast({ variant: "destructive", title: "Error", description: "Could not fetch crop data." });
-      } finally {
-        setIsLoading(false);
-      }
+  useEffect(() => {
+    async function fetchInitialCrops() {
+        if (user) {
+          setIsLoading(true);
+          try {
+            const fetchedCrops = await getCrops(user.uid);
+            setCrops(fetchedCrops);
+          } catch (error) {
+            console.error("Failed to fetch crops", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not fetch crop data." });
+          } finally {
+            setIsLoading(false);
+          }
+        }
     }
+    fetchInitialCrops();
+  }, [user, toast]);
+  
+  const onFormSubmit = async () => {
+      if (user) {
+          setIsLoading(true);
+          const fetchedCrops = await getCrops(user.uid);
+          setCrops(fetchedCrops);
+          setIsLoading(false);
+      }
   };
 
-  useEffect(() => {
-    if (user) {
-        fetchCrops();
-    }
-  }, [user]);
 
   const handleAddNew = () => {
     setEditingCrop(null);
@@ -99,7 +106,7 @@ export default function CropsPageClient() {
     const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
-      await fetchCrops();
+      await onFormSubmit();
     } else {
       toast({
         variant: "destructive",
@@ -118,7 +125,8 @@ export default function CropsPageClient() {
     const originalCrops = [...crops];
     const updatedCalendar = [...crop.calendar];
     updatedCalendar[taskIndex] = { ...updatedCalendar[taskIndex], isCompleted };
-    setCrops(prevCrops => prevCrops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c));
+    const updatedCrops = crops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c);
+    setCrops(updatedCrops);
 
     // Server update
     const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
@@ -162,7 +170,7 @@ export default function CropsPageClient() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {crops.map((crop) => {
-               const nextTask = crop.calendar?.filter(t => !t.isCompleted).sort((a,b) => a.startDate.getTime() - b.startDate.getTime())[0];
+               const nextTask = crop.calendar?.filter(t => !t.isCompleted).sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
                return (
                <Card key={crop.id} className="flex flex-col overflow-hidden">
                    <div className="relative h-40 w-full">
@@ -210,7 +218,7 @@ export default function CropsPageClient() {
                                         </Label>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                                             <Clock className="h-3 w-3" />
-                                            {format(nextTask.startDate, "MMM d")} - {format(nextTask.endDate, "MMM d")}
+                                            {format(new Date(nextTask.startDate), "MMM d")} - {format(new Date(nextTask.endDate), "MMM d")}
                                         </p>
                                     </div>
                                     {togglingTaskId === `${crop.id}-${crop.calendar.indexOf(nextTask)}` && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -253,7 +261,7 @@ export default function CropsPageClient() {
         onOpenChange={setIsDialogOpen}
         crop={editingCrop}
         user={user}
-        onFormSubmit={fetchCrops}
+        onFormSubmit={onFormSubmit}
       />
     </div>
   );
