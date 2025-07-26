@@ -65,9 +65,15 @@ export default function CropsPageClient() {
   const fetchCrops = async () => {
     if (user) {
       setIsLoading(true);
-      const fetchedCrops = await getCrops(user.uid);
-      setCrops(fetchedCrops);
-      setIsLoading(false);
+      try {
+        const fetchedCrops = await getCrops(user.uid);
+        setCrops(fetchedCrops);
+      } catch (error) {
+        console.error("Failed to fetch crops", error);
+        toast({ variant: "destructive", title: "Error", description: "Could not fetch crop data." });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -200,6 +206,9 @@ export default function CropsPageClient() {
                                             </div>
                                         </div>
                                     ))}
+                                    {crop.calendar.filter(t => !t.isCompleted).length === 0 && (
+                                      <p className="text-sm text-muted-foreground">All tasks completed!</p>
+                                    )}
                                 </div>
                             ) : (
                                 <p className="text-sm text-muted-foreground">No upcoming tasks. Edit crop to generate a calendar.</p>
@@ -207,8 +216,8 @@ export default function CropsPageClient() {
                         </div>
                    </CardContent>
                    <CardFooter className="grid grid-cols-2 gap-2">
-                        <Button variant="outline" onClick={() => handleEdit(crop)}><Pencil className="mr-2" /> Edit</Button>
-                        <Button variant="destructive-outline" onClick={() => handleDelete(crop.id)}><Trash2 className="mr-2" /> Delete</Button>
+                        <Button variant="outline" onClick={() => handleEdit(crop)}><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
+                        <Button variant="destructive-outline" onClick={() => handleDelete(crop.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>
                    </CardFooter>
                 </Card>
             ))}
@@ -449,5 +458,3 @@ function CropFormDialog({
     </Dialog>
   );
 }
-
-    

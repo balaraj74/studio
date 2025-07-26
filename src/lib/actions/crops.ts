@@ -96,7 +96,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
 
         let calendar: CropTask[] = [];
         // 1. Generate calendar from AI if region is provided
-        if (data.region) {
+        if (data.region && data.name) {
             try {
                 const { tasks } = await generateCropCalendar({ cropName: data.name, region: data.region });
                 const currentYear = new Date().getFullYear();
@@ -156,8 +156,8 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
         if (data.calendar) {
             dataToUpdate.calendar = data.calendar.map(task => ({
                 ...task,
-                startDate: Timestamp.fromDate(task.startDate),
-                endDate: Timestamp.fromDate(task.endDate),
+                startDate: Timestamp.fromDate(new Date(task.startDate)),
+                endDate: Timestamp.fromDate(new Date(task.endDate)),
             }));
         }
 
