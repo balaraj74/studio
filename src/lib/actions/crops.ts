@@ -148,27 +148,33 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
         const db = getAdminDb();
         const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
         
-        const dataToUpdate: any = { ...data };
+        const dataToUpdate: { [key: string]: any } = {};
 
-        // Convert any date strings to Timestamps
-        if (data.plantedDate) {
-            dataToUpdate.plantedDate = Timestamp.fromDate(new Date(data.plantedDate));
+        // Iterate over the keys in the input data and build the update object.
+        // This prevents trying to access properties that don't exist on `data`.
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key as keyof typeof data];
+                if (key === 'plantedDate' && value) {
+                    dataToUpdate[key] = Timestamp.fromDate(new Date(value as string));
+                } else if (key === 'harvestDate' && value) {
+                    dataToUpdate[key] = Timestamp.fromDate(new Date(value as string));
+                } else if (key === 'calendar' && Array.isArray(value)) {
+                     dataToUpdate[key] = value.map(task => ({
+                        ...task,
+                        startDate: Timestamp.fromDate(new Date(task.startDate)),
+                        endDate: Timestamp.fromDate(new Date(task.endDate)),
+                    }));
+                } else if (value !== undefined) {
+                    dataToUpdate[key] = value;
+                }
+            }
         }
-        if (data.harvestDate) {
-            dataToUpdate.harvestDate = Timestamp.fromDate(new Date(data.harvestDate));
+        
+        if (Object.keys(dataToUpdate).length === 0) {
+            return { success: true, message: "No changes to update." };
         }
 
-        // Handle calendar updates specifically
-        if (data.calendar) {
-            dataToUpdate.calendar = data.calendar.map(task => ({
-                ...task,
-                // Ensure dates from client are converted to Timestamps
-                startDate: Timestamp.fromDate(new Date(task.startDate)),
-                endDate: Timestamp.fromDate(new Date(task.endDate)),
-            }));
-        }
-
-        // Use update instead of set with merge to avoid overwriting nested fields
         await cropRef.update(dataToUpdate);
 
         revalidatePath('/crops');

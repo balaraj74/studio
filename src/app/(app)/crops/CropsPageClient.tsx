@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, CalendarIcon, Clock, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarIcon, Clock, MapPin, Loader2 } from "lucide-react";
 import type { Crop, CropStatus, CropTask } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,7 @@ export default function CropsPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -110,17 +111,24 @@ export default function CropsPageClient() {
   
   const handleTaskToggle = async (crop: Crop, taskIndex: number, isCompleted: boolean) => {
     if (!user) return;
+    const taskId = `${crop.id}-${taskIndex}`;
+    setTogglingTaskId(taskId);
 
+    // Optimistic update
+    const originalCrops = [...crops];
     const updatedCalendar = [...crop.calendar];
     updatedCalendar[taskIndex] = { ...updatedCalendar[taskIndex], isCompleted };
+    setCrops(prevCrops => prevCrops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c));
 
+    // Server update
     const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
-    if (result.success) {
-      // Optimistically update UI, then refresh from source
-      setCrops(prevCrops => prevCrops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c));
-      await fetchCrops();
-    } else {
+    
+    setTogglingTaskId(null);
+
+    if (!result.success) {
       toast({ variant: "destructive", title: "Update failed", description: "Could not save task status." });
+      // Revert optimistic update on failure
+      setCrops(originalCrops);
     }
   };
 
@@ -194,6 +202,7 @@ export default function CropsPageClient() {
                                         id={`task-${crop.id}-${crop.calendar.indexOf(nextTask)}`}
                                         checked={nextTask.isCompleted} 
                                         onCheckedChange={(checked) => handleTaskToggle(crop, crop.calendar.indexOf(nextTask), !!checked)}
+                                        disabled={togglingTaskId === `${crop.id}-${crop.calendar.indexOf(nextTask)}`}
                                     />
                                     <div className="flex-1">
                                         <Label htmlFor={`task-${crop.id}-${crop.calendar.indexOf(nextTask)}`} className="font-medium">
@@ -204,6 +213,7 @@ export default function CropsPageClient() {
                                             {format(nextTask.startDate, "MMM d")} - {format(nextTask.endDate, "MMM d")}
                                         </p>
                                     </div>
+                                    {togglingTaskId === `${crop.id}-${crop.calendar.indexOf(nextTask)}` && <Loader2 className="h-4 w-4 animate-spin" />}
                                 </div>
                             ) : crop.calendar && crop.calendar.length > 0 ? (
                                 <p className="text-sm text-muted-foreground">All tasks completed!</p>
