@@ -67,15 +67,16 @@ export default function CropsPageClient() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchCrops() {
-      if (user) {
-        setIsLoading(true);
-        const fetchedCrops = await getCrops(user.uid);
-        setCrops(fetchedCrops);
-        setIsLoading(false);
-      }
+  const fetchCrops = async () => {
+    if (user) {
+      setIsLoading(true);
+      const fetchedCrops = await getCrops(user.uid);
+      setCrops(fetchedCrops);
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchCrops();
   }, [user]);
 
@@ -94,8 +95,7 @@ export default function CropsPageClient() {
     const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
-      const fetchedCrops = await getCrops(user.uid);
-      setCrops(fetchedCrops);
+      await fetchCrops();
     } else {
       toast({
         variant: "destructive",
@@ -113,27 +113,21 @@ export default function CropsPageClient() {
 
     const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
     if (result.success) {
-      // Optimistically update UI
+      // Optimistically update UI, then refresh from source
       setCrops(prevCrops => prevCrops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c));
+      await fetchCrops();
     } else {
       toast({ variant: "destructive", title: "Update failed", description: "Could not save task status." });
     }
   };
 
-  const onFormSubmit = async () => {
-    if(user) {
-      const fetchedCrops = await getCrops(user.uid);
-      setCrops(fetchedCrops);
-    }
-  }
-
   const renderContent = () => {
      if (isLoading) {
       return (
         <div className="space-y-3">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-24 w-full rounded-xl" />
         </div>
       );
     }
@@ -221,7 +215,7 @@ export default function CropsPageClient() {
         onOpenChange={setIsDialogOpen}
         crop={editingCrop}
         user={user}
-        onFormSubmit={onFormSubmit}
+        onFormSubmit={fetchCrops}
       />
     </div>
   );
@@ -283,7 +277,6 @@ function CropFormDialog({
         harvestDate: harvestDate ? harvestDate.toISOString() : null,
     };
 
-    // For updates, we don't re-generate the calendar. This could be a future feature.
     const result = crop?.id 
       ? await updateCrop(user.uid, crop.id, { ...cropData, calendar: crop.calendar }) 
       : await addCrop(user.uid, cropData);
