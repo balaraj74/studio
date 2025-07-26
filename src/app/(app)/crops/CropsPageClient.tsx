@@ -232,7 +232,7 @@ interface CropFormDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   crop: Crop | null;
   user: User | null;
-  onFormSubmit: () => void;
+  onFormSubmit: () => Promise<void>;
 }
 
 function CropFormDialog({
@@ -290,8 +290,8 @@ function CropFormDialog({
 
     if (result.success) {
         toast({ title: `Crop ${crop ? "updated" : "added"} successfully.` });
+        await onFormSubmit();
         onOpenChange(false);
-        onFormSubmit();
     } else {
         toast({ variant: "destructive", title: "Error", description: result.error });
     }
