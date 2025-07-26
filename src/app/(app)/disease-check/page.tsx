@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2 } from "lucide-react";
 import Image from "next/image";
 import {
   diagnoseCropDisease,
@@ -27,11 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const MAX_IMAGES = 5;
 
 const supportedLanguages = [
-    { value: 'English', label: 'English' },
-    { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)' },
-    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
-    { value: 'Tamil', label: 'Tamil (தமிழ்)' },
-    { value: 'Telugu', label: 'Telugu (తెలుగు)' },
+    { value: 'English', label: 'English', langCode: 'en-US' },
+    { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)', langCode: 'kn-IN' },
+    { value: 'Hindi', label: 'Hindi (हिन्दी)', langCode: 'hi-IN' },
+    { value: 'Tamil', label: 'Tamil (தமிழ்)', langCode: 'ta-IN' },
+    { value: 'Telugu', label: 'Telugu (తెలుగు)', langCode: 'te-IN' },
 ];
 
 export default function DiseaseCheckPage() {
@@ -43,10 +43,22 @@ export default function DiseaseCheckPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    // Load voices for TTS
+    const loadVoices = () => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            setVoices(window.speechSynthesis.getVoices());
+        }
+    };
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
     // Clean up preview URLs when component unmounts
     return () => {
       previewUrls.forEach(URL.revokeObjectURL);
@@ -172,6 +184,41 @@ export default function DiseaseCheckPage() {
       fileInputRef.current.value = "";
     }
   }
+
+  const handleSpeak = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Stop any previous speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      const langInfo = supportedLanguages.find(l => l.value === language);
+      if(langInfo) {
+        utterance.lang = langInfo.langCode;
+        const voice = voices.find(v => v.lang === langInfo.langCode);
+        if (voice) {
+          utterance.voice = voice;
+        }
+      }
+      window.speechSynthesis.speak(utterance);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "TTS Not Supported",
+        description: "Your browser does not support text-to-speech.",
+      });
+    }
+  };
+
+  const ResultSection = ({ title, content, icon: Icon }: { title: string, content: string, icon: React.ElementType }) => (
+    <div>
+        <div className="flex items-center justify-between">
+            <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content)}>
+                <Volume2 className="h-4 w-4" />
+                <span className="sr-only">Read aloud</span>
+            </Button>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -330,18 +377,11 @@ export default function DiseaseCheckPage() {
                             <p className="font-semibold">{result.diseaseDiagnosis.affectedParts?.join(', ') || 'N/A'}</p>
                         </div>
                     </div>
-                    <div>
-                        <Label className="text-lg font-semibold flex items-center gap-2"><ListOrdered className="h-5 w-5 text-primary" /> Suggested Remedy</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.suggestedRemedy}</p>
-                    </div>
-                     <div>
-                        <Label className="text-lg font-semibold flex items-center gap-2"><Leaf className="h-5 w-5 text-primary" /> Alternative Home Remedies</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.alternativeRemedies}</p>
-                    </div>
-                     <div>
-                        <Label className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Preventive Measures</Label>
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{result.diseaseDiagnosis.preventiveMeasures}</p>
-                    </div>
+                    
+                    <ResultSection title="Suggested Remedy" content={result.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} />
+                    <ResultSection title="Alternative Home Remedies" content={result.diseaseDiagnosis.alternativeRemedies} icon={Leaf} />
+                    <ResultSection title="Preventive Measures" content={result.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} />
+
                 </CardContent>
             </Card>
             ) : (
