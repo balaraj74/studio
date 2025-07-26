@@ -3,12 +3,14 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import Image from "next/image";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -23,12 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, CalendarIcon, CheckCircle2, Circle, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarIcon, CheckCircle2, Circle, Clock, MapPin, Wind, Thermometer } from "lucide-react";
 import type { Crop, CropStatus, CropTask } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -51,7 +47,6 @@ import { useToast } from "@/hooks/use-toast";
 import { getCrops, addCrop, updateCrop, deleteCrop, type CropFormInput } from "@/lib/actions/crops";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { User } from 'firebase/auth';
-
 
 const statusStyles: { [key in CropStatus]: string } = {
   Planned: "bg-yellow-500/20 text-yellow-700 hover:bg-yellow-500/30 border-yellow-500/30",
@@ -77,7 +72,9 @@ export default function CropsPageClient() {
   };
 
   useEffect(() => {
-    fetchCrops();
+    if (user) {
+        fetchCrops();
+    }
   }, [user]);
 
   const handleAddNew = () => {
@@ -91,7 +88,7 @@ export default function CropsPageClient() {
   };
 
   const handleDelete = async (cropId: string) => {
-    if (!user) return;
+    if (!user || !confirm("Are you sure you want to delete this crop?")) return;
     const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
@@ -124,10 +121,18 @@ export default function CropsPageClient() {
   const renderContent = () => {
      if (isLoading) {
       return (
-        <div className="space-y-3">
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
-            <Skeleton className="h-24 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({length: 3}).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
+                    <Skeleton className="h-40 w-full" />
+                    <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+                    <CardContent className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                    </CardContent>
+                    <CardFooter><Skeleton className="h-10 w-full" /></CardFooter>
+                </Card>
+            ))}
         </div>
       );
     }
@@ -141,38 +146,51 @@ export default function CropsPageClient() {
     }
     
     return (
-        <Accordion type="single" collapsible className="w-full space-y-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {crops.map((crop) => (
-                <AccordionItem value={crop.id} key={crop.id} className="border rounded-xl bg-card">
-                   <AccordionTrigger className="p-4 hover:no-underline">
-                     <div className="flex justify-between items-center w-full">
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 text-left">
-                                <p className="font-bold text-base">{crop.name}</p>
-                                <p className="text-sm text-muted-foreground">{crop.region || "No region"}</p>
+               <Card key={crop.id} className="flex flex-col overflow-hidden">
+                   <div className="relative h-40 w-full">
+                     <Image 
+                        src={`https://placehold.co/600x400.png`} 
+                        alt={crop.name} 
+                        fill 
+                        className="object-cover"
+                        data-ai-hint={`${crop.name} field`}
+                    />
+                    <Badge className={cn("absolute top-3 right-3 border", statusStyles[crop.status])}>{crop.status}</Badge>
+                   </div>
+                   <CardHeader>
+                        <CardTitle>{crop.name}</CardTitle>
+                        {crop.region && <CardDescription className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {crop.region}</CardDescription>}
+                   </CardHeader>
+                   <CardContent className="flex-grow space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="text-center p-2 rounded-md bg-muted/50">
+                                <p className="font-bold">6.8</p>
+                                <p className="text-xs text-muted-foreground">Soil pH</p>
+                            </div>
+                            <div className="text-center p-2 rounded-md bg-muted/50">
+                                <p className="font-bold">Good</p>
+                                <p className="text-xs text-muted-foreground">Quality</p>
+                            </div>
+                            <div className="text-center p-2 rounded-md bg-muted/50">
+                                <p className="font-bold">Balanced</p>
+                                <p className="text-xs text-muted-foreground">Fertilizer</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                           <Badge className={cn("border", statusStyles[crop.status])}>{crop.status}</Badge>
-                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEdit(crop); }}><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(crop.id); }}><Trash2 className="h-4 w-4" /></Button>
-                        </div>
-                     </div>
-                   </AccordionTrigger>
-                   <AccordionContent className="px-4 pb-4">
-                        <div className="border-t pt-4">
-                            <h4 className="font-semibold mb-2">Crop Calendar</h4>
+                         <div>
+                            <h4 className="font-semibold text-sm mb-2">Next Task</h4>
                             {crop.calendar && crop.calendar.length > 0 ? (
-                                <ul className="space-y-3">
-                                    {crop.calendar.sort((a,b) => a.startDate.getTime() - b.startDate.getTime()).map((task, index) => (
-                                        <li key={index} className="flex items-center gap-3">
+                                <div className="space-y-3">
+                                    {crop.calendar.filter(t => !t.isCompleted).sort((a,b) => a.startDate.getTime() - b.startDate.getTime()).slice(0, 1).map((task, index) => (
+                                        <div key={index} className="flex items-center gap-3">
                                             <Checkbox 
-                                                id={`task-${crop.id}-${index}`}
+                                                id={`task-${crop.id}-${index}-card`}
                                                 checked={task.isCompleted} 
-                                                onCheckedChange={(checked) => handleTaskToggle(crop, index, !!checked)}
+                                                onCheckedChange={(checked) => handleTaskToggle(crop, crop.calendar.indexOf(task), !!checked)}
                                             />
                                             <div className="flex-1">
-                                                <Label htmlFor={`task-${crop.id}-${index}`} className={cn("font-medium", task.isCompleted && "line-through text-muted-foreground")}>
+                                                <Label htmlFor={`task-${crop.id}-${index}-card`} className="font-medium">
                                                     {task.taskName}
                                                 </Label>
                                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -180,17 +198,21 @@ export default function CropsPageClient() {
                                                     {format(task.startDate, "MMM d")} - {format(task.endDate, "MMM d")}
                                                 </p>
                                             </div>
-                                        </li>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">No calendar generated for this crop. Edit the crop and add a region to generate one.</p>
+                                <p className="text-sm text-muted-foreground">No upcoming tasks. Edit crop to generate a calendar.</p>
                             )}
                         </div>
-                   </AccordionContent>
-                </AccordionItem>
+                   </CardContent>
+                   <CardFooter className="grid grid-cols-2 gap-2">
+                        <Button variant="outline" onClick={() => handleEdit(crop)}><Pencil className="mr-2" /> Edit</Button>
+                        <Button variant="destructive-outline" onClick={() => handleDelete(crop.id)}><Trash2 className="mr-2" /> Delete</Button>
+                   </CardFooter>
+                </Card>
             ))}
-        </Accordion>
+        </div>
     );
   }
 
@@ -427,3 +449,5 @@ function CropFormDialog({
     </Dialog>
   );
 }
+
+    
