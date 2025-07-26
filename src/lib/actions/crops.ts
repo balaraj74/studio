@@ -2,11 +2,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy } from 'firebase-admin/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, getDoc } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase/admin';
 import type { Crop, CropTask } from '@/types';
 import { generateCropCalendar, AIGeneratedTask } from '@/ai/flows/generate-crop-calendar';
-import { parse, isValid, setYear } from 'date-fns';
+import { parse, isValid, getYear } from 'date-fns';
 
 // This is the data shape for client-to-server communication, ensuring dates are strings.
 export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate' | 'calendar'> & {
@@ -99,9 +99,12 @@ export async function addCrop(userId: string, data: CropFormInput) {
         if (data.region && data.name) {
             try {
                 const { tasks } = await generateCropCalendar({ cropName: data.name, region: data.region });
-                const currentYear = new Date().getFullYear();
+                // Use the year from plantedDate if available, otherwise use the current year
+                const referenceDate = data.plantedDate ? new Date(data.plantedDate) : new Date();
+                const calendarYear = getYear(referenceDate);
+
                 calendar = tasks.map((task: AIGeneratedTask) => {
-                    const { startDate, endDate } = parseDateRange(task.dateRange, currentYear);
+                    const { startDate, endDate } = parseDateRange(task.dateRange, calendarYear);
                     return {
                         taskName: task.taskName,
                         startDate,
@@ -147,21 +150,27 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
         
         const dataToUpdate: any = { ...data };
 
+        // Convert any date strings to Timestamps
         if (data.plantedDate) {
             dataToUpdate.plantedDate = Timestamp.fromDate(new Date(data.plantedDate));
         }
         if (data.harvestDate) {
             dataToUpdate.harvestDate = Timestamp.fromDate(new Date(data.harvestDate));
         }
+
+        // Handle calendar updates specifically
         if (data.calendar) {
             dataToUpdate.calendar = data.calendar.map(task => ({
                 ...task,
+                // Ensure dates from client are converted to Timestamps
                 startDate: Timestamp.fromDate(new Date(task.startDate)),
                 endDate: Timestamp.fromDate(new Date(task.endDate)),
             }));
         }
 
+        // Use update instead of set with merge to avoid overwriting nested fields
         await cropRef.update(dataToUpdate);
+
         revalidatePath('/crops');
         return { success: true };
     } catch (error) {

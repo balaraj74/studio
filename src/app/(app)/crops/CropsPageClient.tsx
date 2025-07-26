@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Trash2, CalendarIcon, CheckCircle2, Circle, Clock, MapPin, Wind, Thermometer } from "lucide-react";
+import { Plus, Pencil, Trash2, CalendarIcon, Clock, MapPin } from "lucide-react";
 import type { Crop, CropStatus, CropTask } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -153,7 +153,9 @@ export default function CropsPageClient() {
     
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {crops.map((crop) => (
+            {crops.map((crop) => {
+               const nextTask = crop.calendar?.filter(t => !t.isCompleted).sort((a,b) => a.startDate.getTime() - b.startDate.getTime())[0];
+               return (
                <Card key={crop.id} className="flex flex-col overflow-hidden">
                    <div className="relative h-40 w-full">
                      <Image 
@@ -186,32 +188,27 @@ export default function CropsPageClient() {
                         </div>
                          <div>
                             <h4 className="font-semibold text-sm mb-2">Next Task</h4>
-                            {crop.calendar && crop.calendar.length > 0 ? (
-                                <div className="space-y-3">
-                                    {crop.calendar.filter(t => !t.isCompleted).sort((a,b) => a.startDate.getTime() - b.startDate.getTime()).slice(0, 1).map((task, index) => (
-                                        <div key={index} className="flex items-center gap-3">
-                                            <Checkbox 
-                                                id={`task-${crop.id}-${index}-card`}
-                                                checked={task.isCompleted} 
-                                                onCheckedChange={(checked) => handleTaskToggle(crop, crop.calendar.indexOf(task), !!checked)}
-                                            />
-                                            <div className="flex-1">
-                                                <Label htmlFor={`task-${crop.id}-${index}-card`} className="font-medium">
-                                                    {task.taskName}
-                                                </Label>
-                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                                    <Clock className="h-3 w-3" />
-                                                    {format(task.startDate, "MMM d")} - {format(task.endDate, "MMM d")}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {crop.calendar.filter(t => !t.isCompleted).length === 0 && (
-                                      <p className="text-sm text-muted-foreground">All tasks completed!</p>
-                                    )}
+                            {nextTask ? (
+                                <div className="flex items-center gap-3">
+                                    <Checkbox 
+                                        id={`task-${crop.id}-${crop.calendar.indexOf(nextTask)}`}
+                                        checked={nextTask.isCompleted} 
+                                        onCheckedChange={(checked) => handleTaskToggle(crop, crop.calendar.indexOf(nextTask), !!checked)}
+                                    />
+                                    <div className="flex-1">
+                                        <Label htmlFor={`task-${crop.id}-${crop.calendar.indexOf(nextTask)}`} className="font-medium">
+                                            {nextTask.taskName}
+                                        </Label>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                            <Clock className="h-3 w-3" />
+                                            {format(nextTask.startDate, "MMM d")} - {format(nextTask.endDate, "MMM d")}
+                                        </p>
+                                    </div>
                                 </div>
+                            ) : crop.calendar && crop.calendar.length > 0 ? (
+                                <p className="text-sm text-muted-foreground">All tasks completed!</p>
                             ) : (
-                                <p className="text-sm text-muted-foreground">No upcoming tasks. Edit crop to generate a calendar.</p>
+                                <p className="text-sm text-muted-foreground">No calendar generated. Edit crop to create one.</p>
                             )}
                         </div>
                    </CardContent>
@@ -220,7 +217,7 @@ export default function CropsPageClient() {
                         <Button variant="destructive-outline" onClick={() => handleDelete(crop.id)}><Trash2 className="mr-2 h-4 w-4" /> Delete</Button>
                    </CardFooter>
                 </Card>
-            ))}
+            )})}
         </div>
     );
   }
