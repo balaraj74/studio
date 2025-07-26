@@ -48,22 +48,29 @@ export default function DiseaseCheckPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load voices for TTS
+    // Function to load voices
     const loadVoices = () => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
-            setVoices(window.speechSynthesis.getVoices());
+            const availableVoices = window.speechSynthesis.getVoices();
+            setVoices(availableVoices);
         }
     };
+
+    // The 'onvoiceschanged' event is fired when the list of voices has been loaded.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
     }
+
+    // Call it once to get the initial list of voices
     loadVoices();
 
     // Clean up preview URLs when component unmounts
     return () => {
       previewUrls.forEach(URL.revokeObjectURL);
     };
-  }, [previewUrls]);
+    // The dependency array is empty to ensure this runs only once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -190,13 +197,19 @@ export default function DiseaseCheckPage() {
       window.speechSynthesis.cancel(); // Stop any previous speech
       const utterance = new SpeechSynthesisUtterance(text);
       const langInfo = supportedLanguages.find(l => l.value === language);
+      
       if(langInfo) {
+        // Set the language of the utterance
         utterance.lang = langInfo.langCode;
+        // Try to find a voice that matches the language
         const voice = voices.find(v => v.lang === langInfo.langCode);
         if (voice) {
           utterance.voice = voice;
+        } else {
+            console.warn(`No voice found for ${langInfo.langCode}. Using browser default for the language.`);
         }
       }
+      
       window.speechSynthesis.speak(utterance);
     } else {
       toast({
