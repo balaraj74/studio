@@ -11,14 +11,6 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -31,6 +23,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,8 +42,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, CalendarIcon } from "lucide-react";
-import type { Crop, CropStatus } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, Trash2, CalendarIcon, CheckCircle2, Circle, Clock } from "lucide-react";
+import type { Crop, CropStatus, CropTask } from "@/types";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -105,6 +104,21 @@ export default function CropsPageClient() {
       });
     }
   };
+  
+  const handleTaskToggle = async (crop: Crop, taskIndex: number, isCompleted: boolean) => {
+    if (!user) return;
+
+    const updatedCalendar = [...crop.calendar];
+    updatedCalendar[taskIndex] = { ...updatedCalendar[taskIndex], isCompleted };
+
+    const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
+    if (result.success) {
+      // Optimistically update UI
+      setCrops(prevCrops => prevCrops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c));
+    } else {
+      toast({ variant: "destructive", title: "Update failed", description: "Could not save task status." });
+    }
+  };
 
   const onFormSubmit = async () => {
     if(user) {
@@ -113,104 +127,94 @@ export default function CropsPageClient() {
     }
   }
 
+  const renderContent = () => {
+     if (isLoading) {
+      return (
+        <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+        </div>
+      );
+    }
+    
+    if (crops.length === 0) {
+      return (
+        <div className="text-center py-10">
+          <p className="text-muted-foreground">No crops found. Add your first crop to get started.</p>
+        </div>
+      );
+    }
+    
+    return (
+        <Accordion type="single" collapsible className="w-full space-y-2">
+            {crops.map((crop) => (
+                <AccordionItem value={crop.id} key={crop.id} className="border rounded-xl bg-card">
+                   <AccordionTrigger className="p-4 hover:no-underline">
+                     <div className="flex justify-between items-center w-full">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 text-left">
+                                <p className="font-bold text-base">{crop.name}</p>
+                                <p className="text-sm text-muted-foreground">{crop.region || "No region"}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <Badge className={cn("border", statusStyles[crop.status])}>{crop.status}</Badge>
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEdit(crop); }}><Pencil className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(crop.id); }}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                     </div>
+                   </AccordionTrigger>
+                   <AccordionContent className="px-4 pb-4">
+                        <div className="border-t pt-4">
+                            <h4 className="font-semibold mb-2">Crop Calendar</h4>
+                            {crop.calendar && crop.calendar.length > 0 ? (
+                                <ul className="space-y-3">
+                                    {crop.calendar.sort((a,b) => a.startDate.getTime() - b.startDate.getTime()).map((task, index) => (
+                                        <li key={index} className="flex items-center gap-3">
+                                            <Checkbox 
+                                                id={`task-${crop.id}-${index}`}
+                                                checked={task.isCompleted} 
+                                                onCheckedChange={(checked) => handleTaskToggle(crop, index, !!checked)}
+                                            />
+                                            <div className="flex-1">
+                                                <Label htmlFor={`task-${crop.id}-${index}`} className={cn("font-medium", task.isCompleted && "line-through text-muted-foreground")}>
+                                                    {task.taskName}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                                    <Clock className="h-3 w-3" />
+                                                    {format(task.startDate, "MMM d")} - {format(task.endDate, "MMM d")}
+                                                </p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">No calendar generated for this crop. Edit the crop and add a region to generate one.</p>
+                            )}
+                        </div>
+                   </AccordionContent>
+                </AccordionItem>
+            ))}
+        </Accordion>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div className="hidden md:block">
           <h1 className="text-3xl font-bold">Crop Management</h1>
           <p className="text-muted-foreground">
-            Manage your crops and track their growth cycle.
+            Manage your crops and track their growth cycle and tasks.
           </p>
         </div>
         <Button onClick={handleAddNew}>
           <Plus className="mr-2 h-4 w-4" /> Add New Crop
         </Button>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Crops</CardTitle>
-          <CardDescription>
-            A list of all crops you are currently tracking on your farm.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Crop Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Planted</TableHead>
-                  <TableHead>Harvest</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-[100px]" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-[90px] rounded-full" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-[90px]" /></TableCell>
-                        <TableCell className="text-right space-x-1"><Skeleton className="h-8 w-8 inline-block" /><Skeleton className="h-8 w-8 inline-block" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : crops.length > 0 ? (
-                  crops.map((crop) => (
-                    <TableRow key={crop.id}>
-                      <TableCell className="font-medium">{crop.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={cn("border", statusStyles[crop.status])}
-                        >
-                          {crop.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {crop.plantedDate
-                          ? format(crop.plantedDate, "dd MMM, yy")
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {crop.harvestDate
-                          ? format(crop.harvestDate, "dd MMM, yy")
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(crop)}
-                          aria-label="Edit crop"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(crop.id)}
-                          className="text-destructive hover:text-destructive"
-                          aria-label="Delete crop"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">
-                      No crops found. Add your first crop to get started.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      
+      {renderContent()}
 
       <CropFormDialog
         isOpen={isDialogOpen}
@@ -240,6 +244,7 @@ function CropFormDialog({
 }: CropFormDialogProps) {
   const [name, setName] = useState("");
   const [status, setStatus] = useState<CropStatus>("Planned");
+  const [region, setRegion] = useState("");
   const [plantedDate, setPlantedDate] = useState<Date | undefined>();
   const [harvestDate, setHarvestDate] = useState<Date | undefined>();
   const [notes, setNotes] = useState("");
@@ -250,6 +255,7 @@ function CropFormDialog({
     if (isOpen) {
       setName(crop?.name || "");
       setStatus(crop?.status || "Planned");
+      setRegion(crop?.region || "");
       setPlantedDate(crop?.plantedDate ? new Date(crop.plantedDate) : undefined);
       setHarvestDate(crop?.harvestDate ? new Date(crop.harvestDate) : undefined);
       setNotes(crop?.notes || "");
@@ -272,11 +278,15 @@ function CropFormDialog({
         name,
         status,
         notes,
+        region,
         plantedDate: plantedDate ? plantedDate.toISOString() : null,
         harvestDate: harvestDate ? harvestDate.toISOString() : null,
     };
 
-    const result = crop?.id ? await updateCrop(user.uid, crop.id, cropData) : await addCrop(user.uid, cropData);
+    // For updates, we don't re-generate the calendar. This could be a future feature.
+    const result = crop?.id 
+      ? await updateCrop(user.uid, crop.id, { ...cropData, calendar: crop.calendar }) 
+      : await addCrop(user.uid, cropData);
 
     if (result.success) {
         toast({ title: `Crop ${crop ? "updated" : "added"} successfully.` });
@@ -297,7 +307,7 @@ function CropFormDialog({
           <DialogDescription>
             {crop
               ? "Update the details for your crop."
-              : "Fill in the details for your new crop."}
+              : "Fill in the details for your new crop to generate its calendar."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -310,7 +320,21 @@ function CropFormDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="col-span-3"
+              placeholder="e.g. Paddy"
               disabled={isSubmitting}
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="region" className="text-right">
+              Region
+            </Label>
+            <Input
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
+              className="col-span-3"
+              placeholder="e.g. Karnataka"
+              disabled={isSubmitting || !!crop?.id} // Disable for edit
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

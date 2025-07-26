@@ -17,6 +17,13 @@ export interface Scheme {
 
 export type CropStatus = "Planned" | "Growing" | "Harvested";
 
+export interface CropTask {
+  taskName: string;
+  startDate: Date;
+  endDate: Date;
+  isCompleted: boolean;
+}
+
 export interface Crop {
   id: string;
   name: string;
@@ -24,6 +31,8 @@ export interface Crop {
   plantedDate: Date | null;
   harvestDate: Date | null;
   notes: string | null;
+  calendar: CropTask[];
+  region: string | null;
 }
 
 export type ExpenseCategory = "Seeds" | "Fertilizer" | "Labor" | "Equipment" | "Other";
