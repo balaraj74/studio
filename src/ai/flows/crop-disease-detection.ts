@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Identifies a plant from an image and diagnoses any diseases, providing treatment advice.
+ * @fileOverview Identifies a plant from an image and diagnoses any diseases, providing treatment advice in a specified language.
  *
  * - diagnoseCropDisease - A function that handles the plant identification and diagnosis process.
  * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
@@ -19,22 +19,23 @@ const DiagnoseCropDiseaseInputSchema = z.object({
     latitude: z.number(),
     longitude: z.number(),
   }).describe("The geolocation where the images were taken."),
+  language: z.string().default('English').describe("The language for the output, e.g., 'English', 'Kannada', 'Hindi'.")
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
   plantIdentification: z.object({
       isPlant: z.boolean().describe("Confirms if the image contains a plant."),
-      plantName: z.string().describe("The common name of the identified plant. 'Unknown' if not identifiable."),
+      plantName: z.string().describe("The common name of the identified plant in the requested language. 'Unknown' if not identifiable."),
       confidence: z.number().min(0).max(1).describe("The AI's confidence in the plant identification, from 0.0 to 1.0."),
   }),
   diseaseDiagnosis: z.object({
-    diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency. 'Healthy' if no issue is found."),
+    diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency in the requested language. 'Healthy' if no issue is found."),
     severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
-    affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
-    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan."),
-    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future."),
-    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried."),
+    affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit') in the requested language."),
+    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan, written in the requested language."),
+    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future, written in the requested language."),
+    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried, written in the requested language."),
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
 });
@@ -43,36 +44,6 @@ export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutput
 export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Promise<DiagnoseCropDiseaseOutput> {
   return diagnoseCropDiseaseFlow(input);
 }
-
-const diagnoseCropDiseasePromptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
-1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
-2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
-
-Return a detailed diagnosis with:
-  - Plant Identification: { isPlant, plantName, confidence }
-  - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
-
-IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
-
-Use the following contextual information to refine your analysis, especially the weather conditions.
-
-CONTEXT:
-- Geolocation: Latitude {{geolocation.latitude}}, Longitude {{geolocation.longitude}}
-- Current Weather: {{json weather}}
-`;
-
-const prompt = ai.definePrompt({
-  name: 'diagnoseCropDiseasePrompt',
-  input: {
-    schema: z.object({
-        geolocation: DiagnoseCropDiseaseInputSchema.shape.geolocation,
-        weather: z.any().optional().describe("Current weather conditions at the location."),
-    })
-  },
-  output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: diagnoseCropDiseasePromptText,
-});
-
 
 const diagnoseCropDiseaseFlow = ai.defineFlow(
   {
@@ -93,9 +64,11 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
           console.warn("Could not fetch weather data, proceeding without it.", weatherError);
       }
       
-      // 2. Build the final text prompt with weather data
+      // 2. Build the final text prompt with weather data and language instruction
       const weatherInfo = weatherData ? JSON.stringify(weatherData, null, 2) : "Not available";
       const promptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
+IMPORTANT: Generate the entire response, including all names and descriptions, in the following language: ${input.language}.
+
 1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
 2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
 

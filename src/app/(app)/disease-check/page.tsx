@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages } from "lucide-react";
 import Image from "next/image";
 import {
   diagnoseCropDisease,
@@ -22,13 +22,23 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const MAX_IMAGES = 5;
+
+const supportedLanguages = [
+    { value: 'English', label: 'English' },
+    { value: 'Kannada', label: 'Kannada (ಕನ್ನಡ)' },
+    { value: 'Hindi', label: 'Hindi (हिन्दी)' },
+    { value: 'Tamil', label: 'Tamil (தமிழ்)' },
+    { value: 'Telugu', label: 'Telugu (తెలుగు)' },
+];
 
 export default function DiseaseCheckPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [language, setLanguage] = useState<string>('English');
   const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusText, setStatusText] = useState("");
@@ -122,7 +132,8 @@ export default function DiseaseCheckPage() {
       setStatusText("Analyzing with AI...");
       const diagnosisResult = await diagnoseCropDisease({ 
           imageUris,
-          geolocation: location
+          geolocation: location,
+          language: language
       });
 
       if (!diagnosisResult.plantIdentification.isPlant) {
@@ -156,6 +167,7 @@ export default function DiseaseCheckPage() {
     setLocation(null);
     setResult(null);
     setError(null);
+    setLanguage('English');
     if(fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -180,10 +192,24 @@ export default function DiseaseCheckPage() {
             <CardHeader>
             <CardTitle>1. Provide Inputs</CardTitle>
             <CardDescription>
-                Add up to 5 clear leaf images and your location.
+                Add images, location, and preferred language.
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="language">Response Language</Label>
+                 <Select value={language} onValueChange={setLanguage} disabled={isLoading}>
+                    <SelectTrigger id="language">
+                        <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {supportedLanguages.map(lang => (
+                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label>Location</Label>
                 <Button 
