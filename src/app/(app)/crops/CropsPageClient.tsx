@@ -76,6 +76,10 @@ export default function CropsPageClient() {
           } finally {
             setIsLoading(false);
           }
+        } else {
+            // Handle case where user is not logged in or becomes null
+            setIsLoading(false);
+            setCrops([]);
         }
     }
     fetchInitialCrops();
@@ -106,7 +110,7 @@ export default function CropsPageClient() {
     const result = await deleteCrop(user.uid, cropId);
     if (result.success) {
       toast({ title: "Crop deleted successfully." });
-      await onFormSubmit();
+      onFormSubmit(); // Re-fetch data
     } else {
       toast({
         variant: "destructive",
@@ -121,21 +125,18 @@ export default function CropsPageClient() {
     const taskId = `${crop.id}-${taskIndex}`;
     setTogglingTaskId(taskId);
 
-    // Optimistic update
     const originalCrops = [...crops];
     const updatedCalendar = [...crop.calendar];
     updatedCalendar[taskIndex] = { ...updatedCalendar[taskIndex], isCompleted };
     const updatedCrops = crops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c);
     setCrops(updatedCrops);
 
-    // Server update
     const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
     
     setTogglingTaskId(null);
 
     if (!result.success) {
       toast({ variant: "destructive", title: "Update failed", description: "Could not save task status." });
-      // Revert optimistic update on failure
       setCrops(originalCrops);
     }
   };

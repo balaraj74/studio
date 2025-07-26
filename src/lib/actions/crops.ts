@@ -142,31 +142,34 @@ export async function addCrop(userId: string, data: CropFormInput) {
     }
 }
 
-export async function updateCrop(userId: string, id: string, data: Partial<CropFormInput & { calendar: CropTask[] }>) {
+export async function updateCrop(userId: string, id: string, data: Partial<CropFormInput & { calendar?: CropTask[] }>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const db = getAdminDb();
         const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
-        
+
         const dataToUpdate: { [key: string]: any } = {};
 
-        // Iterate over the keys in the input data and build the update object.
-        // This prevents trying to access properties that don't exist on `data`.
+        // Convert dates in the partial data to Timestamps
+        if (data.plantedDate) {
+            dataToUpdate.plantedDate = Timestamp.fromDate(new Date(data.plantedDate));
+        }
+        if (data.harvestDate) {
+            dataToUpdate.harvestDate = Timestamp.fromDate(new Date(data.harvestDate));
+        }
+        if (data.calendar) {
+            dataToUpdate.calendar = data.calendar.map(task => ({
+                ...task,
+                startDate: Timestamp.fromDate(new Date(task.startDate)),
+                endDate: Timestamp.fromDate(new Date(task.endDate)),
+            }));
+        }
+
+        // Add other non-date fields from `data` to `dataToUpdate`
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                const value = data[key as keyof typeof data];
-                if (key === 'plantedDate' && value) {
-                    dataToUpdate[key] = Timestamp.fromDate(new Date(value as string));
-                } else if (key === 'harvestDate' && value) {
-                    dataToUpdate[key] = Timestamp.fromDate(new Date(value as string));
-                } else if (key === 'calendar' && Array.isArray(value)) {
-                     dataToUpdate[key] = value.map(task => ({
-                        ...task,
-                        startDate: Timestamp.fromDate(new Date(task.startDate)),
-                        endDate: Timestamp.fromDate(new Date(task.endDate)),
-                    }));
-                } else if (value !== undefined) {
-                    dataToUpdate[key] = value;
+                if (key !== 'plantedDate' && key !== 'harvestDate' && key !== 'calendar') {
+                    dataToUpdate[key] = data[key as keyof typeof data];
                 }
             }
         }
