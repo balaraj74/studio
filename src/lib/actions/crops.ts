@@ -95,7 +95,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
         const cropsCollection = getCropsCollection(db, userId);
 
         let calendar: CropTask[] = [];
-        // 1. Generate calendar from AI if region is provided
+        // 1. Generate calendar from AI if region and crop name are provided
         if (data.region && data.name) {
             try {
                 const { tasks } = await generateCropCalendar({ cropName: data.name, region: data.region });
@@ -113,7 +113,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
                     };
                 });
             } catch (aiError) {
-                console.error("Failed to generate crop calendar from AI:", aiError);
+                console.error("AI Calendar generation failed:", aiError);
                 // Don't fail the whole operation, just proceed without a calendar
             }
         }
@@ -146,39 +146,31 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const db = getAdminDb();
-        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
+        const cropRef = doc(db, 'users', userId, 'crops', id);
 
         const dataToUpdate: { [key: string]: any } = {};
 
-        // Convert dates in the partial data to Timestamps
-        if (data.plantedDate) {
-            dataToUpdate.plantedDate = Timestamp.fromDate(new Date(data.plantedDate));
-        }
-        if (data.harvestDate) {
-            dataToUpdate.harvestDate = Timestamp.fromDate(new Date(data.harvestDate));
-        }
-        if (data.calendar) {
-            dataToUpdate.calendar = data.calendar.map(task => ({
-                ...task,
-                startDate: Timestamp.fromDate(new Date(task.startDate)),
-                endDate: Timestamp.fromDate(new Date(task.endDate)),
-            }));
-        }
-
-        // Add other non-date fields from `data` to `dataToUpdate`
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                if (key !== 'plantedDate' && key !== 'harvestDate' && key !== 'calendar') {
-                    dataToUpdate[key] = data[key as keyof typeof data];
-                }
+        // Iterate over the provided data and prepare it for Firestore
+        Object.keys(data).forEach(key => {
+            const value = data[key as keyof typeof data];
+            if (key === 'plantedDate' || key === 'harvestDate') {
+                if(value) dataToUpdate[key] = Timestamp.fromDate(new Date(value as string));
+            } else if (key === 'calendar' && Array.isArray(value)) {
+                 dataToUpdate[key] = value.map(task => ({
+                    ...task,
+                    startDate: Timestamp.fromDate(new Date(task.startDate)),
+                    endDate: Timestamp.fromDate(new Date(task.endDate)),
+                }));
+            } else {
+                dataToUpdate[key] = value;
             }
-        }
-        
+        });
+
         if (Object.keys(dataToUpdate).length === 0) {
             return { success: true, message: "No changes to update." };
         }
 
-        await cropRef.update(dataToUpdate);
+        await updateDoc(cropRef, dataToUpdate);
 
         revalidatePath('/crops');
         return { success: true };
@@ -202,3 +194,5 @@ export async function deleteCrop(userId: string, id: string) {
         return { success: false, error: 'Failed to delete crop.' };
     }
 }
+
+    

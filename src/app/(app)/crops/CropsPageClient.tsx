@@ -76,8 +76,8 @@ export default function CropsPageClient() {
           } finally {
             setIsLoading(false);
           }
-        } else {
-            // Handle case where user is not logged in or becomes null
+        } else if (!user) {
+            // Handle case where user is not logged in or logs out
             setIsLoading(false);
             setCrops([]);
         }
@@ -128,15 +128,19 @@ export default function CropsPageClient() {
     const originalCrops = [...crops];
     const updatedCalendar = [...crop.calendar];
     updatedCalendar[taskIndex] = { ...updatedCalendar[taskIndex], isCompleted };
+    
+    // Optimistic UI update
     const updatedCrops = crops.map(c => c.id === crop.id ? { ...c, calendar: updatedCalendar } : c);
     setCrops(updatedCrops);
 
+    // Update the backend
     const result = await updateCrop(user.uid, crop.id, { calendar: updatedCalendar });
     
     setTogglingTaskId(null);
 
     if (!result.success) {
       toast({ variant: "destructive", title: "Update failed", description: "Could not save task status." });
+      // Revert UI if update fails
       setCrops(originalCrops);
     }
   };
@@ -162,8 +166,9 @@ export default function CropsPageClient() {
     
     if (crops.length === 0) {
       return (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No crops found. Add your first crop to get started.</p>
+        <div className="text-center py-10 border-2 border-dashed rounded-xl mt-6">
+          <p className="text-muted-foreground font-semibold">No crops found.</p>
+          <p className="text-sm text-muted-foreground mt-1">Add your first crop to get started.</p>
         </div>
       );
     }
@@ -374,7 +379,7 @@ function CropFormDialog({
               onChange={(e) => setRegion(e.target.value)}
               className="col-span-3"
               placeholder="e.g. Karnataka"
-              disabled={isSubmitting || !!crop?.id} // Disable for edit
+              disabled={isSubmitting}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -474,3 +479,5 @@ function CropFormDialog({
     </Dialog>
   );
 }
+
+    
