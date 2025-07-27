@@ -18,8 +18,8 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-0 left-0 w-full z-50 md:hidden">
-      <nav className="h-20 border-t border-white/20 bg-black/10 p-2 backdrop-blur-lg shadow-2xl shadow-black/40">
+    <div className="fixed bottom-0 left-0 w-full z-50 md:hidden p-4">
+      <nav className="h-16 border border-white/20 bg-black/30 backdrop-blur-lg shadow-2xl shadow-black/40 rounded-full">
         <div className="grid h-full grid-cols-5 mx-auto">
           {navItems.map((item) => {
               const isActive =
@@ -35,8 +35,8 @@ export function BottomNav() {
                           isActive ? "text-primary" : "text-muted-foreground hover:text-white"
                       )}
                   >
-                      <item.icon className={cn("h-6 w-6 mb-1 transition-all", isActive && "text-primary scale-110")} />
-                      <span className="text-xs font-medium">{item.label}</span>
+                      <item.icon className={cn("h-5 w-5 mb-0.5 transition-all", isActive && "text-primary scale-110")} />
+                      <span className="text-[10px] font-medium">{item.label}</span>
                   </Link>
               )
           })}
