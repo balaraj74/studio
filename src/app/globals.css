@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%;
+    --background: 222 83% 4%;
     --foreground: 210 40% 98%;
     
-    --card: 220 15% 12%;
+    --card: 210 40% 98% / 0.1;
     --card-foreground: 210 40% 98%;
 
     --popover: 220 20% 7%;
@@ -16,10 +16,10 @@
     --primary: 90 60% 55%;
     --primary-foreground: 90 95% 10%;
     
-    --secondary: 220 15% 15%;
+    --secondary: 210 40% 98% / 0.1;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 15% 15%;
+    --muted: 210 40% 98% / 0.05;
     --muted-foreground: 215 20% 65%;
     
     --accent: 90 65% 65%;
@@ -28,18 +28,18 @@
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
+    --border: 210 40% 98% / 0.18;
+    --input: 210 40% 98% / 0.1;
     --ring: 90 60% 65%;
 
     --radius: 1.25rem;
   }
  
   .dark {
-    --background: 220 20% 7%;
+    --background: 222 83% 4%;
     --foreground: 210 40% 98%;
     
-    --card: 220 15% 12%;
+    --card: 210 40% 98% / 0.1;
     --card-foreground: 210 40% 98%;
 
     --popover: 220 20% 7%;
@@ -48,10 +48,10 @@
     --primary: 90 60% 55%;
     --primary-foreground: 90 95% 10%;
     
-    --secondary: 220 15% 15%;
+    --secondary: 210 40% 98% / 0.1;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 220 15% 15%;
+    --muted: 210 40% 98% / 0.05;
     --muted-foreground: 215 20% 65%;
     
     --accent: 90 65% 65%;
@@ -60,8 +60,8 @@
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 220 15% 20%;
-    --input: 220 15% 20%;
+    --border: 210 40% 98% / 0.18;
+    --input: 210 40% 98% / 0.1;
     --ring: 90 60% 65%;
 
     --radius: 1.25rem;
@@ -74,6 +74,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
@@ -81,7 +82,37 @@
 }
 
 @layer utilities {
-    .text-balance {
-        text-wrap: balance;
-    }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+}
+
+/* Overriding ShadCN Card to apply glassmorphism */
+.bg-card {
+    background-color: var(--card) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+}
+
+.bg-muted {
+    background-color: var(--muted) !important;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+.bg-background {
+    background-color: hsl(var(--background)) !important;
+}
+
+.bg-secondary {
+     background-color: var(--secondary) !important;
 }

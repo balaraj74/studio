@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AgrisenceLogo } from '@/components/agrisence-logo';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const GoogleIcon = () => (
   <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2">
@@ -87,19 +88,19 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-dvh p-4 bg-background">
-        <div className="z-20 flex flex-col items-center text-center space-y-6 max-w-sm w-full">
-            <AgrisenceLogo className="h-16 w-16" />
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                    {authMode === 'signin' ? 'Welcome Back' : 'Create an Account'}
-                </h1>
-                <p className="text-base text-muted-foreground">
-                    Your AI partner in modern farming.
-                </p>
-            </div>
-            
-            <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
+    <main className="flex flex-col items-center justify-center min-h-dvh p-4">
+        <Card className="z-20 w-full max-w-sm">
+           <CardHeader className="text-center">
+             <AgrisenceLogo className="h-16 w-16 mx-auto" />
+             <CardTitle className="text-3xl tracking-tight text-foreground">
+                {authMode === 'signin' ? 'Welcome Back' : 'Create an Account'}
+             </CardTitle>
+             <CardDescription>
+                Your AI partner in modern farming.
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
                 {authMode === 'signup' && (
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
@@ -123,12 +124,12 @@ export default function LoginPage() {
                 </Button>
             </form>
 
-            <div className="relative w-full">
+            <div className="relative w-full my-4">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                 </div>
             </div>
 
@@ -150,14 +151,16 @@ export default function LoginPage() {
                   </>
                 )}
             </Button>
-
-            <p className="text-sm text-muted-foreground">
+           </CardContent>
+           <CardFooter className="justify-center">
+             <p className="text-sm text-muted-foreground">
                 {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
-                <Button variant="link" className="px-1" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
+                <Button variant="link" className="px-1 text-accent" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
                     {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
                 </Button>
             </p>
-        </div>
+           </CardFooter>
+        </Card>
     </main>
   );
 }

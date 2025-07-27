@@ -32,8 +32,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col h-dvh bg-background">
-      <header className="sticky top-0 z-40 hidden h-16 items-center justify-between border-b border-white/10 bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:flex">
+    <div className="flex flex-col h-dvh">
+      <header className="sticky top-0 z-40 hidden h-16 items-center justify-between border-b bg-transparent/20 px-4 backdrop-blur-sm sm:px-6 md:flex">
         <Link href="/dashboard" className="flex items-center gap-2">
             <AgrisenceLogo className="h-8 w-auto" />
             <span className="text-xl font-semibold">AgriSence</span>
