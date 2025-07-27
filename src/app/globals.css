@@ -5,32 +5,32 @@
 
 @layer base {
   :root {
-    --background: 80 20% 96%;
-    --foreground: 222 83% 4%;
-
-    --card: 210 40% 98% / 0.1; 
-    --card-foreground: 222 83% 10%;
-
-    --popover: 220 20% 97%;
-    --popover-foreground: 222 83% 4%;
+    --background: 222 83% 4%;
+    --foreground: 210 40% 98%;
     
-    --primary: 88 60% 45%; 
+    --card: 210 40% 98% / 0.1;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 20% 7%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 88 60% 55%;
     --primary-foreground: 88 95% 10%;
     
-    --secondary: 45 66% 80%;
-    --secondary-foreground: 45 95% 10%;
+    --secondary: 210 40% 98% / 0.1;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 88 60% 45% / 0.1;
-    --muted-foreground: 88 40% 30%;
+    --muted: 210 40% 98% / 0.05;
+    --muted-foreground: 215 20% 65%;
     
     --accent: 44 65% 61%;
     --accent-foreground: 44 95% 10%;
     
     --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 210 40% 98%;
     
-    --border: 210 40% 98% / 0.2; /* Frosted glass border */
-    --input: 210 40% 98% / 0.2;
+    --border: 210 40% 98% / 0.2;
+    --input: 210 40% 98% / 0.1;
     --ring: 88 60% 55%;
 
     --radius: 20px;
@@ -75,21 +75,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-size: cover;
-    background-position: center center;
-    background-attachment: fixed;
-    animation: image-slideshow 40s linear infinite;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
-  }
-
-  @keyframes image-slideshow {
-    0% { background-image: url('https://images.unsplash.com/photo-1560493676-0407186f467b?q=80&w=1974&auto=format&fit=crop'); }
-    25% { background-image: url('https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1974&auto=format&fit=crop'); }
-    50% { background-image: url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop'); }
-    75% { background-image: url('https://images.unsplash.com/photo-1586771107445-d3ca888e2c05?q=80&w=2070&auto=format&fit=crop'); }
-    100% { background-image: url('https://images.unsplash.com/photo-1560493676-0407186f467b?q=80&w=1974&auto=format&fit=crop'); }
   }
 }
 
@@ -101,7 +89,7 @@
 
 /* Overriding ShadCN Card to apply glassmorphism */
 .bg-card {
-    background: rgba(255, 255, 255, 0.25) !important;
+    background: hsl(var(--card)) !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
     box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
@@ -157,4 +145,3 @@
     box-shadow: 0 4px 15px 0 hsl(var(--primary) / 0.4);
     background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
 }
-
