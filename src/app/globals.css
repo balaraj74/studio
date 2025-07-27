@@ -75,18 +75,21 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
-    background-size: 200% 200%;
-    animation: gradient-animation 15s ease infinite;
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    animation: image-slideshow 40s linear infinite;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
 
-  @keyframes gradient-animation {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  @keyframes image-slideshow {
+    0% { background-image: url('https://images.unsplash.com/photo-1560493676-0407186f467b?q=80&w=1974&auto=format&fit=crop'); }
+    25% { background-image: url('https://images.unsplash.com/photo-1499529112087-3cb3b73cec95?q=80&w=1974&auto=format&fit=crop'); }
+    50% { background-image: url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2070&auto=format&fit=crop'); }
+    75% { background-image: url('https://images.unsplash.com/photo-1586771107445-d3ca888e2c05?q=80&w=2070&auto=format&fit=crop'); }
+    100% { background-image: url('https://images.unsplash.com/photo-1560493676-0407186f467b?q=80&w=1974&auto=format&fit=crop'); }
   }
 }
 
