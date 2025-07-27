@@ -33,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col h-dvh bg-transparent">
+    <div className="flex flex-col h-dvh">
       <header className={cn(
         "sticky top-0 z-40 hidden h-16 items-center justify-between border-b px-4 backdrop-blur-lg sm:px-6 md:flex",
         "border-white/20 bg-black/30"

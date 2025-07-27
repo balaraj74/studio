@@ -75,8 +75,26 @@
   }
   body {
     @apply text-foreground;
-    background-color: transparent;
+    background-color: hsl(var(--background));
+    position: relative;
   }
+
+  body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: hsl(var(--background) / 0.7);
+    z-index: 0;
+  }
+  
+  main, header, .fixed {
+    position: relative;
+    z-index: 1;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
@@ -88,7 +106,6 @@
   }
 }
 
-/* Overriding ShadCN Card to apply glassmorphism */
 .bg-card {
     background: hsl(var(--card)) !important;
     backdrop-filter: blur(10px) !important;
@@ -147,23 +164,21 @@
     background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
 }
 
-/* New Background Animation */
 @keyframes image-fade {
-  0% { background-image: url('https://placehold.co/1920x1080/000000/FFFFFF.png?text=AI+Farming+1'); opacity: 1; }
-  20% { opacity: 1; }
+  0%, 100% { background-image: url('https://placehold.co/1920x1080/000000/FFFFFF.png?text=AI+Farming+1'); opacity: 1; }
+  22% { opacity: 1; }
   25% { opacity: 0; }
   
   25.001% { background-image: url('https://placehold.co/1920x1080/111111/FFFFFF.png?text=AI+Farming+2'); opacity: 0; }
-  45% { opacity: 1; }
+  47% { opacity: 1; }
   50% { opacity: 0; }
 
   50.001% { background-image: url('https://placehold.co/1920x1080/222222/FFFFFF.png?text=AI+Farming+3'); opacity: 0; }
-  70% { opacity: 1; }
+  72% { opacity: 1; }
   75% { opacity: 0; }
   
   75.001% { background-image: url('https://placehold.co/1920x1080/333333/FFFFFF.png?text=AI+Farming+4'); opacity: 0; }
-  95% { opacity: 1; }
-  100% { opacity: 0; }
+  97% { opacity: 1; }
 }
 
 
@@ -179,14 +194,4 @@
   background-position: center;
   background-repeat: no-repeat;
   animation: image-fade 40s linear infinite;
-}
-
-.animated-bg::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: hsl(var(--background) / 0.7); /* Semi-transparent overlay */
 }
