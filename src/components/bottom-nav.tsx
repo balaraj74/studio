@@ -19,7 +19,7 @@ export function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 w-full z-50 md:hidden">
-      <nav className="h-20 border-t border-white/10 bg-black/30 p-2 backdrop-blur-lg shadow-2xl shadow-black/40">
+      <nav className="h-20 border-t border-white/20 bg-black/10 p-2 backdrop-blur-lg shadow-2xl shadow-black/40">
         <div className="grid h-full grid-cols-5 mx-auto">
           {navItems.map((item) => {
               const isActive =

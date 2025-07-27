@@ -99,9 +99,9 @@ const allTools: QuickLink[] = [
 ];
 
 const AiToolsCard = () => (
-    <Card className="neon-glow">
+    <Card>
         <CardHeader>
-            <CardTitle>AI Hub</CardTitle>
+            <CardTitle className="text-xl font-semibold">AI Hub</CardTitle>
             <CardDescription>Your intelligent farming assistants.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -166,34 +166,38 @@ export default function DashboardPage() {
       
       <WeatherWidget />
 
-      <div>
-        <h2 className="text-lg font-semibold mb-3">Your Farming Toolkit</h2>
-        <Carousel 
-          plugins={[plugin.current]}
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-          className="w-full"
-          onMouseEnter={plugin.current.stop}
-          onMouseLeave={plugin.current.reset}
-        >
-          <CarouselContent className="-ml-2">
-            {allTools.map((link) => (
-              <CarouselItem key={link.href} className="pl-3 basis-1/4 md:basis-1/5 lg:basis-1/6">
-                <Link href={link.href} className="block h-full">
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-3 bg-card rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]">
-                      <div className="p-3 bg-primary/10 rounded-full">
-                        <link.icon className="h-7 w-7 text-primary" />
-                      </div>
-                      <p className="text-xs font-medium mt-1">{link.title}</p>
-                  </div>
-                </Link>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-        </Carousel>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Your Farming Toolkit</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Carousel 
+            plugins={[plugin.current]}
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+            onMouseEnter={plugin.current.stop}
+            onMouseLeave={plugin.current.reset}
+          >
+            <CarouselContent className="-ml-2">
+              {allTools.map((link) => (
+                <CarouselItem key={link.href} className="pl-3 basis-1/4 md:basis-1/5 lg:basis-1/6">
+                  <Link href={link.href} className="block h-full">
+                    <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-3 bg-muted/50 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]">
+                        <div className="p-3 bg-primary/10 rounded-full">
+                          <link.icon className="h-7 w-7 text-primary transition-transform group-hover:scale-105" />
+                        </div>
+                        <p className="text-xs font-medium mt-1">{link.title}</p>
+                    </div>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </CardContent>
+      </Card>
 
       <AiToolsCard />
 

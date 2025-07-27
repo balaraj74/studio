@@ -1,38 +1,39 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 80 20% 96%; /* Desaturated light green base */
+    --background: 80 20% 96%;
     --foreground: 222 83% 4%;
 
-    --card: 210 40% 98% / 0.1; /* Transparent for glass effect */
+    --card: 210 40% 98% / 0.1; 
     --card-foreground: 222 83% 10%;
 
     --popover: 220 20% 97%;
     --popover-foreground: 222 83% 4%;
     
-    --primary: 88 60% 45%; /* Fresh green #74B72E */
+    --primary: 88 60% 45%; 
     --primary-foreground: 88 95% 10%;
     
-    --secondary: 45 66% 80%; /* Soft yellow for secondary actions */
+    --secondary: 45 66% 80%;
     --secondary-foreground: 45 95% 10%;
 
-    --muted: 88 60% 45% / 0.1; /* Muted based on primary */
+    --muted: 88 60% 45% / 0.1;
     --muted-foreground: 88 40% 30%;
     
-    --accent: 44 65% 61%; /* Earthy yellow #D6AD60 */
+    --accent: 44 65% 61%;
     --accent-foreground: 44 95% 10%;
     
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 210 40% 98% / 0.25; /* Subtle white border for glass */
+    --border: 210 40% 98% / 0.2; /* Frosted glass border */
     --input: 210 40% 98% / 0.2;
     --ring: 88 60% 55%;
 
-    --radius: 1.25rem; /* 20px */
+    --radius: 20px;
   }
  
   .dark {
@@ -60,11 +61,11 @@
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 210 40% 98% / 0.25;
+    --border: 210 40% 98% / 0.2;
     --input: 210 40% 98% / 0.1;
     --ring: 88 60% 55%;
 
-    --radius: 1.25rem; /* 20px */
+    --radius: 20px;
   }
 }
  
@@ -74,8 +75,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Animated Gradient: sky blue -> pinkish -> green soil */
-    background: linear-gradient(135deg, #a8edea, #fed6e3, #d4fc79);
+    background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
     background-size: 200% 200%;
     animation: gradient-animation 15s ease infinite;
   }
@@ -98,10 +98,10 @@
 
 /* Overriding ShadCN Card to apply glassmorphism */
 .bg-card {
-    background-color: var(--card) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+    background: rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
 .bg-muted {
@@ -110,8 +110,8 @@
 
 .bg-popover {
     background-color: hsl(var(--popover)) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 }
 
 .bg-background {
@@ -122,10 +122,9 @@
      background-color: hsl(var(--secondary)) !important;
 }
 
-/* Glowing border effect */
 .neon-glow {
   position: relative;
-  overflow: hidden; /* Hide the overflowing pseudo-element */
+  overflow: hidden; 
 }
 .neon-glow::before {
   content: '';
@@ -134,8 +133,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border-radius: inherit; /* Match the parent's border-radius */
-  padding: 2px; /* Border width */
+  border-radius: inherit; 
+  padding: 2px; 
   background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)));
   -webkit-mask: 
     linear-gradient(#fff 0 0) content-box, 
@@ -147,7 +146,6 @@
   opacity: 0.8;
 }
 
-/* Gradient Button */
 .gradient-button {
     background-image: linear-gradient(to right, hsl(var(--primary) / 0.9), hsl(var(--accent) / 0.9));
     transition: all 0.3s ease;
