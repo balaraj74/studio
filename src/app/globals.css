@@ -107,10 +107,10 @@
 }
 
 .bg-card {
-    background: hsl(var(--card)) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
+  background: hsl(var(--card)) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
 .bg-muted {
@@ -164,19 +164,27 @@
     background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
 }
 
+/* 
+  ✅ BACKGROUND IMAGE ANIMATION
+  Replace the placeholder URLs below with your own image links.
+*/
 @keyframes image-fade {
+  /* 👉 IMAGE 1 - Replace URL here */
   0%, 100% { background-image: url('https://placehold.co/1920x1080/000000/FFFFFF.png?text=AI+Farming+1'); opacity: 1; }
   22% { opacity: 1; }
   25% { opacity: 0; }
   
+  /* 👉 IMAGE 2 - Replace URL here */
   25.001% { background-image: url('https://placehold.co/1920x1080/111111/FFFFFF.png?text=AI+Farming+2'); opacity: 0; }
   47% { opacity: 1; }
   50% { opacity: 0; }
 
+  /* 👉 IMAGE 3 - Replace URL here */
   50.001% { background-image: url('https://placehold.co/1920x1080/222222/FFFFFF.png?text=AI+Farming+3'); opacity: 0; }
   72% { opacity: 1; }
   75% { opacity: 0; }
   
+  /* 👉 IMAGE 4 - Replace URL here */
   75.001% { background-image: url('https://placehold.co/1920x1080/333333/FFFFFF.png?text=AI+Farming+4'); opacity: 0; }
   97% { opacity: 1; }
 }
