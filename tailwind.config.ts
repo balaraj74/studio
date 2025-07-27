@@ -60,6 +60,8 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 4px)',
         sm: 'calc(var(--radius) - 8px)',
+        "2xl": "calc(var(--radius) + 8px)", // For larger cards
+        "3xl": "calc(var(--radius) + 16px)", // For main containers
       },
       keyframes: {
         'accordion-down': {
@@ -78,10 +80,16 @@ export default {
             height: '0',
           },
         },
+        'gradient-animation': {
+          '0%': { 'background-position': '0% 50%' },
+          '50%': { 'background-position': '100% 50%' },
+          '100%': { 'background-position': '0% 50%' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'gradient': 'gradient-animation 15s ease infinite',
       },
     },
   },

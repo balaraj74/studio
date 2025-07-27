@@ -88,8 +88,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-dvh p-4">
-        <Card className="z-20 w-full max-w-sm">
+    <main className="flex flex-col items-center justify-center min-h-dvh p-4 bg-transparent">
+        <Card className="w-full max-w-sm">
            <CardHeader className="text-center">
              <AgrisenceLogo className="h-16 w-16 mx-auto" />
              <CardTitle className="text-3xl tracking-tight text-foreground">
@@ -115,7 +115,7 @@ export default function LoginPage() {
                     <Label htmlFor="password">Password</Label>
                     <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={isLoading} minLength={6}/>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full gradient-button" disabled={isLoading}>
                     {isLoading ? (
                         <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     ) : (

@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 222 83% 4%;
-    --foreground: 210 40% 98%;
-    
-    --card: 210 40% 98% / 0.1;
-    --card-foreground: 210 40% 98%;
+    --background: 80 20% 96%; /* Desaturated light green base */
+    --foreground: 222 83% 4%;
 
-    --popover: 220 20% 7%;
-    --popover-foreground: 210 40% 98%;
-    
-    --primary: 90 60% 55%;
-    --primary-foreground: 90 95% 10%;
-    
-    --secondary: 210 40% 98% / 0.1;
-    --secondary-foreground: 210 40% 98%;
+    --card: 210 40% 98% / 0.1; /* Transparent for glass effect */
+    --card-foreground: 222 83% 10%;
 
-    --muted: 210 40% 98% / 0.05;
-    --muted-foreground: 215 20% 65%;
+    --popover: 220 20% 97%;
+    --popover-foreground: 222 83% 4%;
     
-    --accent: 90 65% 65%;
-    --accent-foreground: 90 95% 10%;
+    --primary: 88 60% 45%; /* Fresh green #74B72E */
+    --primary-foreground: 88 95% 10%;
+    
+    --secondary: 45 66% 80%; /* Soft yellow for secondary actions */
+    --secondary-foreground: 45 95% 10%;
+
+    --muted: 88 60% 45% / 0.1; /* Muted based on primary */
+    --muted-foreground: 88 40% 30%;
+    
+    --accent: 44 65% 61%; /* Earthy yellow #D6AD60 */
+    --accent-foreground: 44 95% 10%;
     
     --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 210 40% 98% / 0.18;
-    --input: 210 40% 98% / 0.1;
-    --ring: 90 60% 65%;
+    --border: 210 40% 98% / 0.25; /* Subtle white border for glass */
+    --input: 210 40% 98% / 0.2;
+    --ring: 88 60% 55%;
 
-    --radius: 1.25rem;
+    --radius: 1.25rem; /* 20px */
   }
  
   .dark {
@@ -45,8 +45,8 @@
     --popover: 220 20% 7%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 90 60% 55%;
-    --primary-foreground: 90 95% 10%;
+    --primary: 88 60% 55%;
+    --primary-foreground: 88 95% 10%;
     
     --secondary: 210 40% 98% / 0.1;
     --secondary-foreground: 210 40% 98%;
@@ -54,17 +54,17 @@
     --muted: 210 40% 98% / 0.05;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 90 65% 65%;
-    --accent-foreground: 90 95% 10%;
+    --accent: 44 65% 61%;
+    --accent-foreground: 44 95% 10%;
     
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 210 40% 98% / 0.18;
+    --border: 210 40% 98% / 0.25;
     --input: 210 40% 98% / 0.1;
-    --ring: 90 60% 65%;
+    --ring: 88 60% 55%;
 
-    --radius: 1.25rem;
+    --radius: 1.25rem; /* 20px */
   }
 }
  
@@ -74,10 +74,19 @@
   }
   body {
     @apply bg-background text-foreground;
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    /* Animated Gradient: sky blue -> pinkish -> green soil */
+    background: linear-gradient(135deg, #a8edea, #fed6e3, #d4fc79);
+    background-size: 200% 200%;
+    animation: gradient-animation 15s ease infinite;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
+  }
+
+  @keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
 }
 
@@ -85,28 +94,24 @@
   .text-balance {
     text-wrap: balance;
   }
-  .glass-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-  }
 }
 
 /* Overriding ShadCN Card to apply glassmorphism */
 .bg-card {
     background-color: var(--card) !important;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
 }
 
 .bg-muted {
     background-color: var(--muted) !important;
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+}
+
+.bg-popover {
+    background-color: hsl(var(--popover)) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
 }
 
 .bg-background {
@@ -114,5 +119,40 @@
 }
 
 .bg-secondary {
-     background-color: var(--secondary) !important;
+     background-color: hsl(var(--secondary)) !important;
+}
+
+/* Glowing border effect */
+.neon-glow {
+  position: relative;
+  overflow: hidden; /* Hide the overflowing pseudo-element */
+}
+.neon-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit; /* Match the parent's border-radius */
+  padding: 2px; /* Border width */
+  background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: -1;
+  filter: blur(5px);
+  opacity: 0.8;
+}
+
+/* Gradient Button */
+.gradient-button {
+    background-image: linear-gradient(to right, hsl(var(--primary) / 0.9), hsl(var(--accent) / 0.9));
+    transition: all 0.3s ease;
+}
+.gradient-button:hover {
+    box-shadow: 0 4px 15px 0 hsl(var(--primary) / 0.4);
+    background-image: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
 }

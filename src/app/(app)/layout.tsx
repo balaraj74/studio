@@ -8,6 +8,7 @@ import { UserNav } from "@/components/user-nav";
 import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { TopNav } from "@/components/top-nav";
+import { cn } from "@/lib/utils";
 
 const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
 
@@ -32,8 +33,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col h-dvh">
-      <header className="sticky top-0 z-40 hidden h-16 items-center justify-between border-b bg-transparent/20 px-4 backdrop-blur-sm sm:px-6 md:flex">
+    <div className="flex flex-col h-dvh bg-transparent">
+      <header className={cn(
+        "sticky top-0 z-40 hidden h-16 items-center justify-between border-b px-4 backdrop-blur-lg sm:px-6 md:flex",
+        "border-white/10 bg-black/5"
+      )}>
         <Link href="/dashboard" className="flex items-center gap-2">
             <AgrisenceLogo className="h-8 w-auto" />
             <span className="text-xl font-semibold">AgriSence</span>

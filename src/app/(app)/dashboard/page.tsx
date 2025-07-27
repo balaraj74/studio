@@ -99,7 +99,7 @@ const allTools: QuickLink[] = [
 ];
 
 const AiToolsCard = () => (
-    <Card>
+    <Card className="neon-glow">
         <CardHeader>
             <CardTitle>AI Hub</CardTitle>
             <CardDescription>Your intelligent farming assistants.</CardDescription>
@@ -161,13 +161,13 @@ export default function DashboardPage() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-        <Input placeholder="Search here..." className="pl-10 h-12 rounded-full bg-secondary text-base" />
+        <Input placeholder="Search crops, tools, or advice..." className="pl-10 h-12 rounded-full bg-card text-base" />
       </div>
       
       <WeatherWidget />
 
       <div>
-        <h2 className="text-lg font-semibold mb-3">Commodities and Food</h2>
+        <h2 className="text-lg font-semibold mb-3">Your Farming Toolkit</h2>
         <Carousel 
           plugins={[plugin.current]}
           opts={{
@@ -180,11 +180,13 @@ export default function DashboardPage() {
         >
           <CarouselContent className="-ml-2">
             {allTools.map((link) => (
-              <CarouselItem key={link.href} className="pl-3 basis-1/4">
+              <CarouselItem key={link.href} className="pl-3 basis-1/4 md:basis-1/5 lg:basis-1/6">
                 <Link href={link.href} className="block h-full">
-                  <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-2 bg-secondary rounded-2xl hover:bg-primary/20 transition-colors active:scale-[0.98]">
-                      <link.icon className="h-7 w-7 text-primary" />
-                      <p className="text-xs font-medium">{link.title}</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-3 bg-card rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]">
+                      <div className="p-3 bg-primary/10 rounded-full">
+                        <link.icon className="h-7 w-7 text-primary" />
+                      </div>
+                      <p className="text-xs font-medium mt-1">{link.title}</p>
                   </div>
                 </Link>
               </CarouselItem>
