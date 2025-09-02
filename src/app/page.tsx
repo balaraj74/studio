@@ -16,8 +16,6 @@ import {
 import { auth } from '@/lib/firebase/config';
 import { useToast } from "@/hooks/use-toast";
 import { AgrisenceLogo } from '@/components/agrisence-logo';
-import Image from 'next/image';
-import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 const GoogleIcon = () => (
@@ -89,78 +87,80 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-col items-center justify-center min-h-dvh p-4 bg-transparent">
-        <Card className="w-full max-w-sm">
-           <CardHeader className="text-center">
-             <AgrisenceLogo className="h-16 w-16 mx-auto" />
-             <CardTitle className="text-3xl tracking-tight text-foreground">
-                {authMode === 'signin' ? 'Welcome Back' : 'Create an Account'}
-             </CardTitle>
-             <CardDescription>
-                Your AI partner in modern farming.
-             </CardDescription>
-           </CardHeader>
-           <CardContent>
-             <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
-                {authMode === 'signup' && (
-                    <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" type="text" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} required disabled={isLoading} />
+        <div className="w-full max-w-sm space-y-4">
+            <Card>
+               <CardHeader className="text-center">
+                 <AgrisenceLogo className="h-20 w-20 mx-auto" />
+                 <CardTitle className="text-3xl tracking-tight font-bold text-foreground">
+                    AgriSence
+                 </CardTitle>
+               </CardHeader>
+               <CardContent>
+                 <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
+                    {authMode === 'signup' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Full Name</Label>
+                            <Input id="name" type="text" placeholder="Your full name" value={name} onChange={e => setName(e.target.value)} required disabled={isLoading} />
+                        </div>
+                    )}
+                     <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={isLoading} />
                     </div>
-                )}
-                 <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="name@example.com" value={email} onChange={e => setEmail(e.target.value)} required disabled={isLoading} />
+                     <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={isLoading} minLength={6}/>
+                    </div>
+                    <Button type="submit" className="w-full gradient-button" disabled={isLoading}>
+                        {isLoading ? (
+                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        ) : (
+                            authMode === 'signin' ? 'Sign In' : 'Create Account'
+                        )}
+                    </Button>
+                </form>
+
+                <div className="relative w-full my-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">OR CONTINUE WITH</span>
+                    </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required disabled={isLoading} minLength={6}/>
-                </div>
-                <Button type="submit" className="w-full gradient-button" disabled={isLoading}>
-                    {isLoading ? (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+
+                 <Button
+                    onClick={handleGoogleSignIn}
+                    variant="outline"
+                    className="w-full"
+                    disabled={isGoogleLoading || isLoading}
+                >
+                    {isGoogleLoading ? (
+                      <>
+                        <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Connecting...
+                      </>
                     ) : (
-                        authMode === 'signin' ? 'Sign In' : 'Create Account'
+                      <>
+                        <GoogleIcon />
+                        Continue with Google
+                      </>
                     )}
                 </Button>
-            </form>
+               </CardContent>
+            </Card>
 
-            <div className="relative w-full my-6">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                </div>
-            </div>
-
-             <Button
-                onClick={handleGoogleSignIn}
-                variant="outline"
-                className="w-full"
-                disabled={isGoogleLoading || isLoading}
-            >
-                {isGoogleLoading ? (
-                  <>
-                    <div className="h-5 w-5 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <GoogleIcon />
-                    Continue with Google
-                  </>
-                )}
-            </Button>
-           </CardContent>
-           <CardFooter className="justify-center">
-             <p className="text-sm text-muted-foreground">
-                {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
-                <Button variant="link" className="px-1 text-accent" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
-                    {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
-                </Button>
-            </p>
-           </CardFooter>
-        </Card>
+            <Card>
+                <CardFooter className="justify-center p-4">
+                     <p className="text-sm text-muted-foreground">
+                        {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}
+                        <Button variant="link" className="px-1 text-accent" onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}>
+                            {authMode === 'signin' ? 'Sign Up' : 'Sign In'}
+                        </Button>
+                    </p>
+               </CardFooter>
+            </Card>
+        </div>
     </main>
   );
 }
