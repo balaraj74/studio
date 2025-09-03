@@ -32,6 +32,46 @@ export default function VoicePage() {
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
 
+  // Setup speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new (window as any).webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        setTranscript("");
+        setResponse("");
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      recognition.onerror = (event: any) => {
+        toast({
+          variant: "destructive",
+          title: "Voice Recognition Error",
+          description: event.error,
+        });
+        setIsListening(false);
+      };
+      recognition.onresult = (event: any) => {
+        const spokenText = event.results[0][0].transcript;
+        processTranscript(spokenText);
+      };
+
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  // Update recognition language when selectedLanguage changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = selectedLanguage;
+    }
+  }, [selectedLanguage]);
+
+
   useEffect(() => {
     const loadVoices = () => {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -96,7 +136,7 @@ export default function VoicePage() {
   };
 
   const handleMicClick = () => {
-    if (!("webkitSpeechRecognition" in window)) {
+    if (!recognitionRef.current) {
       toast({
         variant: "destructive",
         title: "Voice Recognition Not Supported",
@@ -104,41 +144,12 @@ export default function VoicePage() {
       });
       return;
     }
-
+    
     if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
     }
-
-    const recognition = new (window as any).webkitSpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = selectedLanguage;
-
-    recognition.onstart = () => {
-      setIsListening(true);
-      setTranscript("");
-      setResponse("");
-    };
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-    recognition.onerror = (event: any) => {
-      toast({
-        variant: "destructive",
-        title: "Voice Recognition Error",
-        description: event.error,
-      });
-      setIsListening(false);
-    };
-    recognition.onresult = (event: any) => {
-      const spokenText = event.results[0][0].transcript;
-      processTranscript(spokenText);
-    };
-
-    setTimeout(() => recognition.start(), 100); // Add a small delay
-    recognitionRef.current = recognition;
   };
 
   const languageOptions = [

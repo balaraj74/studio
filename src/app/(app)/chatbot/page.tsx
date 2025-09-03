@@ -35,9 +35,40 @@ export default function ChatbotPage() {
   const [isListening, setIsListening] = useState(false);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<any>(null); // To hold the speech recognition instance
   const [ttsLanguage, setTtsLanguage] = useState('en-IN');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Setup speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new (window as any).webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = (event: any) => {
+        toast({ variant: "destructive", title: "Voice Recognition Error", description: event.error });
+        setIsListening(false);
+      };
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        // Automatically submit after voice input
+        handleSubmit(undefined, transcript); 
+      };
+      recognitionRef.current = recognition;
+    }
+  }, []);
+
+  // Update recognition language when ttsLanguage changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = ttsLanguage;
+    }
+  }, [ttsLanguage]);
+
 
   useEffect(() => {
     const loadVoices = () => {
@@ -85,7 +116,7 @@ export default function ChatbotPage() {
   };
 
   const handleMicClick = () => {
-    if (!('webkitSpeechRecognition' in window)) {
+    if (!recognitionRef.current) {
         toast({
             variant: "destructive",
             title: "Voice Recognition Not Supported",
@@ -95,30 +126,10 @@ export default function ChatbotPage() {
     }
 
     if (isListening) {
-        recognitionRef.current?.stop();
-        setIsListening(false);
-        return;
+        recognitionRef.current.stop();
+    } else {
+        recognitionRef.current.start();
     }
-
-    const recognition = new (window as any).webkitSpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = ttsLanguage; 
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = (event: any) => {
-        toast({ variant: "destructive", title: "Voice Recognition Error", description: event.error });
-        setIsListening(false);
-    };
-    recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        handleSubmit(undefined, transcript);
-    };
-    
-    setTimeout(() => recognition.start(), 100); // Add a small delay
-    recognitionRef.current = recognition;
   };
 
   const handleSubmit = async (e?: React.FormEvent, voiceInput?: string) => {
