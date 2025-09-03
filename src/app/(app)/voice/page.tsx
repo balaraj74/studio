@@ -23,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Browser compatibility
 const SpeechRecognition =
   typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
@@ -37,34 +36,25 @@ export default function VoicePage() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   const recognitionRef = useRef<any>(null);
-  const userStoppedRef = useRef(false); // Track if the user manually stopped listening
   const { toast } = useToast();
 
-  // Initialize Speech Recognition once
   useEffect(() => {
     if (!SpeechRecognition) {
       setError("Voice recognition is not supported by your browser.");
       return;
     }
 
-    recognitionRef.current = new SpeechRecognition();
-    const recognition = recognitionRef.current;
-
+    const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => {
       setIsListening(true);
       setError(null);
-      userStoppedRef.current = false;
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      // Auto-restart if it wasn't a manual stop and we are not processing
-      if (!userStoppedRef.current && !isLoading) {
-         // recognition.start(); // This can be enabled for continuous listening
-      }
     };
 
     recognition.onerror = (event: any) => {
@@ -85,16 +75,15 @@ export default function VoicePage() {
       processTranscript(spokenText);
     };
 
-  }, [isLoading]);
+    recognitionRef.current = recognition;
+  }, []);
   
-  // Update language when user selects a new one
   useEffect(() => {
     if (recognitionRef.current) {
       recognitionRef.current.lang = selectedLanguage;
     }
   }, [selectedLanguage]);
 
-  // Load TTS voices
   useEffect(() => {
     const loadVoices = () => {
       if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -140,27 +129,27 @@ export default function VoicePage() {
   };
 
   const handleMicClick = async () => {
-    if (!recognitionRef.current) return;
+    if (!recognitionRef.current) {
+      setError("Voice recognition is not initialized.");
+      return;
+    }
 
     if (isListening) {
-      userStoppedRef.current = true;
       recognitionRef.current.stop();
       return;
     }
     
-    // Request permission before starting
+    setTranscript("");
+    setResponse("");
+    setError(null);
+    
     try {
-      // Check for HTTPS
-      if (window.location.protocol !== 'https:') {
-        setError('Voice recognition requires a secure (HTTPS) connection.');
-        return;
-      }
-
+      // Step 1: Request microphone permission explicitly
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      setTranscript("");
-      setResponse("");
-      setError(null);
+      
+      // Step 2: Start recognition only after permission is granted
       recognitionRef.current.start();
+
     } catch (err: any) {
        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
             setError("Please allow microphone access in your browser settings.");
@@ -282,5 +271,3 @@ export default function VoicePage() {
     </div>
   );
 }
-
-    
