@@ -38,6 +38,7 @@ export default function VoicePage() {
       const recognition = new (window as any).webkitSpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
+      recognition.lang = selectedLanguage;
       
       recognition.onstart = () => {
         setIsListening(true);
@@ -62,15 +63,7 @@ export default function VoicePage() {
 
       recognitionRef.current = recognition;
     }
-  }, []);
-
-  // Update recognition language when selectedLanguage changes
-  useEffect(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.lang = selectedLanguage;
-    }
   }, [selectedLanguage]);
-
 
   useEffect(() => {
     const loadVoices = () => {
@@ -148,7 +141,7 @@ export default function VoicePage() {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
-      recognitionRef.current.start();
+      setTimeout(() => recognitionRef.current.start(), 0);
     }
   };
 

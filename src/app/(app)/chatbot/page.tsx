@@ -45,6 +45,7 @@ export default function ChatbotPage() {
       const recognition = new (window as any).webkitSpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
+      recognition.lang = ttsLanguage;
 
       recognition.onstart = () => setIsListening(true);
       recognition.onend = () => setIsListening(false);
@@ -59,13 +60,6 @@ export default function ChatbotPage() {
         handleSubmit(undefined, transcript); 
       };
       recognitionRef.current = recognition;
-    }
-  }, []);
-
-  // Update recognition language when ttsLanguage changes
-  useEffect(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.lang = ttsLanguage;
     }
   }, [ttsLanguage]);
 
@@ -128,7 +122,7 @@ export default function ChatbotPage() {
     if (isListening) {
         recognitionRef.current.stop();
     } else {
-        recognitionRef.current.start();
+        setTimeout(() => recognitionRef.current.start(), 0);
     }
   };
 
