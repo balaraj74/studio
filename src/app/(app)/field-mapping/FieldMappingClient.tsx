@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map as MapIcon, Plus, Trash2, Redo, Pin, List, Edit, Trash, LocateFixed, Leaf, Maximize, Ruler } from 'lucide-react';
+import { Map as MapIcon, Plus, Trash2, Redo, Pin, List, Edit, Trash, LocateFixed, Leaf, Maximize, Ruler, Save } from 'lucide-react';
 import type { Field, Crop } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
 import { getCrops } from '@/lib/actions/crops';
@@ -522,14 +522,14 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl h-[90vh]">
+            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>{field ? 'Edit Field Boundary' : 'Add New Field'}</DialogTitle>
                     <DialogDescription>Draw the boundary on the map and enter the field details.</DialogDescription>
                 </DialogHeader>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100%-8rem)]">
-                    <div className="md:col-span-2 h-full rounded-lg bg-muted flex items-center justify-center">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
+                    <div className="md:col-span-2 h-full min-h-[250px] md:min-h-0 rounded-lg bg-muted flex items-center justify-center">
                         {isOpen && (
                                 <MapComponent 
                                     mapRef={dialogMapRef}
@@ -543,9 +543,9 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                                 />
                         )}
                     </div>
-                    <div className="md:col-span-1 flex flex-col h-full min-h-0">
-                         <ScrollArea className="h-full">
-                            <div className="space-y-4 pr-3">
+                    <div className="md:col-span-1 flex flex-col min-h-0">
+                         <ScrollArea className="flex-1 pr-3">
+                            <div className="space-y-4">
                                 <Card>
                                     <CardHeader><CardTitle>Field Details</CardTitle></CardHeader>
                                     <CardContent className="space-y-3">
@@ -599,13 +599,14 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                     </div>
                 </div>
 
-                <DialogFooter className="mt-4 flex justify-between w-full">
-                    <Button variant="outline" onClick={handleResetDrawing} disabled={isSubmitting}>
+                <DialogFooter className="mt-4 flex-shrink-0 flex sm:justify-between w-full">
+                    <Button variant="outline" onClick={handleResetDrawing} disabled={isSubmitting} className="hidden sm:inline-flex">
                         <Redo className="mr-2 h-4 w-4"/> Clear Drawing
                     </Button>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-auto">
                         <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
                         <Button onClick={handleSubmit} disabled={isSubmitting}>
+                            <Save className="mr-2 h-4 w-4" />
                             {isSubmitting ? 'Saving...' : <>{field ? 'Update Field' : 'Save Field'}</>}
                         </Button>
                     </div>
