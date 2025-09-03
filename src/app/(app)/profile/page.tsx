@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart as BarChartIcon, ChevronRight, LogOut, Shield, HelpCircle, Settings, User as UserIcon, Camera, Save } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BarChart as BarChartIcon, ChevronRight, LogOut, Shield, HelpCircle, Settings, User as UserIcon, Camera, Save, Loader2 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
@@ -18,12 +19,11 @@ import { updateUserProfile } from "@/lib/actions/user";
 import { getHarvests } from "@/lib/actions/harvests";
 import { getExpenses } from "@/lib/actions/expenses";
 import type { Harvest, Expense, ExpenseCategory } from "@/types";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
 const menuItems = [
-    { label: "Account Settings", icon: Settings },
     { label: "Privacy Policy", icon: Shield },
     { label: "Help & Support", icon: HelpCircle },
 ];
@@ -89,6 +89,7 @@ export default function ProfilePage() {
         setIsSaving(true);
 
         const formData = new FormData();
+        formData.append("userId", user.uid);
         formData.append("displayName", displayName);
         if (photoFile) {
             formData.append("photo", photoFile);
@@ -98,7 +99,6 @@ export default function ProfilePage() {
             const result = await updateUserProfile(formData);
             if (result.success) {
                 toast({ title: "Profile updated successfully!" });
-                // Optimistically update local state or let auth listener handle it
                 if(result.photoURL) setPreviewUrl(result.photoURL);
             } else {
                 throw new Error(result.error);
@@ -152,86 +152,100 @@ export default function ProfilePage() {
 
     return (
         <div className="space-y-6">
+            <div className="flex flex-col items-center space-y-4">
+                <Avatar className="h-24 w-24 border-4 border-primary/50 ring-4 ring-primary/20">
+                    {previewUrl && <AvatarImage src={previewUrl} alt={displayName || 'User'} />}
+                    <AvatarFallback className="text-4xl bg-muted">
+                        {displayName ? displayName.charAt(0).toUpperCase() : <UserIcon size={48} />}
+                    </AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">{displayName || 'Farmer'}</h1>
+                    <p className="text-muted-foreground">{user.email}</p>
+                </div>
+            </div>
+
             <Card>
                 <CardHeader>
-                    <CardTitle>My Profile</CardTitle>
-                    <CardDescription>Update your personal information and view your stats.</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Settings className="h-5 w-5"/> Edit Profile</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="flex flex-col items-center space-y-4">
-                         <div className="relative">
-                            <Avatar className="h-24 w-24 border-4 border-primary">
+                <CardContent className="space-y-4">
+                     <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <Avatar className="h-16 w-16 border-2">
                                 {previewUrl && <AvatarImage src={previewUrl} alt={displayName || 'User'} />}
-                                <AvatarFallback className="text-4xl">
-                                    {displayName ? displayName.charAt(0).toUpperCase() : <UserIcon size={48} />}
+                                <AvatarFallback className="text-xl bg-muted">
+                                    {displayName ? displayName.charAt(0).toUpperCase() : <UserIcon />}
                                 </AvatarFallback>
                             </Avatar>
-                            <Label htmlFor="photo-upload" className="absolute -bottom-2 -right-2 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80">
+                             <Label htmlFor="photo-upload" className="absolute -bottom-1 -right-1 bg-secondary text-secondary-foreground rounded-full p-1.5 cursor-pointer hover:bg-secondary/80 border-2 border-background">
                                 <Camera className="h-4 w-4" />
                                 <Input id="photo-upload" type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
                             </Label>
                         </div>
-                        <p className="text-muted-foreground">{user.email}</p>
-                    </div>
-
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                        <div className="flex-1 space-y-1">
                             <Label htmlFor="displayName">Display Name</Label>
                             <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
                         </div>
-                        <div className="space-y-2">
-                             <Label>&nbsp;</Label> {/* Placeholder for alignment */}
-                            <Button className="w-full" onClick={handleSaveProfile} disabled={isSaving}>
-                                <Save className="mr-2 h-4 w-4" />
-                                {isSaving ? 'Saving...' : 'Save Changes'}
-                            </Button>
-                        </div>
                     </div>
+                     <Button className="w-full" onClick={handleSaveProfile} disabled={isSaving}>
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChartIcon className="h-5 w-5"/> Your Analytics</CardTitle>
-                </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6">
-                    {isLoadingAnalytics ? (
-                        <>
-                            <Skeleton className="h-64 w-full" />
-                            <Skeleton className="h-64 w-full" />
-                        </>
-                    ) : (
-                       <>
-                         <div>
-                            <h3 className="font-semibold mb-2 text-center">Crop Yield (kg)</h3>
-                             <ResponsiveContainer width="100%" height={250}>
-                                {cropPerformanceData.length > 0 ? (
-                                    <BarChart data={cropPerformanceData}>
-                                        <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                                        <Bar dataKey="yield" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                ) : <p className="text-sm text-muted-foreground text-center pt-20">No harvest data yet.</p>}
-                            </ResponsiveContainer>
-                        </div>
-                         <div>
-                             <h3 className="font-semibold mb-2 text-center">Expense Breakdown</h3>
-                             <ResponsiveContainer width="100%" height={250}>
-                                {expenseBreakdownData.length > 0 ? (
-                                    <PieChart>
-                                        <Pie data={expenseBreakdownData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                            {expenseBreakdownData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={categoryColors[entry.name as ExpenseCategory] || COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                    </PieChart>
-                                ) : <p className="text-sm text-muted-foreground text-center pt-20">No expense data yet.</p>}
-                            </ResponsiveContainer>
-                        </div>
-                       </>
-                    )}
-                </CardContent>
-            </Card>
+            <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="analytics">
+                    <Card>
+                        <AccordionTrigger className="p-6">
+                             <CardTitle className="flex items-center gap-2 text-base font-semibold"><BarChartIcon className="h-5 w-5"/> Farm Analytics</CardTitle>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <CardContent className="grid md:grid-cols-2 gap-6">
+                                {isLoadingAnalytics ? (
+                                    <>
+                                        <Skeleton className="h-64 w-full" />
+                                        <Skeleton className="h-64 w-full" />
+                                    </>
+                                ) : (
+                                <>
+                                    <div>
+                                        <h3 className="font-semibold mb-2 text-center text-sm">Crop Yield (kg)</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            {cropPerformanceData.length > 0 ? (
+                                                <BarChart data={cropPerformanceData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                                    <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} interval={0} />
+                                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                                    <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                                                    <Bar dataKey="yield" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                                </BarChart>
+                                            ) : <div className="flex items-center justify-center h-full"><p className="text-sm text-muted-foreground text-center">No harvest data yet.</p></div>}
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold mb-2 text-center text-sm">Expense Breakdown</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            {expenseBreakdownData.length > 0 ? (
+                                                <PieChart>
+                                                    <Pie data={expenseBreakdownData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                                                        {expenseBreakdownData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={categoryColors[entry.name as ExpenseCategory] || COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
+                                                </PieChart>
+                                            ) : <div className="flex items-center justify-center h-full"><p className="text-sm text-muted-foreground text-center">No expense data yet.</p></div>}
+                                        </ResponsiveContainer>
+                                    </div>
+                                </>
+                                )}
+                            </CardContent>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+            </Accordion>
+
 
             <Card>
                 <CardContent className="p-2">
@@ -261,3 +275,5 @@ export default function ProfilePage() {
         </div>
     )
 }
+
+    
