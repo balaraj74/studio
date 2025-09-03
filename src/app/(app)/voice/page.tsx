@@ -35,10 +35,11 @@ export default function VoicePage() {
   // Setup speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
+      recognitionRef.current = new (window as any).webkitSpeechRecognition();
+      const recognition = recognitionRef.current;
+
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = selectedLanguage;
       
       recognition.onstart = () => {
         setIsListening(true);
@@ -60,8 +61,13 @@ export default function VoicePage() {
         const spokenText = event.results[0][0].transcript;
         processTranscript(spokenText);
       };
+    }
+  }, [toast]);
 
-      recognitionRef.current = recognition;
+  // Update language when user selects a new one
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = selectedLanguage;
     }
   }, [selectedLanguage]);
 
@@ -141,7 +147,7 @@ export default function VoicePage() {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
-      setTimeout(() => recognitionRef.current.start(), 0);
+      recognitionRef.current.start();
     }
   };
 

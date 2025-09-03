@@ -42,10 +42,11 @@ export default function ChatbotPage() {
   // Setup speech recognition
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
+      recognitionRef.current = new (window as any).webkitSpeechRecognition();
+      const recognition = recognitionRef.current;
+      
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = ttsLanguage;
 
       recognition.onstart = () => setIsListening(true);
       recognition.onend = () => setIsListening(false);
@@ -59,8 +60,14 @@ export default function ChatbotPage() {
         // Automatically submit after voice input
         handleSubmit(undefined, transcript); 
       };
-      recognitionRef.current = recognition;
     }
+  }, [toast]);
+  
+  // Update language when user changes it
+  useEffect(() => {
+      if (recognitionRef.current) {
+          recognitionRef.current.lang = ttsLanguage;
+      }
   }, [ttsLanguage]);
 
 
@@ -122,7 +129,7 @@ export default function ChatbotPage() {
     if (isListening) {
         recognitionRef.current.stop();
     } else {
-        setTimeout(() => recognitionRef.current.start(), 0);
+        recognitionRef.current.start();
     }
   };
 
