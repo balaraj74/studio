@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import Image from "next/image";
 import {
@@ -63,36 +63,33 @@ export default function CropsPageClient() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function fetchInitialCrops() {
-        if (user) {
-          setIsLoading(true);
-          try {
-            const fetchedCrops = await getCrops(user.uid);
-            setCrops(fetchedCrops);
-          } catch (error) {
-            console.error("Failed to fetch crops", error);
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch crop data." });
-          } finally {
-            setIsLoading(false);
-          }
-        } else if (!user) {
-            // Handle case where user is not logged in or logs out
-            setIsLoading(false);
-            setCrops([]);
-        }
+  const fetchCrops = useCallback(async (currentUser: User) => {
+    setIsLoading(true);
+    try {
+      const fetchedCrops = await getCrops(currentUser.uid);
+      setCrops(fetchedCrops);
+    } catch (error) {
+      console.error("Failed to fetch crops", error);
+      toast({ variant: "destructive", title: "Error", description: "Could not fetch crop data." });
+    } finally {
+      setIsLoading(false);
     }
-    fetchInitialCrops();
-  }, [user, toast]);
+  }, [toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchCrops(user);
+    } else {
+      setIsLoading(false);
+      setCrops([]);
+    }
+  }, [user, fetchCrops]);
   
-  const onFormSubmit = async () => {
+  const onFormSubmit = useCallback(async () => {
       if (user) {
-          setIsLoading(true);
-          const fetchedCrops = await getCrops(user.uid);
-          setCrops(fetchedCrops);
-          setIsLoading(false);
+          await fetchCrops(user);
       }
-  };
+  }, [user, fetchCrops]);
 
 
   const handleAddNew = () => {
@@ -479,5 +476,3 @@ function CropFormDialog({
     </Dialog>
   );
 }
-
-    
