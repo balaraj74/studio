@@ -1,7 +1,6 @@
 
 'use server';
 
-import { auth } from '@/lib/firebase/config';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { getAdminDb } from '@/lib/firebase/admin';
@@ -21,7 +20,7 @@ export async function updateUserProfile(formData: FormData) {
     let photoURL: string | null = null;
 
     try {
-        if (photoFile) {
+        if (photoFile && photoFile.size > 0) {
             // 1. Upload new photo to Firebase Storage
             const storage = getStorage().bucket('gs://agrisence-1dc30.appspot.com');
             const filePath = `profile-pictures/${userId}/${Date.now()}-${photoFile.name}`;
@@ -37,26 +36,22 @@ export async function updateUserProfile(formData: FormData) {
 
         // 2. Update user profile using Admin SDK
         const updatePayload: { displayName?: string; photoURL?: string } = {};
-        if (displayName) {
+        const currentUser = await getAuth().getUser(userId);
+
+        // Only add to payload if the value has changed
+        if (displayName && displayName !== currentUser.displayName) {
             updatePayload.displayName = displayName;
         }
         if (photoURL) {
             updatePayload.photoURL = photoURL;
         }
-        
-        const currentUser = await getAuth().getUser(userId);
-
-        // Avoid unnecessary updates
-        if (updatePayload.displayName === currentUser.displayName) delete updatePayload.displayName;
-        if (updatePayload.photoURL === currentUser.photoURL) delete updatePayload.photoURL;
-
 
         if (Object.keys(updatePayload).length > 0) {
             await getAuth().updateUser(userId, updatePayload);
         }
         
         revalidatePath('/profile');
-        revalidatePath('/(app)', 'layout');
+        revalidatePath('/(app)', 'layout'); // Revalidate layout to update UserNav
 
         return { success: true, photoURL: photoURL || currentUser.photoURL };
 
@@ -65,5 +60,3 @@ export async function updateUserProfile(formData: FormData) {
         return { success: false, error: error.message || 'Failed to update profile.' };
     }
 }
-
-    
