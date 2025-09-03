@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -20,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, ShieldCheck, ExternalLink } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SpeechRecognition =
@@ -40,38 +39,57 @@ export default function VoicePage() {
 
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
-  
-  // Initialize Speech Recognition once
+
+  // Effect to initialize Speech Recognition and check initial permission status
   useEffect(() => {
     if (!SpeechRecognition) {
       setError("Voice recognition is not supported by your browser.");
       setPermissionState('denied');
       return;
     }
+    
+    // Check initial permission status quietly
+    navigator.permissions?.query({ name: 'microphone' }).then((permissionStatus) => {
+        if (permissionStatus.state === 'granted') {
+            setPermissionState('granted');
+        } else if (permissionStatus.state === 'denied') {
+            setPermissionState('denied');
+            setError("Microphone access was denied. Please allow it in your browser settings.");
+        }
+    });
 
+    // Initialize the recognition object
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = selectedLanguage;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
     
-    recognition.onerror = (event: any) => {
-      let errorMessage = "An unknown error occurred.";
-      if (event.error === 'no-speech') errorMessage = 'No speech was detected. Please try again.';
-      else if (event.error === 'audio-capture') errorMessage = 'Microphone is busy or not found.';
-      else if (event.error === 'not-allowed') errorMessage = 'Microphone access was denied by the browser.';
-      setError(errorMessage);
-      setIsListening(false);
-    };
-
     recognition.onresult = (event: any) => {
       const spokenText = event.results[0][0].transcript;
       processTranscript(spokenText);
     };
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event: any) => {
+      let errorMessage = "An unknown error occurred.";
+      if (event.error === 'no-speech') errorMessage = 'No speech was detected. Please try again.';
+      else if (event.error === 'audio-capture') errorMessage = 'Microphone is busy or not found.';
+      else if (event.error === 'not-allowed') {
+        errorMessage = 'Microphone access was denied by the browser.';
+        setPermissionState('denied');
+      }
+      setError(errorMessage);
+      setIsListening(false);
+    };
 
     recognitionRef.current = recognition;
+
+  }, []);
+
+  // Update language when user changes it
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = selectedLanguage;
+    }
   }, [selectedLanguage]);
 
   // Load TTS voices
@@ -101,7 +119,7 @@ export default function VoicePage() {
   };
 
   const handleMicClick = () => {
-    if (!recognitionRef.current || isListening) {
+    if (!recognitionRef.current || isListening || isLoading) {
       return;
     }
     setTranscript("");
@@ -111,6 +129,7 @@ export default function VoicePage() {
         recognitionRef.current.start();
     } catch (e) {
         setError("Could not start listening. Please try again.");
+        setIsListening(false);
     }
   };
 
@@ -164,10 +183,19 @@ export default function VoicePage() {
           <p className="text-muted-foreground">Interact with AgriSence using your voice.</p>
         </div>
       </div>
+      
+       <Alert variant="default" className="w-full max-w-2xl text-left border-yellow-500/50 bg-yellow-500/10">
+          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <AlertTitle>Running in a secure environment?</AlertTitle>
+          <AlertDescription>
+            Microphone access might be blocked in this preview window. For the best experience, please 
+            <strong className="text-yellow-400"> click the "Open in app" button</strong> at the top of the screen to use the voice assistant in a new tab.
+          </AlertDescription>
+        </Alert>
 
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          {permissionState === 'granted' && (
+          {permissionState === 'granted' ? (
             <div className="flex justify-center mb-4">
               <Button
                 size="lg"
@@ -179,6 +207,13 @@ export default function VoicePage() {
                 {isListening && <span className="absolute h-full w-full rounded-full bg-red-500 animate-ping opacity-75"></span>}
               </Button>
             </div>
+          ) : (
+             <div className="flex justify-center mb-4">
+                <Button onClick={handleRequestPermission} disabled={permissionState === 'prompting' || permissionState === 'denied'}>
+                    <ShieldCheck className="mr-2 h-4 w-4"/>
+                    {permissionState === 'prompting' ? 'Waiting for permission...' : 'Enable Microphone'}
+                </Button>
+            </div>
           )}
           <CardTitle className="text-2xl">
             {permissionState === 'granted' ? getMicButtonText() : "Microphone Access"}
@@ -188,15 +223,6 @@ export default function VoicePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {permissionState !== 'granted' && (
-             <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/50">
-                <Button onClick={handleRequestPermission} disabled={permissionState === 'prompting' || permissionState === 'denied'}>
-                    <ShieldCheck className="mr-2 h-4 w-4"/>
-                    {permissionState === 'prompting' ? 'Waiting for permission...' : 'Enable Microphone'}
-                </Button>
-            </div>
-          )}
-          
           <div className="flex justify-center items-center gap-2">
             <Languages className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
