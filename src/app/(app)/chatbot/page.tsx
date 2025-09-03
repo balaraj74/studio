@@ -117,7 +117,7 @@ export default function ChatbotPage() {
         handleSubmit(undefined, transcript);
     };
     
-    recognition.start();
+    setTimeout(() => recognition.start(), 100); // Add a small delay
     recognitionRef.current = recognition;
   };
 

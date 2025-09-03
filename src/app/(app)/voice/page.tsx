@@ -137,7 +137,7 @@ export default function VoicePage() {
       processTranscript(spokenText);
     };
 
-    recognition.start();
+    setTimeout(() => recognition.start(), 100); // Add a small delay
     recognitionRef.current = recognition;
   };
 
