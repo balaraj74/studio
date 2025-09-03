@@ -20,6 +20,7 @@ const fieldConverter = {
             surveyNumber: data.surveyNumber,
             village: data.village,
             area: data.area,
+            perimeter: data.perimeter || 0, // Add perimeter with a fallback
             coordinates: data.coordinates,
             centroid: data.centroid,
             cropId: data.cropId || null,

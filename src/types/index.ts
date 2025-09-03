@@ -65,6 +65,7 @@ export interface Field {
     surveyNumber: string;
     village: string;
     area: number; // in acres
+    perimeter: number; // in meters
     coordinates: google.maps.LatLngLiteral[];
     centroid: google.maps.LatLngLiteral;
     cropId?: string | null;

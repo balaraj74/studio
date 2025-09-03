@@ -7,16 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Map as MapIcon, Plus, AlertCircle, Trash2, Pencil, Save, X, Redo, Pin, List, Edit, Trash, LocateFixed, Leaf } from 'lucide-react';
+import { Map as MapIcon, Plus, Trash2, Redo, Pin, List, Edit, Trash, LocateFixed, Leaf, Maximize, Ruler } from 'lucide-react';
 import type { Field, Crop } from '@/types';
 import { getFields, addField, updateField, deleteField } from '@/lib/actions/fields';
 import { getCrops } from '@/lib/actions/crops';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { User } from 'firebase/auth';
 
 // TODO: PASTE YOUR NEW MAP ID FROM GOOGLE CLOUD CONSOLE HERE
 const MAP_ID = "YOUR_NEW_MAP_ID_HERE";
@@ -29,6 +29,17 @@ function calculatePolygonArea(coordinates: google.maps.LatLngLiteral[]): number 
     const areaInSqMeters = google.maps.geometry.spherical.computeArea(path);
     return areaInSqMeters * ACRES_PER_SQ_METER;
 }
+
+function calculatePolygonPerimeter(coordinates: google.maps.LatLngLiteral[]): number {
+    if (coordinates.length < 2) return 0;
+    const path = coordinates.map(coord => new google.maps.LatLng(coord.lat, coord.lng));
+    // Close the loop for perimeter calculation if it's not already
+    if (path.length > 2 && (path[0].lat() !== path[path.length - 1].lat() || path[0].lng() !== path[path.length - 1].lng())) {
+        path.push(path[0]);
+    }
+    return google.maps.geometry.spherical.computeLength(path);
+}
+
 
 function calculatePolygonCentroid(coordinates: google.maps.LatLngLiteral[]): google.maps.LatLngLiteral {
     if (coordinates.length === 0) return { lat: 0, lng: 0 };
@@ -203,32 +214,30 @@ export default function FieldMappingClient() {
     }, []);
 
     // Fetch saved fields and crops from Firestore
-    useEffect(() => {
-        async function fetchData() {
-            if (user) {
-                setIsLoading(true);
-                const [fetchedFields, fetchedCrops] = await Promise.all([
-                    getFields(user.uid),
-                    getCrops(user.uid)
-                ]);
-                setFields(fetchedFields);
-                setCrops(fetchedCrops);
-                setIsLoading(false);
-            }
-        }
-        fetchData();
-    }, [user]);
-    
-    const refreshData = useCallback(async () => {
-        if (user) {
+    const refreshData = useCallback(async (currentUser: User) => {
+        setIsLoading(true);
+        try {
             const [fetchedFields, fetchedCrops] = await Promise.all([
-                getFields(user.uid),
-                getCrops(user.uid)
+                getFields(currentUser.uid),
+                getCrops(currentUser.uid)
             ]);
             setFields(fetchedFields);
             setCrops(fetchedCrops);
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not load farm data." });
+        } finally {
+            setIsLoading(false);
         }
-    }, [user]);
+    }, [toast]);
+
+    useEffect(() => {
+        if (user) {
+            refreshData(user);
+        } else {
+            setIsLoading(false);
+        }
+    }, [user, refreshData]);
 
     const handleAddNew = () => {
         setEditingField(null);
@@ -247,7 +256,8 @@ export default function FieldMappingClient() {
         const result = await deleteField(user.uid, fieldId);
         if (result.success) {
             toast({ title: "Field deleted successfully." });
-            refreshData();
+            await refreshData(user);
+            setActiveFieldId(null);
         } else {
             toast({ variant: "destructive", title: "Error", description: result.error });
         }
@@ -275,12 +285,12 @@ export default function FieldMappingClient() {
                 if (userMarkerRef.current) {
                     userMarkerRef.current.setPosition(pos);
                 } else {
-                    userMarkerRef.current = new google.maps.Marker({
+                    userMarkerRef.current = new window.google.maps.Marker({
                         position: pos,
                         map: mapRef.current,
                         title: "Your Location",
                         icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
+                            path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 7,
                             fillColor: "#4285F4",
                             fillOpacity: 1,
@@ -297,29 +307,6 @@ export default function FieldMappingClient() {
     };
 
 
-    const renderWrapperContent = () => {
-        return (
-            <div className="relative h-[calc(100vh-20rem)] lg:h-full w-full">
-                <MapComponent 
-                    mapRef={mapRef}
-                    center={userLocation} 
-                    fields={fields}
-                    activeFieldId={activeFieldId}
-                    onFieldClick={handleFieldClick}
-                    onPolygonComplete={() => {}} // This is handled inside the dialog
-                />
-                <Button 
-                    size="icon" 
-                    className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg"
-                    onClick={handleTrackLocation}
-                    aria-label="Find my location"
-                >
-                    <LocateFixed className="h-5 w-5" />
-                </Button>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-3">
@@ -331,8 +318,23 @@ export default function FieldMappingClient() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 h-full bg-muted rounded-lg flex items-center justify-center">
-                    {renderWrapperContent()}
+                <div className="lg:col-span-2 h-[calc(100vh-20rem)] lg:h-auto lg:min-h-[500px] bg-muted rounded-lg flex items-center justify-center relative">
+                    <MapComponent 
+                        mapRef={mapRef}
+                        center={userLocation} 
+                        fields={fields}
+                        activeFieldId={activeFieldId}
+                        onFieldClick={handleFieldClick}
+                        onPolygonComplete={() => {}}
+                    />
+                    <Button 
+                        size="icon" 
+                        className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg"
+                        onClick={handleTrackLocation}
+                        aria-label="Find my location"
+                    >
+                        <LocateFixed className="h-5 w-5" />
+                    </Button>
                 </div>
 
                 <Card className="lg:col-span-1">
@@ -351,35 +353,37 @@ export default function FieldMappingClient() {
                                 <Skeleton className="h-14 w-full" />
                             </div>
                         ) : fields.length > 0 ? (
-                            <ul className="space-y-2">
-                                {fields.map(field => (
-                                    <li key={field.id}>
-                                        <div
-                                            onClick={() => handleFieldClick(field.id)}
-                                            className={`p-3 rounded-md cursor-pointer border-2 transition-colors ${activeFieldId === field.id ? 'border-primary bg-primary/10' : 'bg-muted/50 hover:bg-muted'}`}
-                                        >
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <p className="font-semibold">{field.fieldName}</p>
-                                                    {field.cropName && (
-                                                        <p className="text-sm text-primary font-medium flex items-center gap-1.5"><Leaf className="h-3 w-3" /> {field.cropName}</p>
-                                                    )}
-                                                    <p className="text-sm text-muted-foreground">Survey #: {field.surveyNumber}</p>
-                                                    <p className="text-sm text-muted-foreground">{field.area.toFixed(2)} acres</p>
-                                                </div>
-                                                <div className="flex items-center flex-shrink-0">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(field); }}>
-                                                        <Edit className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(field.id); }}>
-                                                        <Trash className="h-4 w-4" />
-                                                    </Button>
+                            <ScrollArea className="h-[400px]">
+                                <ul className="space-y-2 pr-4">
+                                    {fields.map(field => (
+                                        <li key={field.id}>
+                                            <div
+                                                onClick={() => handleFieldClick(field.id)}
+                                                className={`p-3 rounded-md cursor-pointer border-2 transition-colors ${activeFieldId === field.id ? 'border-primary bg-primary/10' : 'bg-muted/50 hover:bg-muted'}`}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-semibold">{field.fieldName}</p>
+                                                        {field.cropName && (
+                                                            <p className="text-sm text-primary font-medium flex items-center gap-1.5"><Leaf className="h-3 w-3" /> {field.cropName}</p>
+                                                        )}
+                                                        <p className="text-xs text-muted-foreground">Survey #: {field.surveyNumber} ({field.village})</p>
+                                                        <p className="text-sm text-muted-foreground mt-1">{field.area.toFixed(2)} acres / {field.perimeter.toFixed(1)} m</p>
+                                                    </div>
+                                                    <div className="flex items-center flex-shrink-0">
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleEdit(field); }}>
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(field.id); }}>
+                                                            <Trash className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </ScrollArea>
                         ) : (
                             <div className="text-center py-10">
                                 <Pin className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -395,9 +399,10 @@ export default function FieldMappingClient() {
                 isOpen={isDialogOpen}
                 onOpenChange={setIsDialogOpen}
                 field={editingField}
-                onFormSubmit={refreshData}
+                onFormSubmit={() => user && refreshData(user)}
                 center={userLocation}
                 availableCrops={crops}
+                user={user}
             />
         </div>
     );
@@ -412,16 +417,17 @@ interface FieldFormDialogProps {
   onFormSubmit: () => void;
   center: google.maps.LatLngLiteral;
   availableCrops: Crop[];
+  user: User | null;
 }
 
-function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, availableCrops }: FieldFormDialogProps) {
-    const { user } = useAuth();
+function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, availableCrops, user }: FieldFormDialogProps) {
     const { toast } = useToast();
     const [fieldName, setFieldName] = useState('');
     const [surveyNumber, setSurveyNumber] = useState('');
     const [village, setVillage] = useState('');
     const [cropId, setCropId] = useState<string | null>(null);
     const [area, setArea] = useState(0);
+    const [perimeter, setPerimeter] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const dialogMapRef = useRef<google.maps.Map | null>(null);
     const drawnPolygonRef = useRef<google.maps.Polygon | null>(null);
@@ -433,33 +439,33 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
             setVillage(field?.village || '');
             setCropId(field?.cropId || null);
             setArea(field?.area || 0);
+            setPerimeter(field?.perimeter || 0);
             drawnPolygonRef.current = null;
-            dialogMapRef.current = null; // Reset map instance on open
+            dialogMapRef.current = null;
         }
     }, [isOpen, field]);
+    
+    const updateMeasurements = useCallback(() => {
+        if (drawnPolygonRef.current) {
+            const path = drawnPolygonRef.current.getPath().getArray().map(p => p.toJSON());
+            setArea(calculatePolygonArea(path));
+            setPerimeter(calculatePolygonPerimeter(path));
+        }
+    }, []);
 
     const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
-        // Clear previous polygon if any
         if (drawnPolygonRef.current) {
             drawnPolygonRef.current.setMap(null);
         }
         drawnPolygonRef.current = polygon;
-        updateArea();
+        updateMeasurements();
 
-        // Listen for edits
         const path = polygon.getPath();
-        google.maps.event.addListener(path, 'set_at', updateArea);
-        google.maps.event.addListener(path, 'insert_at', updateArea);
-        google.maps.event.addListener(path, 'remove_at', updateArea);
-    }, []);
+        google.maps.event.addListener(path, 'set_at', updateMeasurements);
+        google.maps.event.addListener(path, 'insert_at', updateMeasurements);
+        google.maps.event.addListener(path, 'remove_at', updateMeasurements);
+    }, [updateMeasurements]);
 
-    const updateArea = () => {
-        if (drawnPolygonRef.current) {
-            const path = drawnPolygonRef.current.getPath().getArray().map(p => p.toJSON());
-            const calculatedArea = calculatePolygonArea(path);
-            setArea(calculatedArea);
-        }
-    }
 
     const handleResetDrawing = () => {
         if(drawnPolygonRef.current) {
@@ -467,6 +473,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
             drawnPolygonRef.current = null;
         }
         setArea(0);
+        setPerimeter(0);
     }
     
     const handleSubmit = async () => {
@@ -494,6 +501,7 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
             surveyNumber,
             village,
             area,
+            perimeter,
             coordinates,
             centroid,
             cropId: selectedCrop?.id || null,
@@ -574,32 +582,36 @@ function FieldFormDialog({ isOpen, onOpenChange, field, onFormSubmit, center, av
                                     </CardContent>
                                 </Card>
                                 <Card>
-                                    <CardHeader><CardTitle>Area Measurement</CardTitle></CardHeader>
-                                    <CardContent className="text-center">
-                                        <p className="text-4xl font-bold text-primary">{area.toFixed(3)}</p>
-                                        <p className="text-muted-foreground">acres</p>
+                                    <CardHeader><CardTitle>Measurements</CardTitle></CardHeader>
+                                    <CardContent className="grid grid-cols-2 gap-4 text-center">
+                                        <div>
+                                            <p className="text-2xl font-bold text-primary flex items-center justify-center gap-2"><Maximize className="h-5 w-5"/>{area.toFixed(3)}</p>
+                                            <p className="text-xs text-muted-foreground">acres</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-2xl font-bold text-primary flex items-center justify-center gap-2"><Ruler className="h-5 w-5"/>{perimeter.toFixed(1)}</p>
+                                            <p className="text-xs text-muted-foreground">meters</p>
+                                        </div>
                                     </CardContent>
-                                    <CardFooter className="grid grid-cols-2 gap-2">
-                                        <Button variant="outline" onClick={handleResetDrawing} disabled={isSubmitting}>
-                                            <Redo className="mr-2 h-4 w-4"/> Clear Drawing
-                                        </Button>
-                                         <Button onClick={handleSubmit} disabled={isSubmitting}>
-                                            {isSubmitting ? 'Saving...' : <>{field ? 'Update Field' : 'Add Field'}</>}
-                                        </Button>
-                                    </CardFooter>
                                 </Card>
                             </div>
                         </ScrollArea>
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
+                <DialogFooter className="mt-4 flex justify-between w-full">
+                    <Button variant="outline" onClick={handleResetDrawing} disabled={isSubmitting}>
+                        <Redo className="mr-2 h-4 w-4"/> Clear Drawing
+                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancel</Button>
+                        <Button onClick={handleSubmit} disabled={isSubmitting}>
+                            {isSubmitting ? 'Saving...' : <>{field ? 'Update Field' : 'Save Field'}</>}
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
 // #endregion
-
-    
