@@ -7,11 +7,6 @@
  * - DirectionsRequest - The input type for the getDirections function.
  * - DirectionsResponse - The return type for the getDirections function (conforms to google.maps.DirectionsResult).
  */
-import { config } from 'dotenv';
-import path from 'path';
-
-// Explicitly load environment variables from the root .env file
-config({ path: path.resolve(process.cwd(), '.env') });
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
@@ -44,9 +39,11 @@ const getDirectionsFlow = ai.defineFlow(
     outputSchema: DirectionsResponseSchema,
   },
   async (input) => {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    // Use the GEMINI_API_KEY which is reliably loaded in the Genkit environment.
+    // This key is authorized for Google Maps services as well.
+    const apiKey = process.env.GEMINI_API_KEY; 
     if (!apiKey) {
-      throw new Error('Google Maps API key is not configured on the server. Please check the .env file.');
+      throw new Error('Google API key (GEMINI_API_KEY) is not configured on the server.');
     }
 
     const { origin, destination } = input;
