@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -8,10 +9,12 @@ import {
   CardContent,
   CardFooter
 } from '@/components/ui/card';
-import { MessageCircle, Mic, ChevronRight, Mail, Phone, Globe, Code } from 'lucide-react';
+import { MessageCircle, Mic, ChevronRight, Mail, Phone, Globe, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+
 
 interface AiItem {
   href: string;
@@ -63,6 +66,18 @@ const DeveloperContactCard = () => (
                     balarajr.b12sites.com
                 </a>
            </div>
+           <Separator className="my-4" />
+            <div className="space-y-2">
+                <h4 className="flex items-center gap-3 font-semibold">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    Supported By
+                </h4>
+                <p className="text-muted-foreground pl-8">
+                    Bharath C D <br />
+                    Mahesh Kumar B <br />
+                    Basavaraj M
+                </p>
+            </div>
         </CardContent>
         <CardFooter>
             <Button asChild className="w-full">
