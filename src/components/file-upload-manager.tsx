@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -9,13 +10,10 @@ import {
 } from "firebase/storage";
 import {
   getFirestore,
-  doc,
-  setDoc,
-  serverTimestamp,
-  collection,
   addDoc,
+  collection,
+  serverTimestamp,
 } from "firebase/firestore";
-import { auth } from "@/lib/firebase/config";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,10 +25,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Camera, ImageIcon, File, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Upload, Camera, ImageIcon, File } from "lucide-react";
 
 interface FileUploadManagerProps {
   onUploadComplete?: (url: string) => void;
@@ -49,11 +54,24 @@ export function FileUploadManager({
 }: FileUploadManagerProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [uploads, setUploads] = React.useState<UploadTask[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
   const photoInputRef = React.useRef<HTMLInputElement>(null);
-  const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    // Cleanup camera stream when component unmounts or dialog closes
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0 || !user) {
@@ -67,9 +85,54 @@ export function FileUploadManager({
     }));
     
     setUploads((prev) => [...prev, ...newUploads]);
-    setIsOpen(false);
-
     newUploads.forEach((task) => uploadFile(task));
+  };
+  
+  const startCamera = async () => {
+    setIsSheetOpen(false); // Close the action sheet
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }});
+            setIsCameraOpen(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (error) {
+            console.error("Error accessing camera:", error);
+            toast({ variant: "destructive", title: "Camera Error", description: "Could not access the camera. Please check permissions."});
+        }
+    } else {
+        toast({ variant: "destructive", title: "Unsupported", description: "Your browser does not support camera access."});
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  const handleCapture = () => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        
+        canvas.toBlob(blob => {
+            if (blob) {
+                const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+                handleFileSelect([capturedFile] as unknown as FileList);
+            }
+        }, 'image/jpeg');
+        
+        stopCamera();
+    }
   };
 
   const uploadFile = (task: UploadTask) => {
@@ -102,7 +165,7 @@ export function FileUploadManager({
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-          const docRef = await addDoc(
+          await addDoc(
             collection(db, `users/${userId}/uploads`),
             {
               name: task.file.name,
@@ -131,7 +194,7 @@ export function FileUploadManager({
 
   return (
     <div>
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetTrigger asChild>
           <Button>
             <Upload className="mr-2 h-4 w-4" /> Upload File
@@ -145,21 +208,27 @@ export function FileUploadManager({
             <Button
               variant="outline"
               className="w-full justify-start h-14 text-base"
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={startCamera}
             >
               <Camera className="mr-4 h-6 w-6" /> Capture with Camera
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start h-14 text-base"
-              onClick={() => photoInputRef.current?.click()}
+              onClick={() => {
+                  photoInputRef.current?.click();
+                  setIsSheetOpen(false);
+              }}
             >
               <ImageIcon className="mr-4 h-6 w-6" /> Choose from Photos
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start h-14 text-base"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                  fileInputRef.current?.click();
+                  setIsSheetOpen(false);
+              }}
             >
               <File className="mr-4 h-6 w-6" /> Choose from Files
             </Button>
@@ -167,10 +236,22 @@ export function FileUploadManager({
         </SheetContent>
       </Sheet>
 
-      {/* Hidden file inputs */}
-      <input type="file" accept="video/*,image/*" capture="environment" ref={cameraInputRef} className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
+      <Dialog open={isCameraOpen} onOpenChange={(open) => !open && stopCamera()}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Camera</DialogTitle>
+            </DialogHeader>
+            <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-md border aspect-video object-cover"></video>
+            <DialogFooter>
+                <Button onClick={handleCapture}>Capture Photo</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Hidden inputs and canvas */}
       <input type="file" accept="image/*" ref={photoInputRef} className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
       <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
+      <canvas ref={canvasRef} className="hidden"></canvas>
       
       {uploads.length > 0 && (
           <div className="mt-4 space-y-4">
@@ -201,3 +282,5 @@ export function FileUploadManager({
     </div>
   );
 }
+
+    
