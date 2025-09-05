@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX } from "lucide-react";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
@@ -44,6 +44,7 @@ export default function DiseaseCheckPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // States for file upload
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -55,6 +56,21 @@ export default function DiseaseCheckPage() {
   const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Effect to manage speech synthesis state
+  useEffect(() => {
+    const handleSpeechEnd = () => setIsSpeaking(false);
+    if (window.speechSynthesis) {
+        window.speechSynthesis.addEventListener('end', handleSpeechEnd);
+    }
+    return () => {
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel(); // Stop any speech on component unmount
+            window.speechSynthesis.removeEventListener('end', handleSpeechEnd);
+        }
+    };
+  }, []);
+
 
   useEffect(() => {
     const loadVoices = () => {
@@ -266,17 +282,30 @@ export default function DiseaseCheckPage() {
     }
   };
 
+  const cleanTextForSpeech = (text: string): string => {
+    // Removes markdown like *, **, _, __, #, ##, etc.
+    return text.replace(/(\*|_|#|`|~)/g, '');
+  };
+
   const handleSpeak = (text: string) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      const langInfo = supportedLanguages.find(l => l.value === language);
-      if(langInfo) {
-        utterance.lang = langInfo.langCode;
-        const voice = voices.find(v => v.lang === langInfo.langCode);
-        if (voice) utterance.voice = voice;
-      }
-      window.speechSynthesis.speak(utterance);
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            return;
+        }
+
+        const cleanedText = cleanTextForSpeech(text);
+        const utterance = new SpeechSynthesisUtterance(cleanedText);
+        const langInfo = supportedLanguages.find(l => l.value === language);
+        if(langInfo) {
+            utterance.lang = langInfo.langCode;
+            const voice = voices.find(v => v.lang === langInfo.langCode);
+            if (voice) utterance.voice = voice;
+        }
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false); // Also set here for natural completion
+        window.speechSynthesis.speak(utterance);
     } else {
       toast({ variant: "destructive", title: "TTS Not Supported" });
     }
@@ -287,7 +316,7 @@ export default function DiseaseCheckPage() {
         <div className="flex items-center justify-between">
             <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content)}>
-                <Volume2 className="h-4 w-4" />
+                {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 <span className="sr-only">Read aloud</span>
             </Button>
         </div>
