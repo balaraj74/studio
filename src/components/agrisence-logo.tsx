@@ -6,43 +6,40 @@ export const AgrisenceLogo = ({ className, ...props }: React.HTMLAttributes<HTML
     <svg 
       width="100%" 
       height="100%" 
-      viewBox="0 0 80 80" 
+      viewBox="0 0 120 120" 
+      version="1.1" 
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="AgriSence Logo"
+      className="h-full w-auto"
     >
-      {/* Blue Circuit Base */}
-      <path 
-        d="M25,75 C25,65 30,60 40,60 C50,60 55,65 55,75 L55,70 C50,70 50,65 52,62 L60,55 C65,50 70,52 70,58 C70,64 65,66 60,61 L58,59 M25,70 C30,70 30,65 28,62 L20,55 C15,50 10,52 10,58 C10,64 15,66 20,61 L22,59"
-        stroke="#337AB7" 
-        strokeWidth="6" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-        fill="none" 
-      />
-      <circle cx="70" cy="58" r="4.5" fill="#337AB7" />
-      <circle cx="10" cy="58" r="4.5" fill="#337AB7" />
-      
-      {/* Plant Stem */}
-      <path 
-        d="M40,60 V25" 
-        stroke="#5CB85C" 
-        strokeWidth="5" 
-        strokeLinecap="round" 
-        fill="none" 
-      />
+      <defs>
+        <linearGradient id="logo-gradient" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop stopColor="hsl(var(--accent))" offset="0%"></stop>
+          <stop stopColor="hsl(var(--primary))" offset="100%"></stop>
+        </linearGradient>
+      </defs>
+      <g stroke="none" strokeWidth="1" fill="none" fillRule="evenodd">
+        {/* Abstract A / Seedling Shape */}
+        <path d="M60,10 L95,110 L75,110 L68,90 L52,90 L45,110 L25,110 L60,10 Z" fill="url(#logo-gradient)" />
+        
+        {/* AI Circuit Veins */}
+        <g stroke="hsl(var(--background))" strokeWidth="3" strokeLinecap="round">
+          {/* Main stem */}
+          <line x1="60" y1="95" x2="60" y2="60" />
 
-      {/* Leaves */}
-      <path 
-        d="M40,45 C30,35 30,20 42,15 C45,25 50,30 40,45 Z"
-        fill="#5CB85C"
-      />
-      <path 
-        d="M40,35 C50,25 50,10 38,5 C35,15 30,20 40,35 Z"
-        fill="#5CB85C"
-      />
-      
-      {/* Orange Dot */}
-      <circle cx="65" cy="22" r="5" fill="#F0AD4E" />
+          {/* Branch 1 */}
+          <line x1="60" y1="80" x2="70" y2="70" />
+          <line x1="70" y1="70" x2="70" y2="65" />
+          <line x1="70" y1="70" x2="75" y2="75" />
+          
+          {/* Branch 2 */}
+          <line x1="60" y1="70" x2="50" y2="60" />
+          <line x1="50" y1="60" x2="50" y2="55" />
+          <line x1="50" y1="60" x2="45" y2="65" />
+
+           {/* Top Node */}
+          <circle cx="60" cy="55" r="4" fill="hsl(var(--background))" />
+        </g>
+      </g>
     </svg>
   </div>
 );
