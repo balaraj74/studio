@@ -21,6 +21,7 @@ import { getExpenses } from "@/lib/actions/expenses";
 import type { Harvest, Expense, ExpenseCategory } from "@/types";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FileUploadManager } from "@/components/file-upload-manager";
 
 
 const menuItems = [
@@ -195,6 +196,16 @@ export default function ProfilePage() {
                 </CardContent>
             </Card>
 
+             <Card>
+                <CardHeader>
+                    <CardTitle>File Upload</CardTitle>
+                    <CardDescription>Upload documents, photos, or videos related to your farm.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FileUploadManager onUploadComplete={(url) => console.log('Uploaded file URL:', url)} />
+                </CardContent>
+            </Card>
+
             <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="analytics">
                     <Card>
@@ -275,5 +286,3 @@ export default function ProfilePage() {
         </div>
     )
 }
-
-    
