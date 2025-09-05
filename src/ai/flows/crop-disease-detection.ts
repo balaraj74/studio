@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getWeatherInfo } from './weather-search';
+import { googleAI } from '@genkit-ai/googleai';
 
 const DiagnoseCropDiseaseInputSchema = z.object({
   imageUris: z.array(z.string()).describe("A list of photos of a plant leaf, as data URIs. Up to 5 images. Format: 'data:<mimetype>;base64,<encoded_data>'."),
@@ -94,7 +95,7 @@ CONTEXT:
       // 4. Call the AI model with the constructed payload
       const { output } = await ai.generate({
         prompt: promptPayload,
-        model: 'googleai/gemini-2.0-flash',
+        model: googleAI.model('gemini-1.5-flash'),
         output: { schema: DiagnoseCropDiseaseOutputSchema },
       });
 
@@ -103,10 +104,10 @@ CONTEXT:
       }
       return output;
 
-    } catch (error) {
+    } catch (error: any) {
        console.error("Error in diagnoseCropDiseaseFlow:", error);
-       // Re-throw a more user-friendly error to be caught by the frontend.
-       throw new Error("The AI model is currently unavailable or experiencing high load. Please try again in a few moments.");
+       // Re-throw a more specific error to be caught by the frontend.
+       throw new Error(`The AI model failed to process the request. Details: ${error.message || 'Unknown error'}`);
     }
   }
 );
