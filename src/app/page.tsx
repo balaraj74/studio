@@ -89,10 +89,10 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-4">
             <Card>
                <CardHeader className="text-center">
-                 <div className="w-32 h-32 mx-auto">
+                 <div className="w-24 h-24 mx-auto">
                     <AgrisenceLogo />
                  </div>
-                 <CardTitle className="sr-only">AgriSence</CardTitle>
+                 <CardTitle className="text-3xl font-bold tracking-tight pt-2">AgriSence</CardTitle>
                  <CardDescription>
                     Your AI-Powered Farming Assistant
                  </CardDescription>
