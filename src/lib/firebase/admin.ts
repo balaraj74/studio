@@ -1,6 +1,4 @@
 
-'use server';
-
 import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import serviceAccount from '../../../serviceAccountKey.json';
@@ -28,6 +26,6 @@ adminDb = getFirestore(adminApp);
 /**
  * Returns a server-side Firestore instance.
  */
-export async function getAdminDb() {
+export function getAdminDb() {
     return adminDb;
 }
