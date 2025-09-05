@@ -28,6 +28,6 @@ adminDb = getFirestore(adminApp);
 /**
  * Returns a server-side Firestore instance.
  */
-export function getAdminDb() {
+export async function getAdminDb() {
     return adminDb;
 }
