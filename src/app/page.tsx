@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState } from 'react';
@@ -90,10 +89,13 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-4">
             <Card>
                <CardHeader className="text-center">
-                 <AgrisenceLogo className="h-20 w-20 mx-auto" />
-                 <CardTitle className="text-3xl tracking-tight font-bold text-foreground">
-                    AgriSence
-                 </CardTitle>
+                 <div className="w-32 h-32 mx-auto">
+                    <AgrisenceLogo />
+                 </div>
+                 <CardTitle className="sr-only">AgriSence</CardTitle>
+                 <CardDescription>
+                    Your AI-Powered Farming Assistant
+                 </CardDescription>
                </CardHeader>
                <CardContent>
                  <form onSubmit={handleEmailAuth} className="w-full text-left space-y-4">
