@@ -22,7 +22,7 @@ export async function updateUserProfile(formData: FormData) {
     try {
         if (photoFile && photoFile.size > 0) {
             // 1. Upload new photo to Firebase Storage
-            const storage = getStorage().bucket('gs://agrisence-1dc30.appspot.com');
+            const storage = getStorage().bucket('gs://agrisence-1dc30.firebasestorage.app');
             const filePath = `profile-pictures/${userId}/${Date.now()}-${photoFile.name}`;
             const fileBuffer = Buffer.from(await photoFile.arrayBuffer());
 
