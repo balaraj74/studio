@@ -330,7 +330,9 @@ function ExpenseFormDialog({
         notes,
     };
 
-    const result = expense?.id ? await updateExpense(user.uid, expense.id, expenseData) : await addExpense(user.uid, expenseData);
+    const result = expense?.id 
+        ? await updateExpense(user.uid, expense.id, expenseData) 
+        : await addExpense(user.uid, expenseData);
 
     if (result.success) {
         toast({ title: `Expense ${expense ? "updated" : "added"} successfully.` });
