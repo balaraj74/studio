@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from '@/components/providers';
@@ -14,7 +14,10 @@ export const metadata: Metadata = {
   title: 'AgriSence - AI Farming Assistant',
   description: 'AI-powered agriculture assistant for Indian farmers',
   manifest: '/manifest.json',
-  themeColor: '#74B72E', // Updated to primary green
+};
+
+export const viewport: Viewport = {
+  themeColor: '#74B72E',
 };
 
 export default function RootLayout({
