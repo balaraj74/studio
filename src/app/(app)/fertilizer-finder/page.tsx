@@ -4,10 +4,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Search, Compass, AlertCircle, Car, List } from 'lucide-react';
+import { MapPin, Search, Compass, AlertCircle, Car, List, Map as MapIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 const MAP_ID = "AGRISENCE_FERTILIZER_MAP";
 
@@ -96,7 +100,7 @@ function MapComponent({
       setMarkers(newMarkers);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, shops, onMarkerClick]);
+  }, [map, shops]);
 
 
   return <div ref={ref} id="map" className="h-full w-full rounded-lg" />;
@@ -109,6 +113,8 @@ export default function FertilizerFinderPage() {
   const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
   const [apiKey, setApiKey] = useState<string | undefined>(undefined);
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("map");
 
   useEffect(() => {
     setApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
@@ -160,6 +166,7 @@ export default function FertilizerFinderPage() {
         
         setShops(shopsWithDistance as Shop[]);
         setStatus('success');
+        if (isMobile) setActiveTab("list");
       } else if (searchStatus === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
         setError("No fertilizer shops found within a 5km radius.");
         setStatus('error');
@@ -182,7 +189,7 @@ export default function FertilizerFinderPage() {
     window.open(url, '_blank');
   };
   
-  const renderContent = () => {
+  const renderMap = () => {
     if (status === 'idle') {
       return (
         <div className="text-center">
@@ -195,19 +202,7 @@ export default function FertilizerFinderPage() {
       );
     }
     if (status === 'locating' || status === 'fetching') {
-      return (
-        <div className="space-y-4">
-            <Skeleton className="h-[400px] w-full" />
-            <div className="space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-            </div>
-             <div className="space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-            </div>
-        </div>
-      );
+      return <Skeleton className="h-full w-full" />;
     }
     if (status === 'error') {
       return (
@@ -222,13 +217,87 @@ export default function FertilizerFinderPage() {
     }
     if (status === 'success' && userLocation) {
       return (
-        <div className="h-[700px] w-full">
-          <MapComponent center={userLocation} shops={shops} onMarkerClick={handleNavigate} />
-        </div>
+        <MapComponent center={userLocation} shops={shops} onMarkerClick={handleNavigate} />
       );
     }
     return null;
   }
+
+  const renderList = () => {
+     if (status === 'locating' || status === 'fetching') {
+      return (
+        <div className="space-y-4 p-6">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      )
+    }
+    if (status === 'success' && shops.length > 0) {
+      return (
+        <ul className="space-y-2">
+          {shops.map(shop => (
+            <li key={shop.place_id}>
+              <button
+                className="h-auto w-full p-3 text-left flex justify-between items-center rounded-lg hover:bg-muted"
+                onClick={() => handleNavigate(shop)}
+              >
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{shop.name}</p>
+                  <p className="text-xs text-muted-foreground">{shop.vicinity}</p>
+                  <p className="text-xs font-bold text-primary mt-1">{shop.distance.toFixed(2)} km away</p>
+                </div>
+                <Car className="h-5 w-5 text-muted-foreground ml-2" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    return (
+      <div className="text-center text-sm text-muted-foreground pt-10 h-full flex items-center justify-center">
+        <p>Shop list will appear here.</p>
+      </div>
+    );
+  }
+
+  const renderDesktopLayout = () => (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-[450px] lg:h-[calc(100vh-22rem)] bg-muted rounded-lg flex items-center justify-center p-4">
+              {apiKey && renderMap()}
+          </div>
+          <Card className="lg:col-span-1">
+              <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><List /> Results</CardTitle>
+                  <CardDescription>Click a shop to navigate.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  {renderList()}
+              </CardContent>
+          </Card>
+      </div>
+  );
+
+  const renderMobileLayout = () => (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="map"><MapIcon className="mr-2 h-4 w-4"/>Map View</TabsTrigger>
+              <TabsTrigger value="list"><List className="mr-2 h-4 w-4"/>List View</TabsTrigger>
+          </TabsList>
+          <TabsContent value="map" className="mt-4">
+              <div className="h-[calc(100vh-22rem)] bg-muted rounded-lg flex items-center justify-center p-4">
+                  {apiKey && renderMap()}
+              </div>
+          </TabsContent>
+          <TabsContent value="list" className="mt-4">
+              <Card>
+                  <CardContent className="p-2">
+                      {renderList()}
+                  </CardContent>
+              </Card>
+          </TabsContent>
+      </Tabs>
+  );
 
   return (
     <div className="space-y-6">
@@ -261,55 +330,18 @@ export default function FertilizerFinderPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 h-[450px] lg:h-auto lg:min-h-[500px] bg-muted rounded-lg flex items-center justify-center p-4">
-             {!apiKey && (
-                <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Configuration Error</AlertTitle>
-                    <AlertDescription>
-                    The Google Maps API Key is missing. Please add it to your environment variables to use this feature.
-                    </AlertDescription>
-                </Alert>
-             )}
-             {apiKey && renderContent()}
-        </div>
-        <div className="lg:col-span-1">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><List /> Results</CardTitle>
-                    <CardDescription>Click a shop to navigate.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {status === 'success' && shops.length > 0 ? (
-                        <ul className="space-y-4">
-                            {shops.map(shop => (
-                                <li key={shop.place_id}>
-                                <Button 
-                                    variant="ghost" 
-                                    className="h-auto w-full p-3 text-left justify-between items-center"
-                                    onClick={() => handleNavigate(shop)}
-                                >
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-sm">{shop.name}</p>
-                                        <p className="text-xs text-muted-foreground">{shop.vicinity}</p>
-                                        <p className="text-xs font-bold text-primary mt-1">{shop.distance.toFixed(2)} km away</p>
-                                    </div>
-                                    <Car className="h-5 w-5 text-muted-foreground ml-2"/>
-                                </Button>
-                                </li>
-                            ))}
-                        </ul>
-                    ): (
-                        <div className="text-center text-sm text-muted-foreground pt-10">
-                            { (status === 'locating' || status === 'fetching') && <p>Loading results...</p> }
-                            { (status === 'idle' || status === 'error') && <p>Shop list will appear here.</p>}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
-      </div>
+      {!apiKey ? (
+          <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Configuration Error</AlertTitle>
+              <AlertDescription>
+              The Google Maps API Key is missing. Please add it to your environment variables to use this feature.
+              </AlertDescription>
+          </Alert>
+      ) : isMobile ? renderMobileLayout() : renderDesktopLayout()}
+
     </div>
   );
 }
+
+    
