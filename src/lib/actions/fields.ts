@@ -8,7 +8,7 @@ import type { Field } from '@/types';
 export type FieldFormInput = Omit<Field, 'id'>;
 
 const fieldConverter = {
-    toFirestore: (field: Omit<Field, 'id'>) => {
+    toFirestore: (field: FieldFormInput) => {
         return field;
     },
     fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Field => {
@@ -52,7 +52,8 @@ export async function addField(userId: string, data: FieldFormInput) {
     try {
         const db = getAdminDb();
         const fieldsCollection = getFieldsCollection(db, userId);
-        await fieldsCollection.withConverter(fieldConverter).add(data);
+        // Do not use the converter here as it's causing issues. Add the plain data object.
+        await fieldsCollection.add(data);
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {
@@ -61,12 +62,13 @@ export async function addField(userId: string, data: FieldFormInput) {
     }
 }
 
-export async function updateField(userId: string, id: string, data: FieldFormInput) {
+export async function updateField(userId: string, id: string, data: Partial<FieldFormInput>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const db = getAdminDb();
         const fieldRef = db.collection('users').doc(userId).collection('fields').doc(id);
-        await fieldRef.withConverter(fieldConverter).update(data);
+         // Do not use the converter here. Update with the plain data object.
+        await fieldRef.update(data);
         revalidatePath('/field-mapping');
         return { success: true };
     } catch (error) {
