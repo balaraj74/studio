@@ -3,8 +3,26 @@
 
 import { revalidatePath } from 'next/cache';
 import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminDb } from '@/lib/firebase/admin';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Expense } from '@/types';
+
+
+// --- Firebase Admin Initialization ---
+let adminApp: App;
+if (!getApps().length) {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    adminApp = initializeApp({
+        credential: cert(serviceAccountConfig),
+        databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
+    });
+} else {
+    adminApp = getApps()[0];
+}
+const db = getFirestore(adminApp);
+// --- End Firebase Admin Initialization ---
+
 
 export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
     date: string;
@@ -29,15 +47,14 @@ const expenseConverter = {
     }
 };
 
-const getExpensesCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+const getExpensesCollection = (userId: string) => {
     return db.collection('users').doc(userId).collection('expenses');
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
     try {
-        const db = getAdminDb();
-        const expensesCollection = getExpensesCollection(db, userId);
+        const expensesCollection = getExpensesCollection(userId);
         const q = expensesCollection.orderBy("date", "desc");
         const querySnapshot = await q.get();
         return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc));
@@ -54,8 +71,7 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
             ...data,
             date: Timestamp.fromDate(new Date(data.date)),
         };
-        const db = getAdminDb();
-        const expensesCollection = getExpensesCollection(db, userId);
+        const expensesCollection = getExpensesCollection(userId);
         await expensesCollection.add(dataToSave);
         revalidatePath('/expenses');
         return { success: true };
@@ -68,7 +84,6 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const expenseRef = db.collection('users').doc(userId).collection('expenses').doc(id);
         const dataToUpdate = {
             ...data,
@@ -86,7 +101,6 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('expenses').doc(id).delete();
         revalidatePath('/expenses');
         return { success: true };

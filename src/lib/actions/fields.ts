@@ -2,9 +2,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getAdminDb } from '@/lib/firebase/admin';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import { getFirestore, GeoPoint } from 'firebase-admin/firestore';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Field } from '@/types';
-import { GeoPoint } from 'firebase-admin/firestore';
+
+
+// --- Firebase Admin Initialization ---
+let adminApp: App;
+if (!getApps().length) {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    adminApp = initializeApp({
+        credential: cert(serviceAccountConfig),
+        databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
+    });
+} else {
+    adminApp = getApps()[0];
+}
+const db = getFirestore(adminApp);
+// --- End Firebase Admin Initialization ---
 
 
 export type FieldFormInput = Omit<Field, 'id'>;
@@ -43,15 +59,14 @@ const fieldConverter = {
 };
 
 
-const getFieldsCollection = (db: FirebaseFirestore.Firestore, userId: string) => {
+const getFieldsCollection = (userId: string) => {
     return db.collection('users').doc(userId).collection('fields');
 }
 
 export async function getFields(userId: string): Promise<Field[]> {
     if (!userId) return [];
     try {
-        const db = getAdminDb();
-        const fieldsCollection = getFieldsCollection(db, userId);
+        const fieldsCollection = getFieldsCollection(userId);
         const q = fieldsCollection.orderBy("fieldName", "asc");
         const querySnapshot = await q.get();
         return querySnapshot.docs.map(doc => fieldConverter.fromFirestore(doc));
@@ -79,8 +94,7 @@ const prepareDataForFirestore = (data: Partial<FieldFormInput>) => {
 export async function addField(userId: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
-        const fieldsCollection = getFieldsCollection(db, userId);
+        const fieldsCollection = getFieldsCollection(userId);
         
         // Manually prepare the data to ensure correct types for Firestore
         const dataToSave = prepareDataForFirestore(data);
@@ -98,7 +112,6 @@ export async function addField(userId: string, data: FieldFormInput) {
 export async function updateField(userId: string, id: string, data: Partial<FieldFormInput>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const fieldRef = db.collection('users').doc(userId).collection('fields').doc(id);
         
         // Manually prepare the data for updating
@@ -117,7 +130,6 @@ export async function updateField(userId: string, id: string, data: Partial<Fiel
 export async function deleteField(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('fields').doc(id).delete();
         revalidatePath('/field-mapping');
         return { success: true };
