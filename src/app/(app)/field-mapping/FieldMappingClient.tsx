@@ -18,8 +18,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { User } from 'firebase/auth';
 
-// TODO: PASTE YOUR NEW MAP ID FROM GOOGLE CLOUD CONSOLE HERE
-const MAP_ID = "YOUR_NEW_MAP_ID_HERE";
+const MAP_ID = "AGRISENCE_MAP";
 const ACRES_PER_SQ_METER = 0.000247105;
 
 // #region Helper Functions
