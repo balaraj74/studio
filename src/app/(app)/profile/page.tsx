@@ -202,7 +202,7 @@ export default function ProfilePage() {
                     <CardDescription>Upload documents, photos, or videos related to your farm.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <FileUploadManager onUploadComplete={(url) => console.log('Uploaded file URL:', url)} />
+                    <FileUploadManager userId={user.uid} onUploadComplete={(url) => console.log('Uploaded file URL:', url)} />
                 </CardContent>
             </Card>
 

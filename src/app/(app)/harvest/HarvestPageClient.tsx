@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getHarvests, addHarvest, updateHarvest, deleteHarvest, type HarvestFormInput } from "@/lib/actions/harvests";
 import { getCrops } from "@/lib/actions/crops";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { User } from "firebase/auth";
 
 export default function HarvestPageClient() {
   const [harvests, setHarvests] = useState<Harvest[]>([]);
@@ -251,6 +252,7 @@ export default function HarvestPageClient() {
         onOpenChange={setIsDialogOpen}
         harvest={editingHarvest}
         availableCrops={availableCrops}
+        user={user}
         onFormSubmit={onFormSubmit}
       />
     </div>
@@ -262,6 +264,7 @@ interface HarvestFormDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   harvest: Harvest | null;
   availableCrops: Crop[];
+  user: User | null;
   onFormSubmit: () => void;
 }
 
@@ -270,9 +273,9 @@ function HarvestFormDialog({
   onOpenChange,
   harvest,
   availableCrops,
+  user,
   onFormSubmit,
 }: HarvestFormDialogProps) {
-  const { user } = useAuth();
   const [cropId, setCropId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [unit, setUnit] = useState<HarvestUnit>("kg");

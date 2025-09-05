@@ -14,7 +14,6 @@ import {
   collection,
   serverTimestamp,
 } from "firebase/firestore";
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +37,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, Camera, ImageIcon, File as FileIcon } from "lucide-react"; // Renamed File to FileIcon to avoid conflict
 
 interface FileUploadManagerProps {
+  userId: string;
   onUploadComplete?: (url: string) => void;
 }
 
@@ -50,9 +50,9 @@ interface UploadTask {
 }
 
 export function FileUploadManager({
+  userId,
   onUploadComplete,
 }: FileUploadManagerProps) {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
@@ -73,7 +73,7 @@ export function FileUploadManager({
   }, []);
 
   const handleFileSelect = (files: FileList | null) => {
-    if (!files || files.length === 0 || !user) {
+    if (!files || files.length === 0 || !userId) {
       return;
     }
 
@@ -139,14 +139,13 @@ export function FileUploadManager({
   };
 
   const uploadFile = (task: UploadTask) => {
-    if (!user) {
+    if (!userId) {
         updateTask(task.id, { error: "You must be logged in to upload files." });
         return;
     }
 
     const storage = getStorage();
     const db = getFirestore();
-    const userId = user.uid;
 
     const storageRef = ref(
       storage,

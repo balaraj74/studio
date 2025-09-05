@@ -194,5 +194,3 @@ export async function deleteCrop(userId: string, id: string) {
         return { success: false, error: 'Failed to delete crop.' };
     }
 }
-
-    
