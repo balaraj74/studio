@@ -7,7 +7,12 @@
  * - DirectionsRequest - The input type for the getDirections function.
  * - DirectionsResponse - The return type for the getDirections function (conforms to google.maps.DirectionsResult).
  */
-import 'dotenv/config'; // Explicitly load environment variables
+import { config } from 'dotenv';
+import path from 'path';
+
+// Explicitly load environment variables from the root .env file
+config({ path: path.resolve(process.cwd(), '.env') });
+
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import fetch from 'node-fetch';
@@ -41,7 +46,7 @@ const getDirectionsFlow = ai.defineFlow(
   async (input) => {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
-      throw new Error('Google Maps API key is not configured on the server.');
+      throw new Error('Google Maps API key is not configured on the server. Please check the .env file.');
     }
 
     const { origin, destination } = input;
@@ -52,6 +57,7 @@ const getDirectionsFlow = ai.defineFlow(
       const data = await response.json() as any;
 
       if (data.status !== 'OK') {
+        console.error('Google Maps API Error:', data);
         throw new Error(`Failed to fetch directions: ${data.error_message || data.status}`);
       }
 
