@@ -7,7 +7,7 @@
  * - DirectionsRequest - The input type for the getDirections function.
  * - DirectionsResponse - The return type for the getDirections function (conforms to google.maps.DirectionsResult).
  */
-
+import 'dotenv/config'; // Explicitly load environment variables
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import fetch from 'node-fetch';
@@ -63,5 +63,3 @@ const getDirectionsFlow = ai.defineFlow(
     }
   }
 );
-
-    
