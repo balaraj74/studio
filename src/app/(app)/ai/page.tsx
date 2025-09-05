@@ -51,7 +51,7 @@ const DeveloperContactCard = () => (
         <CardContent className="space-y-3 text-sm">
            <div className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-muted-foreground" />
-                <a href="mailto:balararjr83@gmail.com" className="hover:underline">balararjr83@gmail.com</a>
+                <a href="mailto:balarajr483@gmail.com" className="hover:underline">balarajr483@gmail.com</a>
            </div>
             <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
@@ -66,7 +66,7 @@ const DeveloperContactCard = () => (
         </CardContent>
         <CardFooter>
             <Button asChild className="w-full">
-                <a href="mailto:balararjr83@gmail.com">
+                <a href="mailto:balarajr483@gmail.com">
                     <Mail className="mr-2 h-4 w-4" /> Contact Developer
                 </a>
             </Button>
