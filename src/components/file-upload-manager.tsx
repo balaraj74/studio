@@ -35,7 +35,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, Camera, ImageIcon, File } from "lucide-react";
+import { Upload, Camera, ImageIcon, File as FileIcon } from "lucide-react"; // Renamed File to FileIcon to avoid conflict
 
 interface FileUploadManagerProps {
   onUploadComplete?: (url: string) => void;
@@ -58,7 +58,6 @@ export function FileUploadManager({
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
   const [uploads, setUploads] = React.useState<UploadTask[]>([]);
   
-  const photoInputRef = React.useRef<HTMLInputElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -86,17 +85,21 @@ export function FileUploadManager({
     
     setUploads((prev) => [...prev, ...newUploads]);
     newUploads.forEach((task) => uploadFile(task));
+    setIsSheetOpen(false); // Close sheet after selection
   };
   
   const startCamera = async () => {
-    setIsSheetOpen(false); // Close the action sheet
+    setIsSheetOpen(false); // Close the action sheet first
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }});
             setIsCameraOpen(true);
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
+            // We need a slight delay to ensure the dialog is rendered before attaching the stream
+            setTimeout(() => {
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            }, 100);
         } catch (error) {
             console.error("Error accessing camera:", error);
             toast({ variant: "destructive", title: "Camera Error", description: "Could not access the camera. Please check permissions."});
@@ -216,21 +219,10 @@ export function FileUploadManager({
               variant="outline"
               className="w-full justify-start h-14 text-base"
               onClick={() => {
-                  photoInputRef.current?.click();
-                  setIsSheetOpen(false);
-              }}
-            >
-              <ImageIcon className="mr-4 h-6 w-6" /> Choose from Photos
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start h-14 text-base"
-              onClick={() => {
                   fileInputRef.current?.click();
-                  setIsSheetOpen(false);
               }}
             >
-              <File className="mr-4 h-6 w-6" /> Choose from Files
+              <FileIcon className="mr-4 h-6 w-6" /> Choose from Files
             </Button>
           </div>
         </SheetContent>
@@ -241,7 +233,7 @@ export function FileUploadManager({
             <DialogHeader>
                 <DialogTitle>Camera</DialogTitle>
             </DialogHeader>
-            <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-md border aspect-video object-cover"></video>
+            <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-md border aspect-video object-cover bg-black"></video>
             <DialogFooter>
                 <Button onClick={handleCapture}>Capture Photo</Button>
             </DialogFooter>
@@ -249,7 +241,6 @@ export function FileUploadManager({
       </Dialog>
       
       {/* Hidden inputs and canvas */}
-      <input type="file" accept="image/*" ref={photoInputRef} className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
       <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e.target.files)} />
       <canvas ref={canvasRef} className="hidden"></canvas>
       
@@ -261,7 +252,7 @@ export function FileUploadManager({
                     <CardContent className="p-3">
                         <div className="flex items-center gap-3">
                              <div className="flex-shrink-0 bg-muted p-2 rounded-md">
-                                {task.file.type.startsWith('image/') ? <ImageIcon className="h-6 w-6" /> : <File className="h-6 w-6" />}
+                                {task.file.type.startsWith('image/') ? <ImageIcon className="h-6 w-6" /> : <FileIcon className="h-6 w-6" />}
                             </div>
                             <div className="flex-1 overflow-hidden">
                                 <p className="text-sm font-medium truncate">{task.file.name}</p>
@@ -282,5 +273,3 @@ export function FileUploadManager({
     </div>
   );
 }
-
-    
