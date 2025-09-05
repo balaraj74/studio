@@ -10,7 +10,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import fetch from 'node-fetch';
 
 const LatLngLiteralSchema = z.object({
   lat: z.number(),
