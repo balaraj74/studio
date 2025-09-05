@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Status } from "@googlemaps/react-wrapper";
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Search, Compass, AlertCircle, Car, List, X, Route, Clock } from 'lucide-react';
+import { getDirections, type DirectionsResponse } from '@/ai/flows/get-directions-flow';
 
 const MAP_ID = "AGRISENCE_FERTILIZER_MAP";
 
@@ -142,8 +142,6 @@ export default function FertilizerFinderPage() {
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
-
   useEffect(() => {
     setApiKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
   }, []);
@@ -178,9 +176,6 @@ export default function FertilizerFinderPage() {
 
   const fetchShops = (location: google.maps.LatLngLiteral) => {
     setStatus('fetching');
-    if (!directionsServiceRef.current) {
-        directionsServiceRef.current = new window.google.maps.DirectionsService();
-    }
     const mapElement = document.createElement('div');
     const placesService = new window.google.maps.places.PlacesService(mapElement);
     const request: google.maps.places.PlaceSearchRequest = {
@@ -209,8 +204,8 @@ export default function FertilizerFinderPage() {
     });
   };
 
-  const handleShowRoute = (shop: Shop) => {
-    if (!userLocation || !shop.geometry?.location || !directionsServiceRef.current) {
+  const handleShowRoute = async (shop: Shop) => {
+    if (!userLocation || !shop.geometry?.location) {
         toast({ variant: 'destructive', title: 'Error', description: 'Cannot calculate route.'});
         return;
     }
@@ -218,21 +213,20 @@ export default function FertilizerFinderPage() {
     setSelectedShop(shop);
     setIsNavigating(true);
     
-    const request: google.maps.DirectionsRequest = {
-        origin: userLocation,
-        destination: shop.geometry.location,
-        travelMode: google.maps.TravelMode.DRIVING,
-    };
+    try {
+        const result = await getDirections({
+            origin: userLocation,
+            destination: shop.geometry.location.toJSON(),
+        });
+        
+        // The result from our flow is already in the google.maps.DirectionsResult format
+        setDirections(result as google.maps.DirectionsResult);
 
-    directionsServiceRef.current.route(request, (result, status) => {
-        if (status === 'OK' && result) {
-            setDirections(result);
-        } else {
-            console.error('Directions request failed due to ' + status);
-            toast({ variant: 'destructive', title: 'Route not found', description: 'Could not calculate a route to this destination.' });
-            clearNavigation();
-        }
-    });
+    } catch (err: any) {
+        console.error('Directions request failed:', err);
+        toast({ variant: 'destructive', title: 'Route not found', description: err.message || 'Could not calculate a route to this destination.' });
+        clearNavigation();
+    }
   };
 
   const clearNavigation = () => {
@@ -261,7 +255,7 @@ export default function FertilizerFinderPage() {
         </div>
       );
     }
-    if (status === 'locating' || status === 'fetching' && !isNavigating) {
+    if (status === 'locating' || (status === 'fetching' && !isNavigating)) {
       return (
         <div className="space-y-4">
             <Skeleton className="h-[400px] w-full" />
