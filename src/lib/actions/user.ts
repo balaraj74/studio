@@ -10,19 +10,22 @@ import { revalidatePath } from 'next/cache';
 // --- Firebase Admin Initialization ---
 let adminApp: App;
 if (!getApps().length) {
-    const serviceAccountConfig = serviceAccount as ServiceAccount;
-    adminApp = initializeApp({
-        credential: cert(serviceAccountConfig),
-        databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
-    });
+    try {
+        const serviceAccountConfig = serviceAccount as ServiceAccount;
+        adminApp = initializeApp({
+            credential: cert(serviceAccountConfig),
+            databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
+        });
+    } catch(error: any) {
+        console.error("Firebase admin initialization error", error.stack);
+    }
 } else {
     adminApp = getApps()[0];
 }
 // --- End Firebase Admin Initialization ---
 
 
-export async function updateUserProfile(formData: FormData) {
-    const userId = formData.get('userId') as string;
+export async function updateUserProfile(userId: string, formData: FormData) {
     if (!userId) {
         return { success: false, error: 'User not authenticated.' };
     }

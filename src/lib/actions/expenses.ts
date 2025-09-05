@@ -3,26 +3,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { Timestamp } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import serviceAccount from '../../../serviceAccountKey.json';
+import { getAdminDb } from '../firebase/admin';
 import type { Expense } from '@/types';
-
-
-// --- Firebase Admin Initialization ---
-let adminApp: App;
-if (!getApps().length) {
-    const serviceAccountConfig = serviceAccount as ServiceAccount;
-    adminApp = initializeApp({
-        credential: cert(serviceAccountConfig),
-        databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
-    });
-} else {
-    adminApp = getApps()[0];
-}
-const db = getFirestore(adminApp);
-// --- End Firebase Admin Initialization ---
-
 
 export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
     date: string;
@@ -48,6 +30,7 @@ const expenseConverter = {
 };
 
 const getExpensesCollection = (userId: string) => {
+    const db = getAdminDb();
     return db.collection('users').doc(userId).collection('expenses');
 }
 
@@ -84,6 +67,7 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         const expenseRef = db.collection('users').doc(userId).collection('expenses').doc(id);
         const dataToUpdate = {
             ...data,
@@ -101,6 +85,7 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
+        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('expenses').doc(id).delete();
         revalidatePath('/expenses');
         return { success: true };
