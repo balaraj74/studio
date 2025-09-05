@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -13,18 +13,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, ImagePlus, X, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2 } from "lucide-react";
-import Image from "next/image";
+import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2 } from "lucide-react";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
 } from "@/ai/flows/crop-disease-detection";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const MAX_IMAGES = 5;
 
 const supportedLanguages = [
     { value: 'English', label: 'English', langCode: 'en-US' },
@@ -34,79 +30,61 @@ const supportedLanguages = [
     { value: 'Telugu', label: 'Telugu (తెలుగు)', langCode: 'te-IN' },
 ];
 
+const ANALYSIS_INTERVAL = 3000; // 3 seconds
+
 export default function DiseaseCheckPage() {
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [language, setLanguage] = useState<string>('English');
-  const [result, setResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [statusText, setStatusText] = useState("");
+  const [finalResult, setFinalResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
+  const [liveResult, setLiveResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const analysisIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Function to load voices
     const loadVoices = () => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
-            const availableVoices = window.speechSynthesis.getVoices();
-            setVoices(availableVoices);
+            setVoices(window.speechSynthesis.getVoices());
         }
     };
-
-    // The 'onvoiceschanged' event is fired when the list of voices has been loaded.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.onvoiceschanged = loadVoices;
     }
-
-    // Call it once to get the initial list of voices
     loadVoices();
 
-    // Clean up preview URLs when component unmounts
+    // Cleanup on unmount
     return () => {
-      previewUrls.forEach(URL.revokeObjectURL);
+      stopAnalysisLoop();
+      stopCameraStream();
     };
-    // The dependency array is empty to ensure this runs only once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-
-    const newFiles = [...imageFiles, ...files].slice(0, MAX_IMAGES);
-    const newUrls = newFiles.map(file => URL.createObjectURL(file));
-
-    // Revoke old URLs
-    previewUrls.forEach(URL.revokeObjectURL);
-
-    setImageFiles(newFiles);
-    setPreviewUrls(newUrls);
-    setResult(null);
-    setError(null);
+  const stopCameraStream = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
   };
 
-  const removeImage = (index: number) => {
-    const newFiles = [...imageFiles];
-    const newUrls = [...previewUrls];
-    
-    newFiles.splice(index, 1);
-    const removedUrl = newUrls.splice(index, 1)[0];
-    URL.revokeObjectURL(removedUrl);
-
-    setImageFiles(newFiles);
-    setPreviewUrls(newUrls);
-  }
-
-  const fileToDataUri = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const frameToDataUri = (): string | null => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if(video.videoWidth === 0 || video.videoHeight === 0) return null;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+    return null;
   };
   
   const handleGetLocation = () => {
@@ -114,109 +92,121 @@ export default function DiseaseCheckPage() {
           setError("Geolocation is not supported by your browser.");
           return;
       }
-      setStatusText("Getting location...");
       navigator.geolocation.getCurrentPosition(
           (position) => {
-              setLocation({
-                  latitude: position.coords.latitude,
-                  longitude: position.coords.longitude,
-              });
-              setStatusText("Location found!");
-              toast({ title: "Location Acquired", description: "Your current location has been recorded for analysis." });
+              setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+              toast({ title: "Location Acquired" });
           },
           () => {
               setError("Permission to access location was denied. Please enable it in your browser settings.");
-              setStatusText("");
           }
       );
   }
 
-  const handleDiagnose = async () => {
-    if (imageFiles.length === 0 || !location) {
-      setError("Please provide at least one image and your location.");
+  const startAnalysisLoop = useCallback(() => {
+    if (!location) {
+      toast({ variant: "destructive", title: "Location Required", description: "Please set your location before starting the diagnosis." });
+      setIsStreaming(false);
       return;
     }
 
-    setIsLoading(true);
+    if (analysisIntervalRef.current) clearInterval(analysisIntervalRef.current);
+
+    analysisIntervalRef.current = setInterval(async () => {
+      if (isAnalyzing) return; // Skip if an analysis is already in progress
+
+      const frameUri = frameToDataUri();
+      if (!frameUri) return;
+
+      setIsAnalyzing(true);
+      try {
+        const diagnosisResult = await diagnoseCropDisease({ 
+            imageUris: [frameUri],
+            geolocation: location,
+            language: language
+        });
+        
+        if (diagnosisResult.plantIdentification.isPlant) {
+            setLiveResult(diagnosisResult);
+            setError(null);
+        } else {
+            setError("No plant detected in the current view.");
+            setLiveResult(null);
+        }
+      } catch (e) {
+        console.error(e);
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+        setError(`Analysis failed. ${errorMessage}`);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }, ANALYSIS_INTERVAL);
+  }, [isAnalyzing, location, language, toast]);
+
+
+  const stopAnalysisLoop = () => {
+      if (analysisIntervalRef.current) {
+          clearInterval(analysisIntervalRef.current);
+          analysisIntervalRef.current = null;
+      }
+  };
+
+
+  const handleStartStreaming = async () => {
     setError(null);
-    setResult(null);
+    setFinalResult(null);
+    setLiveResult(null);
+
+    if (!location) {
+        toast({ variant: "destructive", title: "Location Needed", description: "Please get your location before starting the scan."});
+        return;
+    }
 
     try {
-      setStatusText("Converting images...");
-      const imageUris = await Promise.all(imageFiles.map(fileToDataUri));
-      
-      setStatusText("Contacting weather service...");
-      // The flow will handle weather, we just call the main diagnose function
-      
-      setStatusText("Analyzing with AI...");
-      const diagnosisResult = await diagnoseCropDisease({ 
-          imageUris,
-          geolocation: location,
-          language: language
-      });
-
-      if (!diagnosisResult.plantIdentification.isPlant) {
-        setError("The AI could not identify a plant in the uploaded images. Please try again with a clearer picture.");
-        setIsLoading(false);
-        return;
-      }
-
-      setResult(diagnosisResult);
-      setStatusText("Diagnosis complete!");
-
-    } catch (e) {
-      console.error(e);
-      const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-      setError(`Failed to get diagnosis. ${errorMessage}`);
-      toast({
-        variant: "destructive",
-        title: "Diagnosis Failed",
-        description: "There was a problem contacting the AI service. Please try again later.",
-      });
-    } finally {
-      setIsLoading(false);
-      setStatusText("");
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }});
+        if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setIsStreaming(true);
+            startAnalysisLoop();
+        }
+    } catch (err) {
+        console.error("Camera error:", err);
+        setError("Could not access camera. Please check permissions.");
     }
   };
   
+  const handleStopStreaming = () => {
+      stopAnalysisLoop();
+      stopCameraStream();
+      setIsStreaming(false);
+      setIsAnalyzing(false);
+      if (liveResult) {
+          setFinalResult(liveResult);
+      }
+  };
+
   const handleReset = () => {
-    setImageFiles([]);
-    previewUrls.forEach(URL.revokeObjectURL);
-    setPreviewUrls([]);
+    handleStopStreaming();
     setLocation(null);
-    setResult(null);
+    setFinalResult(null);
+    setLiveResult(null);
     setError(null);
     setLanguage('English');
-    if(fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   }
 
   const handleSpeak = (text: string) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Stop any previous speech
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       const langInfo = supportedLanguages.find(l => l.value === language);
-      
       if(langInfo) {
-        // Set the language of the utterance
         utterance.lang = langInfo.langCode;
-        // Try to find a voice that matches the language
         const voice = voices.find(v => v.lang === langInfo.langCode);
-        if (voice) {
-          utterance.voice = voice;
-        } else {
-            console.warn(`No voice found for ${langInfo.langCode}. Using browser default for the language.`);
-        }
+        if (voice) utterance.voice = voice;
       }
-      
       window.speechSynthesis.speak(utterance);
     } else {
-      toast({
-        variant: "destructive",
-        title: "TTS Not Supported",
-        description: "Your browser does not support text-to-speech.",
-      });
+      toast({ variant: "destructive", title: "TTS Not Supported" });
     }
   };
 
@@ -232,96 +222,73 @@ export default function DiseaseCheckPage() {
         <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>
     </div>
   );
+  
+  const LiveResultDisplay = ({ result }: { result: DiagnoseCropDiseaseOutput | null }) => {
+    if (!result) {
+      return (
+        <div className="flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <p className="text-muted-foreground">Searching for plants...</p>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4 animate-in fade-in-50">
+          <div className="flex items-center gap-3">
+            <Sprout className="h-6 w-6 text-primary" />
+            <p className="text-xl font-bold">{result.plantIdentification.plantName}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Stethoscope className="h-6 w-6 text-primary" />
+            <p className="text-xl font-bold">{result.diseaseDiagnosis.diseaseName}</p>
+          </div>
+          <div>
+              <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Diagnosis Confidence</Label>
+              <div className="flex items-center gap-2 pt-1">
+                <Progress value={result.diseaseDiagnosis.confidenceScore * 100} className="w-2/3" />
+                <span className="font-semibold text-sm">{(result.diseaseDiagnosis.confidenceScore * 100).toFixed(0)}%</span>
+              </div>
+          </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="bg-primary/10 p-3 rounded-lg">
-          <Stethoscope className="h-8 w-8 text-primary" />
-        </div>
+        <div className="bg-primary/10 p-3 rounded-lg"><Stethoscope className="h-8 w-8 text-primary" /></div>
         <div>
-          <h1 className="text-3xl font-bold font-headline">Advanced Crop Diagnosis</h1>
-          <p className="text-muted-foreground">
-            Upload leaf images for a detailed AI analysis and identification.
-          </p>
+          <h1 className="text-3xl font-bold font-headline">Live Crop Diagnosis</h1>
+          <p className="text-muted-foreground">Point your camera at a leaf for a real-time AI analysis.</p>
         </div>
       </div>
       
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-2">
             <CardHeader>
-            <CardTitle>1. Provide Inputs</CardTitle>
-            <CardDescription>
-                Add images, location, and preferred language.
-            </CardDescription>
+            <CardTitle>1. Setup</CardTitle>
+            <CardDescription>Configure location and language, then start the stream.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="language">Response Language</Label>
-                 <Select value={language} onValueChange={setLanguage} disabled={isLoading}>
-                    <SelectTrigger id="language">
-                        <SelectValue placeholder="Select Language" />
-                    </SelectTrigger>
+                 <Select value={language} onValueChange={setLanguage} disabled={isStreaming}>
+                    <SelectTrigger id="language"><SelectValue placeholder="Select Language" /></SelectTrigger>
                     <SelectContent>
-                        {supportedLanguages.map(lang => (
-                            <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                        ))}
+                        {supportedLanguages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
                     </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>Location</Label>
-                <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={handleGetLocation}
-                    disabled={isLoading || !!location}
-                >
+                <Button variant="outline" className="w-full" onClick={handleGetLocation} disabled={isStreaming || !!location}>
                     <LocateFixed className="mr-2 h-4 w-4" />
-                    {location ? `Location Acquired (${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)})` : "Get Current Location"}
+                    {location ? `Location Acquired` : "Get Current Location"}
                 </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="pictures">Leaf Images ({imageFiles.length}/{MAX_IMAGES})</Label>
-                <div className="grid grid-cols-3 gap-2">
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative aspect-square">
-                          <Image src={url} alt={`Preview ${index}`} fill className="rounded-md object-cover"/>
-                           <Button
-                              size="icon"
-                              variant="destructive"
-                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                              onClick={() => removeImage(index)}
-                              disabled={isLoading}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                      </div>
-                    ))}
-                    {imageFiles.length < MAX_IMAGES && (
-                      <Label
-                        htmlFor="pictures"
-                        className="flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-lg cursor-pointer bg-card hover:bg-muted"
-                      >
-                        <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                        <Input
-                          id="pictures"
-                          type="file"
-                          multiple
-                          className="hidden"
-                          accept="image/png, image/jpeg, image/webp"
-                          onChange={handleFileChange}
-                          ref={fileInputRef}
-                          disabled={isLoading}
-                        />
-                      </Label>
-                    )}
-                </div>
-              </div>
-
-            {error && (
+            {error && !isStreaming && (
                 <Alert variant="destructive">
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
@@ -329,72 +296,61 @@ export default function DiseaseCheckPage() {
             )}
             </CardContent>
             <CardFooter className="flex justify-between">
-            <Button variant="outline" onClick={handleReset} disabled={isLoading}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reset
-            </Button>
-            <Button onClick={handleDiagnose} disabled={imageFiles.length === 0 || !location || isLoading}>
-                {isLoading ? (
-                <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    {statusText || "Diagnosing..."}
-                </>
-                ) : (
-                <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Diagnose
-                </>
-                )}
-            </Button>
+              <Button variant="outline" onClick={handleReset} disabled={isStreaming}><RefreshCw className="mr-2 h-4 w-4" /> Reset</Button>
+              {isStreaming ? (
+                 <Button onClick={handleStopStreaming} variant="destructive"><Square className="mr-2 h-4 w-4" /> Stop Diagnosis</Button>
+              ) : (
+                 <Button onClick={handleStartStreaming} disabled={!location}><Video className="mr-2 h-4 w-4" /> Start Live Diagnosis</Button>
+              )}
             </CardFooter>
         </Card>
 
+        <canvas ref={canvasRef} className="hidden"></canvas>
+
         <div className="lg:col-span-3">
-            {result ? (
+            {isStreaming ? (
+                 <Card className="animate-in fade-in-50">
+                    <CardHeader>
+                        <CardTitle>Live Analysis</CardTitle>
+                        <CardDescription>Point your camera towards a plant leaf.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <video ref={videoRef} autoPlay playsInline className="w-full h-auto rounded-lg border aspect-video object-cover bg-muted"></video>
+                        <div className="p-4 rounded-lg border bg-card min-h-[160px] flex items-center justify-center">
+                            {error && isStreaming ? (
+                                 <p className="text-destructive text-center">{error}</p>
+                            ) : (
+                               <LiveResultDisplay result={liveResult} />
+                            )}
+                        </div>
+                    </CardContent>
+                 </Card>
+            ) : finalResult ? (
             <Card className="animate-in fade-in-50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-lg">
-                        <Sprout className="text-primary" />
-                      </div>
-                      <span>{result.plantIdentification.plantName}</span>
+                      <div className="bg-primary/10 p-2 rounded-lg"><Sprout className="text-primary" /></div>
+                      <span>{finalResult.plantIdentification.plantName}</span>
                     </CardTitle>
-                    <CardDescription>
-                        Disease Diagnosis: {result.diseaseDiagnosis.diseaseName}
-                    </CardDescription>
+                    <CardDescription>Disease Diagnosis: {finalResult.diseaseDiagnosis.diseaseName}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                        <div>
                           <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Diagnosis Confidence</Label>
                           <div className="flex items-center gap-2 pt-1">
-                            <Progress value={result.diseaseDiagnosis.confidenceScore * 100} className="w-2/3" />
-                            <span className="font-semibold text-sm">{(result.diseaseDiagnosis.confidenceScore * 100).toFixed(0)}%</span>
+                            <Progress value={finalResult.diseaseDiagnosis.confidenceScore * 100} className="w-2/3" />
+                            <span className="font-semibold text-sm">{(finalResult.diseaseDiagnosis.confidenceScore * 100).toFixed(0)}%</span>
                           </div>
-                      </div>
-                       <div>
-                          <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Plant Confidence</Label>
-                          <div className="flex items-center gap-2 pt-1">
-                            <Progress value={result.plantIdentification.confidence * 100} className="w-2/3" />
-                            <span className="font-semibold text-sm">{(result.plantIdentification.confidence * 100).toFixed(0)}%</span>
-                          </div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                        </div>
                         <div className="space-y-1">
                             <Label className="flex items-center gap-2 text-muted-foreground"><TestTube2 className="h-4 w-4" /> Severity</Label>
-                            <p className="font-semibold">{result.diseaseDiagnosis.severity}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="flex items-center gap-2 text-muted-foreground"><ListOrdered className="h-4 w-4" /> Affected Parts</Label>
-                            <p className="font-semibold">{result.diseaseDiagnosis.affectedParts?.join(', ') || 'N/A'}</p>
+                            <p className="font-semibold">{finalResult.diseaseDiagnosis.severity}</p>
                         </div>
                     </div>
-                    
-                    <ResultSection title="Suggested Remedy" content={result.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} />
-                    <ResultSection title="Alternative Home Remedies" content={result.diseaseDiagnosis.alternativeRemedies} icon={Leaf} />
-                    <ResultSection title="Preventive Measures" content={result.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} />
-
+                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} />
+                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} />
+                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} />
                 </CardContent>
             </Card>
             ) : (
@@ -403,7 +359,7 @@ export default function DiseaseCheckPage() {
                         <Wand2 className="mx-auto h-12 w-12 text-muted-foreground" />
                         <h3 className="mt-4 text-lg font-medium">Awaiting Diagnosis</h3>
                         <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
-                            Provide your crop images and location, then click "Diagnose" to see the AI analysis here.
+                            Click "Start Live Diagnosis" to begin the real-time crop analysis.
                         </p>
                     </div>
                 </Card>
