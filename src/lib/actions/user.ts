@@ -1,53 +1,30 @@
 
-'use server';
+'use client';
 
-import { getAuth } from 'firebase-admin/auth';
-import { getStorage } from 'firebase-admin/storage';
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
-import { revalidatePath } from 'next/cache';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { updateProfile } from 'firebase/auth';
+import { auth, storage } from '@/lib/firebase/config';
 
-// --- Firebase Admin Initialization ---
-// This uses Application Default Credentials.
-if (!getApps().length) {
-  try {
-    initializeApp();
-  } catch (error: any) {
-    console.error("Firebase admin initialization error", error.stack);
-  }
-}
-// --- End Firebase Admin Initialization ---
-
-
-export async function updateUserProfile(userId: string, formData: FormData) {
-    if (!userId) {
+export async function updateUserProfile(formData: FormData) {
+    const user = auth.currentUser;
+    if (!user) {
         return { success: false, error: 'User not authenticated.' };
     }
 
     const displayName = formData.get('displayName') as string;
     const photoFile = formData.get('photo') as File | null;
-    let photoURL: string | null = null;
+    let photoURL: string | undefined = undefined;
 
     try {
         if (photoFile && photoFile.size > 0) {
-            // 1. Upload new photo to Firebase Storage
-            const storage = getStorage().bucket('gs://agrisence-1dc30.appspot.com');
-            const filePath = `profile-pictures/${userId}/${Date.now()}-${photoFile.name}`;
-            const fileBuffer = Buffer.from(await photoFile.arrayBuffer());
-
-            const file = storage.file(filePath);
-            await file.save(fileBuffer, {
-                metadata: { contentType: photoFile.type },
-            });
-            await file.makePublic();
-            photoURL = file.publicUrl();
+            const storageRef = ref(storage, `profile-pictures/${user.uid}/${photoFile.name}`);
+            const snapshot = await uploadBytes(storageRef, photoFile);
+            photoURL = await getDownloadURL(snapshot.ref);
         }
 
-        // 2. Update user profile using Admin SDK
         const updatePayload: { displayName?: string; photoURL?: string } = {};
-        const currentUser = await getAuth().getUser(userId);
-
-        // Only add to payload if the value has changed
-        if (displayName && displayName !== currentUser.displayName) {
+        
+        if (displayName && displayName !== user.displayName) {
             updatePayload.displayName = displayName;
         }
         if (photoURL) {
@@ -55,13 +32,10 @@ export async function updateUserProfile(userId: string, formData: FormData) {
         }
 
         if (Object.keys(updatePayload).length > 0) {
-            await getAuth().updateUser(userId, updatePayload);
+            await updateProfile(user, updatePayload);
         }
-        
-        revalidatePath('/profile');
-        revalidatePath('/(app)', 'layout'); // Revalidate layout to update UserNav
 
-        return { success: true, photoURL: photoURL || currentUser.photoURL };
+        return { success: true, photoURL: photoURL || user.photoURL };
 
     } catch (error: any) {
         console.error("Error updating profile: ", error);

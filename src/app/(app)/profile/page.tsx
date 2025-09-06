@@ -90,7 +90,6 @@ export default function ProfilePage() {
         setIsSaving(true);
 
         const formData = new FormData();
-        formData.append("userId", user.uid);
         formData.append("displayName", displayName);
         if (photoFile) {
             formData.append("photo", photoFile);
@@ -101,6 +100,8 @@ export default function ProfilePage() {
             if (result.success) {
                 toast({ title: "Profile updated successfully!" });
                 if(result.photoURL) setPreviewUrl(result.photoURL);
+                // Manually trigger a re-render or state update if auth state doesn't automatically
+                // This might require a manual refresh of the user object from auth
             } else {
                 throw new Error(result.error);
             }

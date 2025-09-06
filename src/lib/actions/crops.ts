@@ -1,26 +1,11 @@
 
-'use server';
+'use client';
 
-import { revalidatePath } from 'next/cache';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import type { Crop, CropTask } from '@/types';
 import { generateCropCalendar, AIGeneratedTask } from '@/ai/flows/generate-crop-calendar';
 import { parse, isValid, getYear } from 'date-fns';
-
-
-// --- Firebase Admin Initialization ---
-// This uses Application Default Credentials.
-if (!getApps().length) {
-  try {
-    initializeApp();
-  } catch (error: any) {
-    console.error("Firebase admin initialization error", error.stack);
-  }
-}
-const db = getFirestore();
-// --- End Firebase Admin Initialization ---
-
 
 // This is the data shape for client-to-server communication, ensuring dates are strings.
 export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate' | 'calendar'> & {
@@ -28,23 +13,17 @@ export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate' | 'c
     harvestDate: string | null;
 };
 
-
 // Helper function to parse AI-generated date ranges into concrete dates
 const parseDateRange = (range: string, year: number): { startDate: Date, endDate: Date } => {
-    // Expected format: "Month Day" e.g., "July 10" or "July 1 - July 10"
     const parts = range.split(' - ').map(p => p.trim());
-    
-    // Attempt to parse with format "MMMM d"
     const parseWithYear = (dateStr: string) => {
         const fullDateStr = `${dateStr} ${year}`;
         let dt = parse(fullDateStr, 'MMMM d yyyy', new Date());
-        // Fallback for abbreviated months like "Sept"
         if (!isValid(dt)) {
             dt = parse(fullDateStr, 'MMM d yyyy', new Date());
         }
         return dt;
     };
-    
     const startDate = parseWithYear(parts[0]);
     const endDate = parts.length > 1 ? parseWithYear(parts[1]) : startDate;
 
@@ -53,23 +32,16 @@ const parseDateRange = (range: string, year: number): { startDate: Date, endDate
         const now = new Date();
         return { startDate: now, endDate: now };
     }
-
     return { startDate, endDate };
 }
 
-
-// Helper function to convert Firestore doc data to a Crop object
-const docToCrop = (doc: FirebaseFirestore.DocumentSnapshot): Crop => {
+const docToCrop = (doc: any): Crop => {
     const data = doc.data();
-    if (!data) throw new Error("Document data is empty");
-
-    // Convert Firestore Timestamps in calendar to JS Dates
     const calendarTasks = (data.calendar || []).map((task: any) => ({
         ...task,
         startDate: task.startDate ? (task.startDate as Timestamp).toDate() : new Date(),
         endDate: task.endDate ? (task.endDate as Timestamp).toDate() : new Date(),
     }));
-
     return {
         id: doc.id,
         name: data.name,
@@ -82,19 +54,17 @@ const docToCrop = (doc: FirebaseFirestore.DocumentSnapshot): Crop => {
     };
 };
 
-
 const getCropsCollection = (userId: string) => {
-    return db.collection('users').doc(userId).collection('crops');
+    return collection(db, 'users', userId, 'crops');
 }
 
 export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
     try {
         const cropsCollection = getCropsCollection(userId);
-        const q = cropsCollection.orderBy("plantedDate", "desc");
-        const querySnapshot = await q.get();
-        const crops = querySnapshot.docs.map(docToCrop);
-        return crops;
+        const q = query(cropsCollection, orderBy("plantedDate", "desc"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(docToCrop);
     } catch (error) {
         console.error("Error fetching crops: ", error);
         return [];
@@ -105,51 +75,38 @@ export async function addCrop(userId: string, data: CropFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
         const cropsCollection = getCropsCollection(userId);
-
         let calendar: CropTask[] = [];
-        // 1. Generate calendar from AI if region and crop name are provided
+
         if (data.region && data.name) {
             try {
                 const { tasks } = await generateCropCalendar({ cropName: data.name, region: data.region });
-                // Use the year from plantedDate if available, otherwise use the current year
                 const referenceDate = data.plantedDate ? new Date(data.plantedDate) : new Date();
                 const calendarYear = getYear(referenceDate);
-
                 calendar = tasks.map((task: AIGeneratedTask) => {
                     const { startDate, endDate } = parseDateRange(task.dateRange, calendarYear);
-                    return {
-                        taskName: task.taskName,
-                        startDate,
-                        endDate,
-                        isCompleted: false, // Default to not completed
-                    };
+                    return { taskName: task.taskName, startDate, endDate, isCompleted: false };
                 });
             } catch (aiError) {
                 console.error("AI Calendar generation failed:", aiError);
-                // Don't fail the whole operation, just proceed without a calendar
             }
         }
         
-        // 2. Prepare data for Firestore
         const dataToSave = {
             ...data,
             plantedDate: data.plantedDate ? Timestamp.fromDate(new Date(data.plantedDate)) : null,
             harvestDate: data.harvestDate ? Timestamp.fromDate(new Date(data.harvestDate)) : null,
-            calendar: calendar.map(task => ({ // Convert dates back to Timestamps for saving
+            calendar: calendar.map(task => ({
                 ...task,
                 startDate: Timestamp.fromDate(task.startDate),
                 endDate: Timestamp.fromDate(task.endDate),
             })),
         };
         
-        // 3. Add to Firestore
-        await cropsCollection.add(dataToSave);
-
-        revalidatePath('/crops');
+        await addDoc(cropsCollection, dataToSave);
         return { success: true };
     } catch (error) {
         console.error("Error adding crop: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to add crop. Details: ${errorMessage}` };
     }
 }
@@ -157,11 +114,9 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: Partial<CropFormInput & { calendar?: CropTask[] }>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
-
+        const cropRef = doc(db, 'users', userId, 'crops', id);
         const dataToUpdate: { [key: string]: any } = {};
 
-        // Iterate over the provided data and prepare it for Firestore
         Object.keys(data).forEach(key => {
             const value = data[key as keyof typeof data];
             if (key === 'plantedDate' || key === 'harvestDate') {
@@ -181,13 +136,11 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
             return { success: true, message: "No changes to update." };
         }
 
-        await cropRef.update(dataToUpdate);
-
-        revalidatePath('/crops');
+        await updateDoc(cropRef, dataToUpdate);
         return { success: true };
     } catch (error) {
         console.error("Error updating crop: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to update crop. Details: ${errorMessage}` };
     }
 }
@@ -195,13 +148,12 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
 export async function deleteCrop(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
-        await cropRef.delete();
-        revalidatePath('/crops');
+        const cropRef = doc(db, 'users', userId, 'crops', id);
+        await deleteDoc(cropRef);
         return { success: true };
     } catch (error) {
         console.error("Error deleting crop: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to delete crop. Details: ${errorMessage}` };
     }
 }

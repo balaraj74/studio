@@ -1,58 +1,37 @@
 
-'use server';
+'use client';
 
-import { revalidatePath } from 'next/cache';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
-import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 import type { Expense } from '@/types';
-
-
-// --- Firebase Admin Initialization ---
-// This uses Application Default Credentials.
-if (!getApps().length) {
-  try {
-    initializeApp();
-  } catch (error: any) {
-    console.error("Firebase admin initialization error", error.stack);
-  }
-}
-const db = getFirestore();
-// --- End Firebase Admin Initialization ---
 
 export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
     date: string;
 };
 
-const expenseConverter = {
-    toFirestore: (expense: Omit<Expense, 'id'>) => ({
-        ...expense,
-        date: Timestamp.fromDate(new Date(expense.date)),
-    }),
-    fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): Expense => {
-        const data = snapshot.data();
-        if(!data) throw new Error("Document is empty");
-        return {
-            id: snapshot.id,
-            name: data.name,
-            category: data.category,
-            amount: data.amount,
-            notes: data.notes,
-            date: (data.date as Timestamp).toDate(),
-        };
-    }
+const docToExpense = (doc: any): Expense => {
+    const data = doc.data();
+    return {
+        id: doc.id,
+        name: data.name,
+        category: data.category,
+        amount: data.amount,
+        notes: data.notes,
+        date: (data.date as Timestamp).toDate(),
+    };
 };
 
 const getExpensesCollection = (userId: string) => {
-    return db.collection('users').doc(userId).collection('expenses');
+    return collection(db, 'users', userId, 'expenses');
 }
 
 export async function getExpenses(userId: string): Promise<Expense[]> {
     if (!userId) return [];
     try {
         const expensesCollection = getExpensesCollection(userId);
-        const q = expensesCollection.orderBy("date", "desc");
-        const querySnapshot = await q.get();
-        return querySnapshot.docs.map(doc => expenseConverter.fromFirestore(doc));
+        const q = query(expensesCollection, orderBy("date", "desc"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(docToExpense);
     } catch (error) {
         console.error("Error fetching expenses: ", error);
         return [];
@@ -67,12 +46,11 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
             date: Timestamp.fromDate(new Date(data.date)),
         };
         const expensesCollection = getExpensesCollection(userId);
-        await expensesCollection.add(dataToSave);
-        revalidatePath('/expenses');
+        await addDoc(expensesCollection, dataToSave);
         return { success: true };
     } catch (error) {
         console.error("Error adding expense: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to add expense. Details: ${errorMessage}` };
     }
 }
@@ -80,17 +58,16 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const expenseRef = db.collection('users').doc(userId).collection('expenses').doc(id);
+        const expenseRef = doc(db, 'users', userId, 'expenses', id);
         const dataToUpdate = {
             ...data,
             date: Timestamp.fromDate(new Date(data.date))
         };
-        await expenseRef.update(dataToUpdate);
-        revalidatePath('/expenses');
+        await updateDoc(expenseRef, dataToUpdate);
         return { success: true };
     } catch (error) {
         console.error("Error updating expense: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to update expense. Details: ${errorMessage}` };
     }
 }
@@ -98,12 +75,12 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        await db.collection('users').doc(userId).collection('expenses').doc(id).delete();
-        revalidatePath('/expenses');
+        const expenseRef = doc(db, 'users', userId, 'expenses', id);
+        await deleteDoc(expenseRef);
         return { success: true };
     } catch (error) {
         console.error("Error deleting expense: ", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return { success: false, error: `Failed to delete expense. Details: ${errorMessage}` };
     }
 }
