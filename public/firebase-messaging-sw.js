@@ -1,23 +1,29 @@
-// This service worker is required to show notifications when the app is in the background.
+// Import the Firebase app and messaging modules
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// Import and initialize the Firebase SDK
-import { initializeApp } from "firebase/app";
-import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
-
-// Your web app's Firebase configuration
+// Get the Firebase config from the query parameters
+const urlParams = new URL(self.location).searchParams;
 const firebaseConfig = {
-  apiKey: self.location.search.split('apiKey=')[1].split('&')[0],
-  authDomain: self.location.search.split('authDomain=')[1].split('&')[0],
-  projectId: self.location.search.split('projectId=')[1].split('&')[0],
-  storageBucket: self.location.search.split('storageBucket=')[1].split('&')[0],
-  messagingSenderId: self.location.search.split('messagingSenderId=')[1].split('&')[0],
-  appId: self.location.search.split('appId=')[1].split('&')[0],
+    apiKey: urlParams.get('apiKey'),
+    authDomain: urlParams.get('authDomain'),
+    projectId: urlParams.get('projectId'),
+    storageBucket: urlParams.get('storageBucket'),
+    messagingSenderId: urlParams.get('messagingSenderId'),
+    appId: urlParams.get('appId'),
 };
 
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+// Initialize the Firebase app in the service worker
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
-onBackgroundMessage(messaging, (payload) => {
+// Retrieve an instance of Firebase Messaging so that it can handle background messages
+const messaging = firebase.messaging();
+
+// Optional: You can add a background message handler here if you need to
+// customize the notification that is shown to the user when the web app is in the background.
+messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   
   const notificationTitle = payload.notification.title;
