@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX, History, CalendarDays } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX, History, CalendarDays, TrendingUp } from "lucide-react";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
@@ -521,6 +521,17 @@ export default function DiseaseCheckPage() {
                             <p className="font-semibold">{finalResult.diseaseDiagnosis.severity}</p>
                         </div>
                     </div>
+                    {finalResult.riskPrediction && (
+                        <Card className="bg-muted/50">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-5 w-5"/> Future Risk Prediction</CardTitle>
+                            </CardHeader>
+                            <CardContent className="text-sm space-y-2">
+                                <p><strong>Next Risk:</strong> {finalResult.riskPrediction.nextRisk} {`(${finalResult.riskPrediction.timeline})`}</p>
+                                <p className="text-muted-foreground">{finalResult.riskPrediction.reasoning}</p>
+                            </CardContent>
+                        </Card>
+                    )}
                     <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" />
                     <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" />
                     <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />

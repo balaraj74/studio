@@ -44,6 +44,11 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
     alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried, written in the requested language."),
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
+  riskPrediction: z.object({
+    nextRisk: z.string().describe("The name of the most likely next disease or pest risk, e.g., 'Aphid Infestation' or 'Downy Mildew'."),
+    timeline: z.string().describe("The predicted timeline for this risk, e.g., 'In the next 7-10 days'."),
+    reasoning: z.string().describe("A brief explanation for the prediction, linking current conditions, diagnosis, and weather."),
+  }),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -101,10 +106,12 @@ IMPORTANT: Generate the entire response, including all names and descriptions, i
 
 1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
 2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
+3.  Third, based on the current diagnosis, weather forecast, and past history, predict the most likely upcoming risk (disease or pest) and provide a timeline and reasoning.
 
 Return a detailed diagnosis with:
   - Plant Identification: { isPlant, plantName, confidence }
   - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
+  - Risk Prediction: { nextRisk, timeline, reasoning }
 
 IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
 
@@ -112,7 +119,7 @@ Use the following contextual information to refine your analysis. Pay close atte
 
 CONTEXT:
 - Geolocation: Latitude ${input.geolocation.latitude}, Longitude ${input.geolocation.longitude}
-- Current Weather: ${weatherInfo}
+- Current Weather & Forecast: ${weatherInfo}
 - User's Recent Diagnosis History:
 ${historyData}
 `;
