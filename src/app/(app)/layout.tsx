@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
 import { FcmInitializer } from "@/components/fcm-initializer";
 
-const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
+const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping', '/field-intelligence'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;

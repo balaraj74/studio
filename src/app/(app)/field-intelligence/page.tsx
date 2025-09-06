@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -21,39 +21,60 @@ import { Loader2, Satellite, Bot, MapPin, Leaf, ShieldAlert } from 'lucide-react
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// A simple map component placeholder. In a real app, this would use Google Maps API.
 const FieldMap = ({ boundaries }: { boundaries: { lat: number, lng: number }[] }) => {
     const mapRef = useRef<HTMLDivElement>(null);
-    const [isMapVisible, setIsMapVisible] = useState(false);
+    const [map, setMap] = useState<google.maps.Map | null>(null);
+    const polygonRef = useRef<google.maps.Polygon | null>(null);
 
-    // This is a simple SVG placeholder. A real implementation would use a mapping library.
-    const renderMapPlaceholder = () => {
-        if (boundaries.length === 0) return null;
-        
-        const latitudes = boundaries.map(p => p.lat);
-        const longitudes = boundaries.map(p => p.lng);
-        const minLat = Math.min(...latitudes);
-        const maxLat = Math.max(...latitudes);
-        const minLng = Math.min(...longitudes);
-        const maxLng = Math.max(...longitudes);
+    useEffect(() => {
+        if (mapRef.current && !map) {
+            const center = boundaries.reduce((acc, curr) => ({
+                lat: acc.lat + curr.lat,
+                lng: acc.lng + curr.lng,
+            }), { lat: 0, lng: 0 });
+            center.lat /= boundaries.length;
+            center.lng /= boundaries.length;
 
-        const points = boundaries.map(p => 
-            `${((p.lng - minLng) / (maxLng - minLng)) * 100},${100 - ((p.lat - minLat) / (maxLat - minLat)) * 100}`
-        ).join(' ');
+            const newMap = new window.google.maps.Map(mapRef.current, {
+                center,
+                zoom: 16,
+                mapTypeId: 'satellite',
+                disableDefaultUI: true,
+                zoomControl: true,
+            });
+            setMap(newMap);
+        }
+    }, [mapRef, map, boundaries]);
 
-        return (
-             <svg viewBox="0 0 100 100" className="w-full h-full rounded-lg border bg-muted/50">
-                 <polygon points={points} style={{ fill: 'hsl(var(--primary) / 0.4)', stroke: 'hsl(var(--primary))', strokeWidth: 0.5 }} />
-             </svg>
-        );
-    }
-    
+    useEffect(() => {
+        if (map && boundaries.length > 0) {
+             // Clear previous polygon if it exists
+            if (polygonRef.current) {
+                polygonRef.current.setMap(null);
+            }
+            
+            const newPolygon = new google.maps.Polygon({
+                paths: boundaries,
+                strokeColor: 'hsl(var(--primary))',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: 'hsl(var(--primary))',
+                fillOpacity: 0.35,
+            });
+            newPolygon.setMap(map);
+            polygonRef.current = newPolygon;
+
+            const bounds = new google.maps.LatLngBounds();
+            boundaries.forEach(point => bounds.extend(point));
+            map.fitBounds(bounds);
+        }
+    }, [map, boundaries]);
+
     return (
-        <div className="aspect-video w-full">
-            {renderMapPlaceholder()}
-        </div>
-    )
-}
+        <div ref={mapRef} className="aspect-video w-full rounded-lg bg-muted border" />
+    );
+};
+
 
 const HealthStatusCard = ({ status, summary }: { status: string, summary: string }) => {
     const colorClasses = {
