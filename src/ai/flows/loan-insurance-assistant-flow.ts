@@ -13,7 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
-export const CheckLoanInsuranceEligibilityInputSchema = z.object({
+const CheckLoanInsuranceEligibilityInputSchema = z.object({
   landSizeAcres: z.number().describe("The farmer's total land holding in acres."),
   primaryCrop: z.string().describe("The main crop cultivated by the farmer, e.g., 'Rice', 'Cotton'."),
   location: z.string().describe("The farmer's location, e.g., 'Mandya, Karnataka'."),
@@ -30,7 +30,7 @@ const EligibleSchemeSchema = z.object({
     requiredDocuments: z.string().describe("A comma-separated list of the essential documents required for the application."),
 });
 
-export const CheckLoanInsuranceEligibilityOutputSchema = z.object({
+const CheckLoanInsuranceEligibilityOutputSchema = z.object({
   eligibleSchemes: z.array(EligibleSchemeSchema).describe("A list of loan and insurance schemes the farmer is likely eligible for."),
   overallSummary: z.string().describe("A brief, encouraging summary of the findings for the farmer."),
 });
