@@ -5,7 +5,7 @@ import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messagi
 import { app } from './config';
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  apiKey: "AIzaSyAd8T2SnKYd0lC464LCU8SPloORnCtf2f8",
   authDomain: "agrisence-1dc30.firebaseapp.com",
   projectId: "agrisence-1dc30",
   storageBucket: "agrisence-1dc30.appspot.com",
