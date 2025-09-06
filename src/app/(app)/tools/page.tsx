@@ -18,6 +18,7 @@ import {
   HeartPulse,
   Satellite,
   Landmark,
+  Handshake,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -52,6 +53,12 @@ const toolItems: ToolItem[] = [
     title: 'Loan & Insurance',
     description: 'Check eligibility for loans and schemes.',
     icon: Landmark,
+  },
+  {
+    href: '/market-matchmaking',
+    title: 'Market Matchmaking',
+    description: 'Find the best buyers for your crops.',
+    icon: Handshake,
   },
   {
     href: '/weather',
