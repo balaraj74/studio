@@ -45,13 +45,13 @@ const predictMarketPriceFlow = ai.defineFlow(
     const { output } = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       prompt: `
-        You are an expert agricultural market analyst. Your task is to generate a plausible 7-day price forecast for a specific crop in a given Indian market.
+        You are an expert agricultural market analyst. Your task is to generate a plausible and realistic 7-day price forecast for a specific crop in a given Indian market.
         
         Generate a forecast for the next 7 days, starting from tomorrow.
         - The dates should be in 'YYYY-MM-DD' format.
         - The prices should be realistic for the Indian market, per quintal.
-        - The price fluctuations should be logical, showing minor daily changes.
-        - Provide a short, conversational summary of the predicted trend (e.g., "Prices are expected to remain stable with a slight upward trend towards the end of the week.").
+        - The price fluctuations should be logical and reflect some daily market volatility. Avoid creating a perfectly straight line; introduce minor, realistic ups and downs.
+        - Provide a short, conversational summary of the predicted trend (e.g., "Prices for ${cropName} are expected to remain stable with a slight upward trend, though some minor daily fluctuations are likely.").
 
         Crop: ${cropName}
         Market: ${marketName}

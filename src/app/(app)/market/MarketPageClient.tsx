@@ -13,13 +13,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   LineChart as RechartsLineChart,
   Line,
   XAxis,
@@ -37,11 +30,9 @@ type Price = MarketPriceSearchOutput['prices'][0];
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
-        <div className="p-2 bg-background/80 border rounded-md shadow-lg backdrop-blur-sm">
-            <p className="font-bold">{format(parseISO(label), 'MMM d')}</p>
-            <p style={{ color: payload[0].stroke }}>
-                Price: ₹{payload[0].value.toFixed(2)}
-            </p>
+        <div className="p-2 bg-background/90 border rounded-lg shadow-lg backdrop-blur-sm">
+            <p className="font-bold text-base">{`₹${payload[0].value.toFixed(2)}`}</p>
+            <p className="text-sm text-muted-foreground">{format(parseISO(label), 'EEEE, MMM d')}</p>
         </div>
         );
     }
@@ -56,15 +47,12 @@ function PriceForecastCard() {
     const [selectedCrop, setSelectedCrop] = useState('');
     const [selectedMarket, setSelectedMarket] = useState('');
 
-    const crops = ['Wheat', 'Rice', 'Cotton', 'Soybean', 'Maize', 'Turmeric', 'Chana'];
-    const markets = ['Nagpur Mandi', 'Indore Mandi', 'Davangere APMC', 'Kurnool Market', 'Rajkot Market'];
-
     const handlePredict = async () => {
-        if (!selectedCrop || !selectedMarket) {
+        if (!selectedCrop.trim() || !selectedMarket.trim()) {
             toast({
                 variant: 'destructive',
                 title: 'Missing Information',
-                description: 'Please select both a crop and a market.'
+                description: 'Please enter both a crop and a market name.'
             });
             return;
         }
@@ -94,18 +82,22 @@ function PriceForecastCard() {
         <Card>
             <CardHeader>
                 <CardTitle>7-Day Price Forecast</CardTitle>
-                <CardDescription>Predict next week's mandi prices for a selected crop and market.</CardDescription>
+                <CardDescription>Predict next week's mandi prices for any crop and market.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <Select value={selectedCrop} onValueChange={setSelectedCrop}>
-                        <SelectTrigger><SelectValue placeholder="Select Crop" /></SelectTrigger>
-                        <SelectContent>{crops.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <Select value={selectedMarket} onValueChange={setSelectedMarket}>
-                        <SelectTrigger><SelectValue placeholder="Select Market" /></SelectTrigger>
-                        <SelectContent>{markets.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <Input
+                        placeholder="Enter Crop Name (e.g., Wheat)"
+                        value={selectedCrop}
+                        onChange={(e) => setSelectedCrop(e.target.value)}
+                        disabled={isPredicting}
+                    />
+                    <Input
+                        placeholder="Enter Market (e.g., Nagpur Mandi)"
+                        value={selectedMarket}
+                        onChange={(e) => setSelectedMarket(e.target.value)}
+                        disabled={isPredicting}
+                    />
                      <Button onClick={handlePredict} disabled={isPredicting}>
                         {isPredicting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AreaChart className="mr-2 h-4 w-4" />}
                         {isPredicting ? 'Forecasting...' : 'Forecast Prices'}
@@ -119,9 +111,9 @@ function PriceForecastCard() {
                                 <RechartsLineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="date" tickFormatter={(str) => format(parseISO(str), 'MMM d')} />
-                                    <YAxis />
+                                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} />
                                     <Tooltip content={<CustomTooltip />} />
-                                    <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} name="Price" />
+                                    <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} name="Price" dot={false} />
                                 </RechartsLineChart>
                             </ResponsiveContainer>
                         </div>
