@@ -22,16 +22,25 @@ const FindBestBuyersInputSchema = z.object({
 });
 export type FindBestBuyersInput = z.infer<typeof FindBestBuyersInputSchema>;
 
+const PointSchema = z.object({
+  lat: z.number().describe("The latitude of the point."),
+  lng: z.number().describe("The longitude of the point."),
+});
+
 const BuyerMatchSchema = z.object({
+    buyerId: z.string().describe("A unique ID for the buyer, e.g., 'BUYER-123'."),
     buyerName: z.string().describe("The name of the potential buyer, e.g., 'City Agro Traders', 'Local Mandi Wholesaler', or 'Rampur Farmer Co-op'."),
     buyerType: z.enum(["Wholesaler", "Retailer", "Exporter", "Food Processor", "Farmer Co-op", "Individual Farmer"]).describe("The type of the buyer."),
     location: z.string().describe("The buyer's location, including a plausible distance in km, e.g., 'Nashik (approx. 15 km away)'."),
+    coordinates: PointSchema.describe("A plausible, simulated GPS coordinate for the buyer's location."),
     offerPrice: z.number().describe("The price per unit offered by the buyer."),
     offerUnit: z.string().describe("The unit for the offered price, matching the farmer's unit."),
     pickupOrDelivery: z.enum(["Pickup", "Delivery"]).describe("Whether the buyer will pick up from the farm or if the farmer needs to deliver."),
     summary: z.string().describe("A simple, one-sentence summary of the offer, e.g., 'Good local price, pickup tomorrow.'."),
     rating: z.number().min(1).max(5).describe("A simulated trust rating for the buyer, from 1 to 5."),
 });
+export type BuyerMatch = z.infer<typeof BuyerMatchSchema>;
+
 
 const FindBestBuyersOutputSchema = z.object({
   matches: z.array(BuyerMatchSchema).describe("A list of the top 3-5 best buyer matches for the farmer, ranked by a combination of proximity and best offer."),
@@ -60,8 +69,10 @@ const marketMatchmakingFlow = ai.defineFlow(
           You must generate a list of 3 to 5 plausible and diverse buyer matches. The matches should be realistic for the Indian context and ranked by the best combination of proximity and offer price.
           
           For each buyer, you need to create:
+          - A unique ID.
           - A realistic name and buyer type (e.g., 'Kolar Super Foods' - Food Processor, 'Village Co-op' - Farmer Co-op).
           - A plausible location that includes an approximate distance in km from the farmer's location.
+          - A plausible GPS coordinate for the buyer's location.
           - An offer price that is realistic for the given crop and market conditions. Vary the prices slightly between buyers.
           - Specify if it's pickup or delivery.
           - A simple, helpful one-sentence summary of the offer.
@@ -94,3 +105,4 @@ const marketMatchmakingFlow = ai.defineFlow(
     }
   }
 );
+
