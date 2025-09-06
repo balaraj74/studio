@@ -11,6 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/googleai';
+
 
 const GenerateCropCalendarInputSchema = z.object({
   cropName: z.string().describe("The name of the crop, e.g., 'Paddy' or 'Ragi'."),
@@ -36,29 +38,6 @@ export async function generateCropCalendar(input: GenerateCropCalendarInput): Pr
   return generateCropCalendarFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateCropCalendarPrompt',
-  input: { schema: GenerateCropCalendarInputSchema },
-  output: { schema: GenerateCropCalendarOutputSchema },
-  prompt: `You are an expert agriculturalist specializing in Indian farming practices. 
-  
-  Your task is to generate a typical, simplified seasonal calendar for a specific crop in a given Indian region.
-  
-  The calendar should include the most critical tasks: Sowing, at least one Fertilizing event, Irrigation period, and Harvesting.
-  
-  For each task, provide a concise name and a typical date range. The date range should be in a "Month Day - Month Day" format. If it's a single day, just state the "Month Day". Do not include the year.
-  
-  Example for 'Paddy' in 'Karnataka':
-  - Sowing: July 1 - July 10
-  - Fertilizer (NPK): July 20
-  - Irrigation: July 15 - September 15
-  - Harvest: October 10
-  
-  Now, generate this calendar for:
-  - Crop: {{{cropName}}}
-  - Region: {{{region}}}
-  `,
-});
 
 const generateCropCalendarFlow = ai.defineFlow(
   {
@@ -68,7 +47,29 @@ const generateCropCalendarFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-      const { output } = await prompt(input);
+      const { output } = await ai.generate({
+          model: googleAI.model('gemini-1.5-flash'),
+          system: `You are an expert agriculturalist specializing in Indian farming practices. Your task is to generate a typical, simplified seasonal calendar for a specific crop in a given Indian region.`,
+          prompt: `
+            The calendar should include the most critical tasks: Sowing, at least one Fertilizing event, Irrigation period, and Harvesting.
+            
+            For each task, provide a concise name and a typical date range. The date range should be in a "Month Day - Month Day" format. If it's a single day, just state the "Month Day". Do not include the year.
+            
+            Example for 'Paddy' in 'Karnataka':
+            - Sowing: July 1 - July 10
+            - Fertilizer (NPK): July 20
+            - Irrigation: July 15 - September 15
+            - Harvest: October 10
+            
+            Now, generate this calendar for:
+            - Crop: ${input.cropName}
+            - Region: ${input.region}
+          `,
+          output: {
+              schema: GenerateCropCalendarOutputSchema,
+          }
+      });
+      
       if (!output || !output.tasks) {
         throw new Error("AI did not return a valid task list.");
       }
