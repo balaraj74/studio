@@ -81,7 +81,7 @@ const MapComponent = ({
           const marker = new google.maps.Marker({
               position: match.coordinates,
               map,
-              title: 'name' in match ? match.name : match.buyerName,
+              title: 'sellerName' in match ? match.sellerName : match.buyerName,
           });
           newMarkers.push(marker);
           bounds.extend(match.coordinates);
@@ -315,7 +315,51 @@ export default function MarketMatchmakingPage() {
                                 <FormField control={sellForm.control} name="unit" render={({ field }) => ( <FormItem> <FormLabel>Unit</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="kg">kg</SelectItem> <SelectItem value="quintal">quintal</SelectItem> <SelectItem value="tonne">tonne</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
                             </div>
                              <FormField control={sellForm.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Your Location</FormLabel> <div className="flex gap-2"> <FormControl><Input placeholder="e.g., 'Nashik, Maharashtra'" {...field} /></FormControl> <Button type="button" size="icon" onClick={() => handleGetLocation(sellForm)} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin"/> : <LocateFixed className="h-4 w-4"/>}</Button> </div> <FormMessage /> </FormItem> )}/>
-                             <FormField control={sellForm.control} name="sellByDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Preferred Sell By Date</FormLabel> <Popover> <PopoverTrigger asChild> <FormControl> <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}> {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>} <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> </Button> </FormControl> </PopoverTrigger> <PopoverContent className="w-auto p-0" align="start"> <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))} initialFocus /> </PopoverContent> </Popover> <FormMessage /> </FormItem> )}/>
+                             <FormField
+                                control={sellForm.control}
+                                name="sellByDate"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Preferred Sell By Date</FormLabel>
+                                    <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value ? (
+                                            format(new Date(field.value), "PPP")
+                                            ) : (
+                                            <span>Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={
+                                            field.value ? new Date(field.value) : undefined
+                                        }
+                                        onSelect={(date) =>
+                                            field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                                        }
+                                        disabled={(date) =>
+                                            date < new Date(new Date().setDate(new Date().getDate() - 1))
+                                        }
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
                         </CardContent>
                         <CardFooter>
                         <Button type="submit" disabled={isLoading}> {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />} {isLoading ? 'Finding Buyers...' : 'Find Best Buyers'} </Button>
@@ -339,7 +383,51 @@ export default function MarketMatchmakingPage() {
                                 <FormField control={buyForm.control} name="unit" render={({ field }) => ( <FormItem> <FormLabel>Unit</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent> <SelectItem value="kg">kg</SelectItem> <SelectItem value="quintal">quintal</SelectItem> <SelectItem value="tonne">tonne</SelectItem> </SelectContent> </Select> <FormMessage /> </FormItem> )}/>
                             </div>
                              <FormField control={buyForm.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Your Location</FormLabel> <div className="flex gap-2"> <FormControl><Input placeholder="e.g., 'Pune, Maharashtra'" {...field} /></FormControl> <Button type="button" size="icon" onClick={() => handleGetLocation(buyForm)} disabled={isLocating}>{isLocating ? <Loader2 className="h-4 w-4 animate-spin"/> : <LocateFixed className="h-4 w-4"/>}</Button> </div> <FormMessage /> </FormItem> )}/>
-                             <FormField control={buyForm.control} name="purchaseByDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Preferred Purchase By Date</FormLabel> <Popover> <PopoverTrigger asChild> <FormControl> <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}> {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>} <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> </Button> </FormControl> </PopoverTrigger> <PopoverContent className="w-auto p-0" align="start"> <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() - 1))} initialFocus /> </PopoverContent> </Popover> <FormMessage /> </FormItem> )}/>
+                             <FormField
+                                control={buyForm.control}
+                                name="purchaseByDate"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Preferred Purchase By Date</FormLabel>
+                                    <Popover>
+                                    <PopoverTrigger asChild>
+                                        <FormControl>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                            )}
+                                        >
+                                            {field.value ? (
+                                            format(new Date(field.value), "PPP")
+                                            ) : (
+                                            <span>Pick a date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                        </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                        mode="single"
+                                        selected={
+                                            field.value ? new Date(field.value) : undefined
+                                        }
+                                        onSelect={(date) =>
+                                            field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                                        }
+                                        disabled={(date) =>
+                                            date < new Date(new Date().setDate(new Date().getDate() - 1))
+                                        }
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
                         </CardContent>
                         <CardFooter>
                         <Button type="submit" disabled={isLoading}> {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />} {isLoading ? 'Finding Sellers...' : 'Find Best Sellers'} </Button>
