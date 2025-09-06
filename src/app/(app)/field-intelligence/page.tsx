@@ -21,10 +21,18 @@ import { Loader2, Satellite, Bot, MapPin, Leaf, ShieldAlert } from 'lucide-react
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const FieldMap = ({ boundaries }: { boundaries: { lat: number, lng: number }[] }) => {
+const FieldMap = ({ boundaries, hotspots }: { boundaries: { lat: number, lng: number }[], hotspots: GetSatelliteIntelligenceOutput['diseaseHotspots'] }) => {
     const mapRef = useRef<HTMLDivElement>(null);
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const polygonRef = useRef<google.maps.Polygon | null>(null);
+    const markersRef = useRef<google.maps.Marker[]>([]);
+    const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+
+    const hotspotColors = {
+        'Low': '#3b82f6', // blue
+        'Medium': '#f59e0b', // amber
+        'High': '#ef4444', // red
+    };
 
     useEffect(() => {
         if (mapRef.current && !map) {
@@ -43,12 +51,12 @@ const FieldMap = ({ boundaries }: { boundaries: { lat: number, lng: number }[] }
                 zoomControl: true,
             });
             setMap(newMap);
+            infoWindowRef.current = new window.google.maps.InfoWindow();
         }
     }, [mapRef, map, boundaries]);
 
     useEffect(() => {
         if (map && boundaries.length > 0) {
-             // Clear previous polygon if it exists
             if (polygonRef.current) {
                 polygonRef.current.setMap(null);
             }
@@ -66,9 +74,56 @@ const FieldMap = ({ boundaries }: { boundaries: { lat: number, lng: number }[] }
 
             const bounds = new google.maps.LatLngBounds();
             boundaries.forEach(point => bounds.extend(point));
+
+            // Clear previous markers
+            markersRef.current.forEach(marker => marker.setMap(null));
+            markersRef.current = [];
+
+            // Add new markers for hotspots
+            if (hotspots && hotspots.length > 0) {
+                hotspots.forEach((hotspot, index) => {
+                    // Simple logic to place markers inside the polygon
+                    const pointIndex = Math.floor(index * (boundaries.length / hotspots.length));
+                    const markerPosition = boundaries[pointIndex];
+                    
+                    const marker = new google.maps.Marker({
+                        position: markerPosition,
+                        map,
+                        title: `${hotspot.riskLevel} Risk: ${hotspot.diseaseName}`,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: hotspotColors[hotspot.riskLevel] || '#9ca3af',
+                            fillOpacity: 1,
+                            strokeWeight: 2,
+                            strokeColor: 'white'
+                        }
+                    });
+
+                    bounds.extend(markerPosition);
+
+                    marker.addListener('click', () => {
+                         if (infoWindowRef.current) {
+                            const contentString = `
+                                <div style="font-family: sans-serif; color: black; max-width: 200px;">
+                                    <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 4px;">${hotspot.diseaseName}</h4>
+                                    <p style="font-size: 0.8rem; margin-bottom: 8px;"><strong>Risk:</strong> ${hotspot.riskLevel}</p>
+                                    <p style="font-size: 0.8rem; margin-bottom: 4px;"><strong>Reason:</strong> ${hotspot.reason}</p>
+                                    <p style="font-size: 0.8rem;"><strong>Action:</strong> ${hotspot.suggestedAction}</p>
+                                </div>
+                            `;
+                            infoWindowRef.current.setContent(contentString);
+                            infoWindowRef.current.open(map, marker);
+                        }
+                    });
+
+                    markersRef.current.push(marker);
+                });
+            }
+
             map.fitBounds(bounds);
         }
-    }, [map, boundaries]);
+    }, [map, boundaries, hotspots]);
 
     return (
         <div ref={mapRef} className="aspect-video w-full rounded-lg bg-muted border" />
@@ -216,7 +271,7 @@ export default function FieldIntelligencePage() {
             <div className="grid lg:grid-cols-2 gap-6">
                 <div>
                      <h3 className="font-semibold text-lg mb-2 flex items-center gap-2"><MapPin /> Automated Field Boundary</h3>
-                     <FieldMap boundaries={result.fieldBoundaries} />
+                     <FieldMap boundaries={result.fieldBoundaries} hotspots={result.diseaseHotspots} />
                 </div>
                 <div className="space-y-4">
                     <HealthStatusCard status={result.cropHealth.status} summary={result.cropHealth.summary} />
