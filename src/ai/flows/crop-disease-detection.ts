@@ -13,9 +13,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getWeatherInfo } from './weather-search';
 import { googleAI } from '@genkit-ai/googleai';
-import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
 import { addDiagnosisRecord, getDiagnosisHistory } from '@/lib/actions/diagnoses';
 import { storage } from '@/lib/firebase/config';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 
 const DiagnoseCropDiseaseInputSchema = z.object({
@@ -166,4 +166,3 @@ ${historyData}
     }
   }
 );
-

@@ -6,7 +6,7 @@ import { getAuth, type Auth } from "firebase/auth";
 
 // Your web app's Firebase configuration for agrisence-1dc30
 const firebaseConfig = {
-  apiKey: "AIzaSyAd8T2SnKYd0lC464LCU8SPloORnCtf2f8",
+  apiKey: "YOUR_API_KEY",
   authDomain: "agrisence-1dc30.firebaseapp.com",
   projectId: "agrisence-1dc30",
   storageBucket: "agrisence-1dc30.appspot.com",
