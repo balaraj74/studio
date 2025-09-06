@@ -38,6 +38,7 @@ import { Button } from '@/components/ui/button';
 import { WeatherWidget } from '@/components/weather-widget';
 import Autoplay from "embla-carousel-autoplay";
 import { Input } from '@/components/ui/input';
+import { NotificationBell } from '@/components/notification-bell';
 
 interface QuickLink {
   href: string;
@@ -152,7 +153,10 @@ export default function DashboardPage() {
             </h1>
             <p className="text-sm text-muted-foreground">{formattedDate}</p>
         </div>
-        <div>
+        <div className="flex items-center gap-1">
+            <div className="md:hidden">
+                <NotificationBell />
+            </div>
             <Button variant="ghost" size="icon" className="rounded-full">
               <RefreshCw className="h-5 w-5"/>
             </Button>
