@@ -13,7 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
-export const PredictMarketPriceInputSchema = z.object({
+const PredictMarketPriceInputSchema = z.object({
   cropName: z.string().describe("The name of the crop, e.g., 'Wheat'."),
   marketName: z.string().describe("The market or region for the price, e.g., 'Nagpur Mandi'."),
 });
@@ -25,7 +25,7 @@ const DailyForecastSchema = z.object({
 });
 export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 
-export const PredictMarketPriceOutputSchema = z.object({
+const PredictMarketPriceOutputSchema = z.object({
     forecast: z.array(DailyForecastSchema).describe("A list of 7 daily price forecasts."),
     summary: z.string().describe("A brief, friendly summary of the price forecast and trend."),
 });
