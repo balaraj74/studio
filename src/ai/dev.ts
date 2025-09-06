@@ -8,4 +8,5 @@ import '@/ai/flows/medicinal-plant-identifier.ts';
 import '@/ai/flows/generate-crop-calendar.ts';
 import '@/ai/flows/price-prediction-flow.ts';
 import '@/ai/flows/satellite-intelligence-flow.ts';
+import '@/ai/flows/loan-insurance-assistant-flow.ts';
     

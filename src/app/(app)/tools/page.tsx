@@ -17,6 +17,7 @@ import {
   ChevronRight,
   HeartPulse,
   Satellite,
+  Landmark,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -45,6 +46,12 @@ const toolItems: ToolItem[] = [
     title: 'Satellite Intelligence',
     description: 'Monitor crop health and boundaries via satellite.',
     icon: Satellite,
+  },
+  {
+    href: '/loan-assistant',
+    title: 'Loan & Insurance',
+    description: 'Check eligibility for loans and schemes.',
+    icon: Landmark,
   },
   {
     href: '/weather',
