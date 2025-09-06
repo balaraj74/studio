@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import {
   Card,
   CardContent,
@@ -18,7 +19,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import {
   checkLoanInsuranceEligibility,
-  CheckLoanInsuranceEligibilityInputSchema,
   type CheckLoanInsuranceEligibilityInput,
   type CheckLoanInsuranceEligibilityOutput,
 } from '@/ai/flows/loan-insurance-assistant-flow';
@@ -27,6 +27,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+// Define the schema directly in the client component
+const formSchema = z.object({
+  landSizeAcres: z.coerce.number().min(0, "Land size must be a positive number."),
+  primaryCrop: z.string().min(1, "Primary crop is required."),
+  location: z.string().min(1, "Location is required."),
+  hasKisanCreditCard: z.boolean(),
+});
+
 
 const ResultCard = ({ scheme }: { scheme: CheckLoanInsuranceEligibilityOutput['eligibleSchemes'][0] }) => (
     <Card>
@@ -63,7 +72,7 @@ export default function LoanAssistantPage() {
   const { toast } = useToast();
 
   const form = useForm<CheckLoanInsuranceEligibilityInput>({
-    resolver: zodResolver(CheckLoanInsuranceEligibilityInputSchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       landSizeAcres: 5,
       primaryCrop: '',
