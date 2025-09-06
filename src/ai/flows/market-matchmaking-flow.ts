@@ -13,7 +13,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
-export const FindBestBuyersInputSchema = z.object({
+const FindBestBuyersInputSchema = z.object({
   cropType: z.string().describe("The type of crop the farmer wants to sell, e.g., 'Tomatoes', 'Wheat'."),
   quantity: z.number().describe("The quantity of the crop available for sale."),
   unit: z.enum(["kg", "quintal", "tonne"]).describe("The unit for the quantity."),
@@ -33,7 +33,7 @@ const BuyerMatchSchema = z.object({
     rating: z.number().min(1).max(5).describe("A simulated trust rating for the buyer, from 1 to 5."),
 });
 
-export const FindBestBuyersOutputSchema = z.object({
+const FindBestBuyersOutputSchema = z.object({
   matches: z.array(BuyerMatchSchema).describe("A list of the top 3-5 best buyer matches for the farmer."),
   overallSummary: z.string().describe("A brief, encouraging summary of the market situation for the farmer's crop."),
 });
