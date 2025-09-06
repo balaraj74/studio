@@ -23,9 +23,9 @@ const FindBestBuyersInputSchema = z.object({
 export type FindBestBuyersInput = z.infer<typeof FindBestBuyersInputSchema>;
 
 const BuyerMatchSchema = z.object({
-    buyerName: z.string().describe("The name of the potential buyer, e.g., 'City Agro Traders' or 'Local Mandi Wholesaler'."),
-    buyerType: z.enum(["Wholesaler", "Retailer", "Exporter", "Food Processor"]).describe("The type of the buyer."),
-    location: z.string().describe("The buyer's location."),
+    buyerName: z.string().describe("The name of the potential buyer, e.g., 'City Agro Traders', 'Local Mandi Wholesaler', or 'Rampur Farmer Co-op'."),
+    buyerType: z.enum(["Wholesaler", "Retailer", "Exporter", "Food Processor", "Farmer Co-op", "Individual Farmer"]).describe("The type of the buyer."),
+    location: z.string().describe("The buyer's location, including a plausible distance in km, e.g., 'Nashik (approx. 15 km away)'."),
     offerPrice: z.number().describe("The price per unit offered by the buyer."),
     offerUnit: z.string().describe("The unit for the offered price, matching the farmer's unit."),
     pickupOrDelivery: z.enum(["Pickup", "Delivery"]).describe("Whether the buyer will pick up from the farm or if the farmer needs to deliver."),
@@ -34,7 +34,7 @@ const BuyerMatchSchema = z.object({
 });
 
 const FindBestBuyersOutputSchema = z.object({
-  matches: z.array(BuyerMatchSchema).describe("A list of the top 3-5 best buyer matches for the farmer."),
+  matches: z.array(BuyerMatchSchema).describe("A list of the top 3-5 best buyer matches for the farmer, ranked by a combination of proximity and best offer."),
   overallSummary: z.string().describe("A brief, encouraging summary of the market situation for the farmer's crop."),
 });
 export type FindBestBuyersOutput = z.infer<typeof FindBestBuyersOutputSchema>;
@@ -55,13 +55,13 @@ const marketMatchmakingFlow = ai.defineFlow(
     try {
       const { output } = await ai.generate({
           model: googleAI.model('gemini-1.5-flash'),
-          system: `You are an expert AI Market Matchmaking engine for Indian farmers. Your task is to analyze a farmer's crop supply and find the best potential buyers from a simulated market.
+          system: `You are an expert AI Market Matchmaking engine for Indian farmers, simulating a two-way digital mandi. Your task is to analyze a farmer's crop supply and find the best potential buyers from a simulated market of wholesalers, retailers, and other farmers.
 
-          You must generate a list of 3 to 5 plausible and diverse buyer matches. The matches should be realistic for the Indian context.
+          You must generate a list of 3 to 5 plausible and diverse buyer matches. The matches should be realistic for the Indian context and ranked by the best combination of proximity and offer price.
           
           For each buyer, you need to create:
-          - A realistic name and buyer type (e.g., 'Kolar Super Foods' - Food Processor).
-          - A plausible location (some local, some in a nearby major city).
+          - A realistic name and buyer type (e.g., 'Kolar Super Foods' - Food Processor, 'Village Co-op' - Farmer Co-op).
+          - A plausible location that includes an approximate distance in km from the farmer's location.
           - An offer price that is realistic for the given crop and market conditions. Vary the prices slightly between buyers.
           - Specify if it's pickup or delivery.
           - A simple, helpful one-sentence summary of the offer.
@@ -70,7 +70,7 @@ const marketMatchmakingFlow = ai.defineFlow(
           Finally, provide a brief, encouraging overall summary.
           `,
           prompt: `
-            A farmer has the following crop to sell. Find the best buyer matches for them.
+            A farmer has the following crop to sell. Find the best buyer matches for them, ranked by proximity and offer quality.
 
             - **Crop:** ${input.cropType}
             - **Quantity:** ${input.quantity} ${input.unit}
