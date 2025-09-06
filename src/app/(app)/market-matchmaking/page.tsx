@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
 
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { findBestBuyers, FindBestBuyersInputSchema, type FindBestBuyersInput, type FindBestBuyersOutput } from '@/ai/flows/market-matchmaking-flow';
+import { findBestBuyers, type FindBestBuyersInput, type FindBestBuyersOutput } from '@/ai/flows/market-matchmaking-flow';
 import { Loader2, Handshake, Bot, Star, MapPin, Truck, IndianRupee } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -21,6 +22,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+
+const FindBestBuyersInputSchema = z.object({
+  cropType: z.string().min(1, "Crop type is required."),
+  quantity: z.coerce.number().min(0, "Quantity must be a positive number."),
+  unit: z.enum(["kg", "quintal", "tonne"]),
+  location: z.string().min(1, "Location is required."),
+  sellByDate: z.string().min(1, "Sell-by date is required."),
+});
+
 
 const ResultCard = ({ match }: { match: FindBestBuyersOutput['matches'][0] }) => {
     const rating = Math.round(match.rating * 2) / 2; // Round to nearest 0.5
