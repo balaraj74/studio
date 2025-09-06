@@ -34,6 +34,8 @@ const supportedLanguages = [
 ];
 
 const ANALYSIS_INTERVAL = 3000; // 3 seconds
+type SpeakingSection = 'remedy' | 'alternative' | 'prevention' | null;
+
 
 export default function DiseaseCheckPage() {
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
@@ -44,7 +46,7 @@ export default function DiseaseCheckPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingSection, setSpeakingSection] = useState<SpeakingSection>(null);
   
   // States for file upload
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -59,14 +61,16 @@ export default function DiseaseCheckPage() {
   
   // Effect to manage speech synthesis state
   useEffect(() => {
-    const handleSpeechEnd = () => setIsSpeaking(false);
+    const handleSpeechEnd = () => setSpeakingSection(null);
     if (window.speechSynthesis) {
         window.speechSynthesis.addEventListener('end', handleSpeechEnd);
+        window.speechSynthesis.addEventListener('error', handleSpeechEnd);
     }
     return () => {
         if (window.speechSynthesis) {
-            window.speechSynthesis.cancel(); // Stop any speech on component unmount
+            window.speechSynthesis.cancel();
             window.speechSynthesis.removeEventListener('end', handleSpeechEnd);
+            window.speechSynthesis.removeEventListener('error', handleSpeechEnd);
         }
     };
   }, []);
@@ -287,36 +291,44 @@ export default function DiseaseCheckPage() {
     return text.replace(/(\*|_|#|`|~)/g, '');
   };
 
-  const handleSpeak = (text: string) => {
+  const handleSpeak = (text: string, section: SpeakingSection) => {
     if ('speechSynthesis' in window) {
-        if (isSpeaking) {
-            window.speechSynthesis.cancel();
-            setIsSpeaking(false);
-            return;
-        }
+      // If the clicked section is already speaking, stop it.
+      if (speakingSection === section) {
+        window.speechSynthesis.cancel();
+        setSpeakingSection(null);
+        return;
+      }
 
-        const cleanedText = cleanTextForSpeech(text);
-        const utterance = new SpeechSynthesisUtterance(cleanedText);
-        const langInfo = supportedLanguages.find(l => l.value === language);
-        if(langInfo) {
-            utterance.lang = langInfo.langCode;
-            const voice = voices.find(v => v.lang === langInfo.langCode);
-            if (voice) utterance.voice = voice;
-        }
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false); // Also set here for natural completion
-        window.speechSynthesis.speak(utterance);
+      // If another section is speaking, stop it before starting the new one.
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      
+      const cleanedText = cleanTextForSpeech(text);
+      const utterance = new SpeechSynthesisUtterance(cleanedText);
+      const langInfo = supportedLanguages.find(l => l.value === language);
+      if (langInfo) {
+        utterance.lang = langInfo.langCode;
+        // Try to find a voice that matches the language code exactly
+        const voice = voices.find(v => v.lang === langInfo.langCode);
+        if (voice) utterance.voice = voice;
+      }
+      utterance.onstart = () => setSpeakingSection(section);
+      
+      window.speechSynthesis.speak(utterance);
     } else {
       toast({ variant: "destructive", title: "TTS Not Supported" });
     }
   };
 
-  const ResultSection = ({ title, content, icon: Icon }: { title: string, content: string, icon: React.ElementType }) => (
+
+  const ResultSection = ({ title, content, icon: Icon, sectionId }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection }) => (
     <div>
         <div className="flex items-center justify-between">
             <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content)}>
-                {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)}>
+                {speakingSection === sectionId ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 <span className="sr-only">Read aloud</span>
             </Button>
         </div>
@@ -493,9 +505,9 @@ export default function DiseaseCheckPage() {
                             <p className="font-semibold">{finalResult.diseaseDiagnosis.severity}</p>
                         </div>
                     </div>
-                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} />
-                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} />
-                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} />
+                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" />
+                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" />
+                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />
                 </CardContent>
             </Card>
             )}
