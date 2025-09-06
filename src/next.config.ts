@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
     // This is required to allow the Next.js dev server to accept requests from the preview iframe.
     // In newer Next.js versions, this might be handled automatically or via a different config.
   },
+  watchOptions: {
+    ignored: ['**/src/ai/.genkit/**'],
+  },
 };
 
 export default nextConfig;
