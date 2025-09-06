@@ -61,7 +61,8 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
         return { success: true };
     } catch (error) {
         console.error("Error adding harvest: ", error);
-        return { success: false, error: 'Failed to add harvest.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to add harvest. Details: ${errorMessage}` };
     }
 }
 
@@ -79,7 +80,8 @@ export async function updateHarvest(userId: string, id: string, data: HarvestFor
         return { success: true };
     } catch (error) {
         console.error("Error updating harvest: ", error);
-        return { success: false, error: 'Failed to update harvest.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to update harvest. Details: ${errorMessage}` };
     }
 }
 
@@ -92,6 +94,7 @@ export async function deleteHarvest(userId: string, id: string) {
         return { success: true };
     } catch (error) {
         console.error("Error deleting harvest: ", error);
-        return { success: false, error: 'Failed to delete harvest.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete harvest. Details: ${errorMessage}` };
     }
 }

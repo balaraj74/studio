@@ -74,7 +74,8 @@ const prepareDataForFirestore = (data: Partial<FieldFormInput>) => {
 export async function addField(userId: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const fieldsCollection = getFieldsCollection(userId);
+        const db = getAdminDb();
+        const fieldsCollection = db.collection('users').doc(userId).collection('fields');
         
         const dataToSave = prepareDataForFirestore(data);
 
@@ -84,7 +85,8 @@ export async function addField(userId: string, data: FieldFormInput) {
         return { success: true };
     } catch (error) {
         console.error("Error adding field: ", error);
-        return { success: false, error: 'Failed to add field.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to add field. Details: ${errorMessage}` };
     }
 }
 
@@ -102,7 +104,8 @@ export async function updateField(userId: string, id: string, data: Partial<Fiel
         return { success: true };
     } catch (error) {
         console.error("Error updating field: ", error);
-        return { success: false, error: 'Failed to update field.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to update field. Details: ${errorMessage}` };
     }
 }
 
@@ -116,6 +119,7 @@ export async function deleteField(userId: string, id: string) {
     } catch (error)
  {
         console.error("Error deleting field: ", error);
-        return { success: false, error: 'Failed to delete field.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete field. Details: ${errorMessage}` };
     }
 }

@@ -60,7 +60,8 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
         return { success: true };
     } catch (error) {
         console.error("Error adding expense: ", error);
-        return { success: false, error: 'Failed to add expense.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to add expense. Details: ${errorMessage}` };
     }
 }
 
@@ -78,7 +79,8 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
         return { success: true };
     } catch (error) {
         console.error("Error updating expense: ", error);
-        return { success: false, error: 'Failed to update expense.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to update expense. Details: ${errorMessage}` };
     }
 }
 
@@ -91,6 +93,7 @@ export async function deleteExpense(userId: string, id: string) {
         return { success: true };
     } catch (error) {
         console.error("Error deleting expense: ", error);
-        return { success: false, error: 'Failed to delete expense.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete expense. Details: ${errorMessage}` };
     }
 }

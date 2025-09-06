@@ -190,6 +190,7 @@ export async function deleteCrop(userId: string, id: string) {
         return { success: true };
     } catch (error) {
         console.error("Error deleting crop: ", error);
-        return { success: false, error: 'Failed to delete crop.' };
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete crop. Details: ${errorMessage}` };
     }
 }
