@@ -46,6 +46,9 @@ export const getFcmToken = async () => {
       const serviceWorkerUrl = getServiceWorkerUrl();
       const serviceWorkerRegistration = await navigator.serviceWorker.register(serviceWorkerUrl);
 
+      // Wait for the service worker to be active.
+      await navigator.serviceWorker.ready;
+
       fcmToken = await getToken(messaging, {
         vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
         serviceWorkerRegistration
