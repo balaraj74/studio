@@ -31,6 +31,7 @@ const getServiceWorkerUrl = () => {
 export const getFcmToken = async () => {
   let fcmToken = null;
   const isFcmSupported = await isSupported();
+  const vapidKey = "BKy-UaL9-3-sW_Gz5G_wDso9-y_SbYxAqncf27lJ3D-u-Y9j-tA6-i_lR-oGzM-pX_r-A6sB8cZ_eL-4KjY-jJk"; // VAPID key is a public key, safe to include here.
 
   if (!isFcmSupported) {
     console.log("Firebase Messaging is not supported in this browser.");
@@ -50,7 +51,7 @@ export const getFcmToken = async () => {
       await navigator.serviceWorker.ready;
 
       fcmToken = await getToken(messaging, {
-        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+        vapidKey: vapidKey,
         serviceWorkerRegistration
       });
     } else {
