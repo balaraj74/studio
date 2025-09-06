@@ -3,17 +3,14 @@
 
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
-import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
-import serviceAccount from '../../../serviceAccountKey.json';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
 import { revalidatePath } from 'next/cache';
 
 // --- Firebase Admin Initialization ---
+// This uses Application Default Credentials.
 if (!getApps().length) {
   try {
-    const serviceAccountConfig = serviceAccount as ServiceAccount;
-    initializeApp({
-      credential: cert(serviceAccountConfig),
-    });
+    initializeApp();
   } catch (error: any) {
     console.error("Firebase admin initialization error", error.stack);
   }
