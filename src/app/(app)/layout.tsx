@@ -9,6 +9,7 @@ import Link from "next/link";
 import { BottomNav } from "@/components/bottom-nav";
 import { TopNav } from "@/components/top-nav";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notification-bell";
 
 const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
 
@@ -43,7 +44,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xl font-semibold">AgriSence</span>
         </Link>
         <TopNav />
-        <UserNav />
+        <div className="flex items-center gap-4">
+            <NotificationBell />
+            <UserNav />
+        </div>
       </header>
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-28 md:pb-8">
         {renderContent()}
