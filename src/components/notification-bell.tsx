@@ -93,19 +93,26 @@ export function NotificationBell() {
                 <ScrollArea className="h-72">
                     <div className="p-2 space-y-1">
                     {notifications.length > 0 ? notifications.map(notification => (
-                        <div key={notification.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted" onClick={() => handleMarkAsRead(notification.id)}>
+                        <Link
+                          key={notification.id}
+                          href={notification.link}
+                          className="block rounded-lg hover:bg-muted"
+                          onClick={() => handleMarkAsRead(notification.id)}
+                        >
+                          <div className="flex items-start gap-3 p-3">
                             <div className="relative">
-                               <Icon type={notification.type} />
-                                {!notification.isRead && <span className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-red-500" />}
+                              <Icon type={notification.type} />
+                              {!notification.isRead && (
+                                <span className="absolute -top-0.5 -right-0.5 block h-2 w-2 rounded-full bg-red-500" />
+                              )}
                             </div>
                             <div className="flex-1">
-                                <p className="font-semibold text-sm">{notification.title}</p>
-                                <p className="text-xs text-muted-foreground">{notification.description}</p>
+                              <p className="font-semibold text-sm">{notification.title}</p>
+                              <p className="text-xs text-muted-foreground">{notification.description}</p>
                             </div>
-                            <Link href={notification.link} className="self-center">
-                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                            </Link>
-                        </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground self-center" />
+                          </div>
+                        </Link>
                     )) : (
                         <p className="text-center text-sm text-muted-foreground py-10">No new notifications.</p>
                     )}
