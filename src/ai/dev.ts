@@ -6,4 +6,5 @@ import '@/ai/flows/schemes-search.ts';
 import '@/ai/flows/weather-search.ts';
 import '@/ai/flows/medicinal-plant-identifier.ts';
 import '@/ai/flows/generate-crop-calendar.ts';
+import '@/ai/flows/price-prediction-flow.ts';
     
