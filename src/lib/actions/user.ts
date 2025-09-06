@@ -3,7 +3,8 @@
 
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { auth, storage } from '@/lib/firebase/config';
+import { auth, storage, db } from '@/lib/firebase/config';
+import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 
 export async function updateUserProfile(formData: FormData) {
     const user = auth.currentUser;
@@ -40,5 +41,25 @@ export async function updateUserProfile(formData: FormData) {
     } catch (error: any) {
         console.error("Error updating profile: ", error);
         return { success: false, error: error.message || 'Failed to update profile.' };
+    }
+}
+
+/**
+ * Stores the user's FCM token in their Firestore document.
+ * @param userId The UID of the user.
+ * @param token The FCM registration token.
+ */
+export async function addFcmTokenToUser(userId: string, token: string) {
+    if (!userId || !token) return;
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        // Using arrayUnion ensures we don't add duplicate tokens.
+        await updateDoc(userDocRef, {
+            fcmTokens: arrayUnion(token),
+            lastUpdated: serverTimestamp()
+        }, { merge: true }); // Use merge to create the doc if it doesn't exist
+        console.log(`FCM token saved for user ${userId}`);
+    } catch (error) {
+        console.error('Error saving FCM token:', error);
     }
 }

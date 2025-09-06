@@ -13,6 +13,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { ScrollArea } from "./ui/scroll-area";
 import Link from "next/link";
 
+// Note: This component is now primarily for displaying notifications.
+// The logic for receiving notifications is handled by the FcmInitializer component.
+// In a full application, this component would fetch historical notifications from Firestore.
+
 interface Notification {
   id: number;
   type: 'price' | 'scheme';
@@ -23,7 +27,7 @@ interface Notification {
 }
 
 const mockNotifications: Notification[] = [
-  {
+   {
     id: 1,
     type: 'price',
     title: 'Wheat Price Alert',
@@ -37,22 +41,6 @@ const mockNotifications: Notification[] = [
     title: 'New Subsidy Available',
     description: 'A new government scheme for drip irrigation has been announced for Karnataka.',
     isRead: false,
-    link: '/schemes'
-  },
-  {
-    id: 3,
-    type: 'price',
-    title: 'Cotton Price Drop',
-    description: 'Cotton prices have dropped by 3%. Consider holding your stock.',
-    isRead: true,
-    link: '/market'
-  },
-   {
-    id: 4,
-    type: 'scheme',
-    title: 'PM-KISAN Update',
-    description: 'The next installment of PM-KISAN is scheduled for next week.',
-    isRead: true,
     link: '/schemes'
   },
 ];
@@ -119,7 +107,7 @@ export function NotificationBell() {
                             </Link>
                         </div>
                     )) : (
-                        <p className="text-center text-sm text-muted-foreground py-10">No notifications yet.</p>
+                        <p className="text-center text-sm text-muted-foreground py-10">No new notifications.</p>
                     )}
                     </div>
                 </ScrollArea>

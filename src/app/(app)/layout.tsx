@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { TopNav } from "@/components/top-nav";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
+import { FcmInitializer } from "@/components/fcm-initializer";
 
 const MAPS_PAGES = ['/fertilizer-finder', '/field-mapping'];
 
@@ -35,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col h-dvh">
+      <FcmInitializer />
       <header className={cn(
         "sticky top-0 z-40 hidden h-16 items-center justify-between border-b px-4 backdrop-blur-lg sm:px-6 md:flex",
         "border-white/20 bg-black/30"
