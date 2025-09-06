@@ -185,7 +185,7 @@ export default function DiseaseCheckPage() {
               setLiveResult(diagnosisResult);
               setError(null);
           } else {
-              setError("No plant detected in the current view.");
+              setError(diagnosisResult.plantIdentification.plantName || "No plant detected in the current view.");
               setLiveResult(null);
           }
       }
@@ -294,7 +294,12 @@ export default function DiseaseCheckPage() {
         const imageUris = await Promise.all(imageFiles.map(fileToDataUri));
         const diagnosisResult = await runDiagnosis(imageUris);
         if(diagnosisResult) {
-            setFinalResult(diagnosisResult);
+             if (!diagnosisResult.plantIdentification.isPlant) {
+                setError(diagnosisResult.plantIdentification.plantName || "Could not identify a plant. The image may be unclear.");
+                setFinalResult(null);
+            } else {
+                setFinalResult(diagnosisResult);
+            }
         }
     } finally {
         setIsUploading(false);
@@ -413,12 +418,6 @@ export default function DiseaseCheckPage() {
                 </Button>
               </div>
 
-            {error && (
-                <Alert variant="destructive">
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            )}
             </CardContent>
             <CardFooter>
               <Button variant="outline" onClick={handleReset} disabled={isStreaming || isUploading} className="w-full"><RefreshCw className="mr-2 h-4 w-4" /> Reset All</Button>
@@ -484,6 +483,12 @@ export default function DiseaseCheckPage() {
                             ))}
                         </div>
                     )}
+                     {error && (
+                        <Alert variant="destructive">
+                          <AlertTitle>Analysis Failed</AlertTitle>
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
                  </CardContent>
                  <CardFooter>
                     <Button className="w-full" onClick={handleUploadDiagnosis} disabled={isUploading || imageFiles.length === 0 || !location}>
@@ -498,7 +503,7 @@ export default function DiseaseCheckPage() {
             </TabsContent>
           </Tabs>
 
-            {finalResult && (
+            {finalResult && finalResult.plantIdentification.isPlant && (
             <Card className="animate-in fade-in-50 mt-6">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-3">

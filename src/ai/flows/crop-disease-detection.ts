@@ -31,12 +31,12 @@ export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSc
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
   plantIdentification: z.object({
-      isPlant: z.boolean().describe("Confirms if the image contains a plant."),
-      plantName: z.string().describe("The common name of the identified plant in the requested language. 'Unknown' if not identifiable."),
+      isPlant: z.boolean().describe("Confirms if the image contains a plant. Set to false if the image quality is too poor (e.g., blurry, dark, partial view) to make a reliable identification."),
+      plantName: z.string().describe("The common name of the identified plant in the requested language. If not identifiable or if image quality is poor, provide a reason (e.g., 'Image too blurry', 'Not a plant')."),
       confidence: z.number().min(0).max(1).describe("The AI's confidence in the plant identification, from 0.0 to 1.0."),
   }),
   diseaseDiagnosis: z.object({
-    diseaseName: z.string().describe("Name of the detected disease, stress, or nutrient deficiency in the requested language. 'Healthy' if no issue is found."),
+    diseaseName: z.string().describe("Name of the detected disease in the requested language. 'Healthy' if no issue is found. 'Uncertain' if confidence is too low."),
     severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
     affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit') in the requested language."),
     suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan, written in the requested language."),
@@ -104,9 +104,10 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
       const promptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
 IMPORTANT: Generate the entire response, including all names and descriptions, in the following language: ${input.language}.
 
-1.  First, identify the plant from the provided image(s). Determine if it is a plant, its common name, and your confidence in this identification.
-2.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency.
-3.  Third, based on the current diagnosis, weather forecast, and past history, predict the most likely upcoming risk (disease or pest) and provide a timeline and reasoning.
+1.  First, analyze the image quality. If the image is too blurry, dark, or shows only a partial leaf, set 'isPlant' to false and use 'plantName' to explain the issue (e.g., 'Image is too blurry'). Do not proceed with diagnosis.
+2.  If the image is clear, identify the plant. Determine if it is a plant, its common name, and your confidence.
+3.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency. If your confidence in a specific disease is low (below 0.7), set diseaseName to 'Uncertain' and confidenceScore to your low score.
+4.  Third, based on the current diagnosis, weather forecast, and past history, predict the most likely upcoming risk (disease or pest) and provide a timeline and reasoning.
 
 Return a detailed diagnosis with:
   - Plant Identification: { isPlant, plantName, confidence }
@@ -165,3 +166,4 @@ ${historyData}
     }
   }
 );
+
