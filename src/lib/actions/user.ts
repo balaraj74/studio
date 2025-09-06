@@ -4,7 +4,7 @@
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import { auth, storage, db } from '@/lib/firebase/config';
-import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, serverTimestamp, setDoc } from 'firebase/firestore';
 
 export async function updateUserProfile(formData: FormData) {
     const user = auth.currentUser;
@@ -53,11 +53,12 @@ export async function addFcmTokenToUser(userId: string, token: string) {
     if (!userId || !token) return;
     try {
         const userDocRef = doc(db, 'users', userId);
-        // Using arrayUnion ensures we don't add duplicate tokens.
-        await updateDoc(userDocRef, {
+        // Using setDoc with merge:true will create the document if it doesn't exist,
+        // or update it if it does. This prevents the "No document to update" error.
+        await setDoc(userDocRef, {
             fcmTokens: arrayUnion(token),
             lastUpdated: serverTimestamp()
-        }, { merge: true }); // Use merge to create the doc if it doesn't exist
+        }, { merge: true });
         console.log(`FCM token saved for user ${userId}`);
     } catch (error) {
         console.error('Error saving FCM token:', error);
