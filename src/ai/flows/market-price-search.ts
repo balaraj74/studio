@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 const MarketPriceSearchInputSchema = z.object({
   question: z.string().describe("An optional user question about specific crop prices. If empty, the AI should provide a general overview of major crop prices in India."),
@@ -38,6 +39,7 @@ export async function marketPriceSearch(input: MarketPriceSearchInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'marketPriceSearchPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   input: {schema: MarketPriceSearchInputSchema},
   output: {schema: MarketPriceSearchOutputSchema},
   prompt: `You are an expert agricultural market analyst. Your task is to provide an overview of major crop prices in India.

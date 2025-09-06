@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 const FarmingAdviceChatbotInputSchema = z.object({
   question: z.string().describe('The question asked by the farmer.'),
@@ -27,6 +28,7 @@ export async function farmingAdviceChatbot(input: FarmingAdviceChatbotInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'farmingAdviceChatbotPrompt',
+  model: googleAI.model('gemini-1.5-flash'),
   input: {schema: FarmingAdviceChatbotInputSchema},
   output: {schema: FarmingAdviceChatbotOutputSchema},
   prompt: `You are an AI assistant providing farming advice to farmers in India.
