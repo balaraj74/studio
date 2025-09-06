@@ -62,15 +62,16 @@ export default function DiseaseCheckPage() {
   // Effect to manage speech synthesis state
   useEffect(() => {
     const handleSpeechEnd = () => setSpeakingSection(null);
-    if (window.speechSynthesis) {
-        window.speechSynthesis.addEventListener('end', handleSpeechEnd);
-        window.speechSynthesis.addEventListener('error', handleSpeechEnd);
+    const synth = window.speechSynthesis;
+    if (synth) {
+        synth.addEventListener('end', handleSpeechEnd);
+        synth.addEventListener('error', handleSpeechEnd);
     }
     return () => {
-        if (window.speechSynthesis) {
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.removeEventListener('end', handleSpeechEnd);
-            window.speechSynthesis.removeEventListener('error', handleSpeechEnd);
+        if (synth) {
+            synth.cancel();
+            synth.removeEventListener('end', handleSpeechEnd);
+            synth.removeEventListener('error', handleSpeechEnd);
         }
     };
   }, []);
@@ -293,16 +294,17 @@ export default function DiseaseCheckPage() {
 
   const handleSpeak = (text: string, section: SpeakingSection) => {
     if ('speechSynthesis' in window) {
+      const synth = window.speechSynthesis;
       // If the clicked section is already speaking, stop it.
-      if (speakingSection === section) {
-        window.speechSynthesis.cancel();
+      if (speakingSection === section && synth.speaking) {
+        synth.cancel();
         setSpeakingSection(null);
         return;
       }
 
       // If another section is speaking, stop it before starting the new one.
-      if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
+      if (synth.speaking) {
+        synth.cancel();
       }
       
       const cleanedText = cleanTextForSpeech(text);
@@ -310,13 +312,12 @@ export default function DiseaseCheckPage() {
       const langInfo = supportedLanguages.find(l => l.value === language);
       if (langInfo) {
         utterance.lang = langInfo.langCode;
-        // Try to find a voice that matches the language code exactly
         const voice = voices.find(v => v.lang === langInfo.langCode);
         if (voice) utterance.voice = voice;
       }
       utterance.onstart = () => setSpeakingSection(section);
       
-      window.speechSynthesis.speak(utterance);
+      synth.speak(utterance);
     } else {
       toast({ variant: "destructive", title: "TTS Not Supported" });
     }
