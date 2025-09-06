@@ -31,6 +31,7 @@ import {
   ChevronRight,
   HeartPulse,
   BarChart,
+  Satellite,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -61,6 +62,11 @@ const allTools: QuickLink[] = [
     href: '/analytics',
     title: 'Analytics',
     icon: BarChart,
+  },
+   {
+    href: '/field-intelligence',
+    title: 'Satellite',
+    icon: Satellite,
   },
   {
     href: '/medicinal-plants',
@@ -137,7 +143,7 @@ export default function DashboardPage() {
     Autoplay({ delay: 2500, stopOnInteraction: true })
   );
   const date = new Date();
-  const formattedDate = date.toLocaleDateString('en-US', {
+  const formattedDate = date.toLocaleString('en-US', {
     weekday: 'long',
     day: '2-digit',
     month: 'short',
