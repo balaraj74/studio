@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX, History, CalendarDays } from "lucide-react";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
@@ -24,6 +24,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
+import { getDiagnosisHistory, type DiagnosisRecord } from "@/lib/actions/diagnoses";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const supportedLanguages = [
     { value: 'English', label: 'English', langCode: 'en-US' },
@@ -38,6 +42,7 @@ type SpeakingSection = 'remedy' | 'alternative' | 'prevention' | null;
 
 
 export default function DiseaseCheckPage() {
+  const { user } = useAuth();
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [language, setLanguage] = useState<string>('English');
   const [finalResult, setFinalResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
@@ -48,7 +53,6 @@ export default function DiseaseCheckPage() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [speakingSection, setSpeakingSection] = useState<SpeakingSection>(null);
   
-  // States for file upload
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -133,9 +137,35 @@ export default function DiseaseCheckPage() {
       );
   }
 
+  const runDiagnosis = async (imageUris: string[]) => {
+      if (!user) {
+          setError("You must be logged in to perform a diagnosis.");
+          return null;
+      }
+       if (!location) {
+          setError("Location must be set to perform a diagnosis.");
+          return null;
+       }
+       try {
+           const diagnosisResult = await diagnoseCropDisease({ 
+                imageUris: imageUris,
+                geolocation: location,
+                language: language,
+                userId: user.uid, // Pass userId for history saving
+            });
+            return diagnosisResult;
+       } catch(e) {
+           console.error(e);
+           const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+           setError(`Diagnosis failed. ${errorMessage}`);
+           return null;
+       }
+  }
+
+
   const startAnalysisLoop = useCallback(() => {
-    if (!location) {
-      toast({ variant: "destructive", title: "Location Required", description: "Please set your location before starting the diagnosis." });
+    if (!location || !user) {
+      toast({ variant: "destructive", title: "Setup Required", description: "Please log in and set your location before starting the diagnosis." });
       setIsStreaming(false);
       return;
     }
@@ -149,29 +179,19 @@ export default function DiseaseCheckPage() {
       if (!frameUri) return;
 
       setIsAnalyzing(true);
-      try {
-        const diagnosisResult = await diagnoseCropDisease({ 
-            imageUris: [frameUri],
-            geolocation: location,
-            language: language
-        });
-        
-        if (diagnosisResult.plantIdentification.isPlant) {
-            setLiveResult(diagnosisResult);
-            setError(null);
-        } else {
-            setError("No plant detected in the current view.");
-            setLiveResult(null);
-        }
-      } catch (e) {
-        console.error(e);
-        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-        setError(`Analysis failed. ${errorMessage}`);
-      } finally {
-        setIsAnalyzing(false);
+      const diagnosisResult = await runDiagnosis([frameUri]);
+      if (diagnosisResult) {
+           if (diagnosisResult.plantIdentification.isPlant) {
+              setLiveResult(diagnosisResult);
+              setError(null);
+          } else {
+              setError("No plant detected in the current view.");
+              setLiveResult(null);
+          }
       }
+      setIsAnalyzing(false);
     }, ANALYSIS_INTERVAL);
-  }, [isAnalyzing, location, language, toast]);
+  }, [isAnalyzing, location, language, toast, user]);
 
 
   const stopAnalysisLoop = () => {
@@ -272,37 +292,28 @@ export default function DiseaseCheckPage() {
 
     try {
         const imageUris = await Promise.all(imageFiles.map(fileToDataUri));
-        const diagnosisResult = await diagnoseCropDisease({ 
-            imageUris: imageUris,
-            geolocation: location,
-            language: language
-        });
-        setFinalResult(diagnosisResult);
-    } catch(e) {
-        console.error(e);
-        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-        setError(`Diagnosis failed. ${errorMessage}`);
+        const diagnosisResult = await runDiagnosis(imageUris);
+        if(diagnosisResult) {
+            setFinalResult(diagnosisResult);
+        }
     } finally {
         setIsUploading(false);
     }
   };
 
   const cleanTextForSpeech = (text: string): string => {
-    // Removes markdown like *, **, _, __, #, ##, etc.
     return text.replace(/(\*|_|#|`|~)/g, '');
   };
 
   const handleSpeak = (text: string, section: SpeakingSection) => {
     if ('speechSynthesis' in window) {
       const synth = window.speechSynthesis;
-      // If the clicked section is already speaking, stop it.
       if (speakingSection === section && synth.speaking) {
         synth.cancel();
         setSpeakingSection(null);
         return;
       }
 
-      // If another section is speaking, stop it before starting the new one.
       if (synth.speaking) {
         synth.cancel();
       }
@@ -419,9 +430,10 @@ export default function DiseaseCheckPage() {
 
         <div className="lg:col-span-3">
           <Tabs defaultValue="live" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="live">Live Diagnosis</TabsTrigger>
               <TabsTrigger value="upload">Upload Images</TabsTrigger>
+              <TabsTrigger value="history">History</TabsTrigger>
             </TabsList>
             <TabsContent value="live">
               <Card>
@@ -481,6 +493,9 @@ export default function DiseaseCheckPage() {
                  </CardFooter>
                </Card>
             </TabsContent>
+            <TabsContent value="history">
+                <DiagnosisHistoryTab />
+            </TabsContent>
           </Tabs>
 
             {finalResult && (
@@ -516,4 +531,72 @@ export default function DiseaseCheckPage() {
       </div>
     </div>
   );
+}
+
+
+function DiagnosisHistoryTab() {
+    const { user } = useAuth();
+    const [history, setHistory] = useState<DiagnosisRecord[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (user) {
+                setIsLoading(true);
+                const records = await getDiagnosisHistory(user.uid);
+                setHistory(records);
+                setIsLoading(false);
+            }
+        };
+        fetchHistory();
+    }, [user]);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                {Array.from({length: 3}).map((_, i) => (
+                     <Card key={i}><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>
+                ))}
+            </div>
+        )
+    }
+
+    if (history.length === 0) {
+        return (
+            <div className="text-center py-12 bg-card rounded-lg border">
+                <History className="mx-auto h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-medium">No Diagnosis History</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Perform a diagnosis to see your history here.
+                </p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+            {history.map(record => (
+                <Card key={record.id}>
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <Image
+                            src={record.imageUrl}
+                            alt="Diagnosed plant"
+                            width={80}
+                            height={80}
+                            className="rounded-md object-cover aspect-square"
+                        />
+                        <div className="flex-1 space-y-1">
+                            <p className="font-semibold">{record.plantName}</p>
+                            <p className="text-sm font-medium text-destructive">{record.diseaseName}</p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <CalendarDays className="h-3 w-3" />
+                                {format(record.timestamp, 'd MMM, yyyy, h:mm a')}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    )
+
 }

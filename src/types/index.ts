@@ -71,3 +71,17 @@ export interface Field {
     cropId?: string | null;
     cropName?: string | null;
 }
+
+export interface DiagnosisRecord {
+    id: string;
+    plantName: string;
+    diseaseName: string;
+    severity: "Low" | "Medium" | "High" | "Unknown";
+    confidenceScore: number;
+    imageUrl: string;
+    timestamp: Date;
+    geolocation: {
+        latitude: number;
+        longitude: number;
+    };
+}
