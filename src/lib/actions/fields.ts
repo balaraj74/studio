@@ -2,9 +2,26 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { GeoPoint } from 'firebase-admin/firestore';
-import { getAdminDb } from '../firebase/admin';
+import { getFirestore, GeoPoint } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Field } from '@/types';
+
+
+// --- Firebase Admin Initialization ---
+if (!getApps().length) {
+  try {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    initializeApp({
+      credential: cert(serviceAccountConfig),
+    });
+  } catch (error: any) {
+    console.error("Firebase admin initialization error", error.stack);
+  }
+}
+const db = getFirestore();
+// --- End Firebase Admin Initialization ---
+
 
 export type FieldFormInput = Omit<Field, 'id'>;
 
@@ -40,7 +57,6 @@ const fieldConverter = {
 };
 
 const getFieldsCollection = (userId: string) => {
-    const db = getAdminDb();
     return db.collection('users').doc(userId).collection('fields');
 }
 
@@ -74,7 +90,6 @@ const prepareDataForFirestore = (data: Partial<FieldFormInput>) => {
 export async function addField(userId: string, data: FieldFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const fieldsCollection = db.collection('users').doc(userId).collection('fields');
         
         const dataToSave = prepareDataForFirestore(data);
@@ -93,7 +108,6 @@ export async function addField(userId: string, data: FieldFormInput) {
 export async function updateField(userId: string, id: string, data: Partial<FieldFormInput>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const fieldRef = db.collection('users').doc(userId).collection('fields').doc(id);
         
         const dataToUpdate = prepareDataForFirestore(data);
@@ -112,7 +126,6 @@ export async function updateField(userId: string, id: string, data: Partial<Fiel
 export async function deleteField(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('fields').doc(id).delete();
         revalidatePath('/field-mapping');
         return { success: true };

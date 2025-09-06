@@ -8,19 +8,15 @@ import serviceAccount from '../../../serviceAccountKey.json';
 import { revalidatePath } from 'next/cache';
 
 // --- Firebase Admin Initialization ---
-let adminApp: App;
 if (!getApps().length) {
-    try {
-        const serviceAccountConfig = serviceAccount as ServiceAccount;
-        adminApp = initializeApp({
-            credential: cert(serviceAccountConfig),
-            databaseURL: `https://${serviceAccountConfig.project_id}.firebaseio.com`
-        });
-    } catch(error: any) {
-        console.error("Firebase admin initialization error", error.stack);
-    }
-} else {
-    adminApp = getApps()[0];
+  try {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    initializeApp({
+      credential: cert(serviceAccountConfig),
+    });
+  } catch (error: any) {
+    console.error("Firebase admin initialization error", error.stack);
+  }
 }
 // --- End Firebase Admin Initialization ---
 
@@ -37,7 +33,7 @@ export async function updateUserProfile(userId: string, formData: FormData) {
     try {
         if (photoFile && photoFile.size > 0) {
             // 1. Upload new photo to Firebase Storage
-            const storage = getStorage(adminApp).bucket('gs://agrisence-1dc30.appspot.com');
+            const storage = getStorage().bucket('gs://agrisence-1dc30.appspot.com');
             const filePath = `profile-pictures/${userId}/${Date.now()}-${photoFile.name}`;
             const fileBuffer = Buffer.from(await photoFile.arrayBuffer());
 
@@ -51,7 +47,7 @@ export async function updateUserProfile(userId: string, formData: FormData) {
 
         // 2. Update user profile using Admin SDK
         const updatePayload: { displayName?: string; photoURL?: string } = {};
-        const currentUser = await getAuth(adminApp).getUser(userId);
+        const currentUser = await getAuth().getUser(userId);
 
         // Only add to payload if the value has changed
         if (displayName && displayName !== currentUser.displayName) {
@@ -62,7 +58,7 @@ export async function updateUserProfile(userId: string, formData: FormData) {
         }
 
         if (Object.keys(updatePayload).length > 0) {
-            await getAuth(adminApp).updateUser(userId, updatePayload);
+            await getAuth().updateUser(userId, updatePayload);
         }
         
         revalidatePath('/profile');

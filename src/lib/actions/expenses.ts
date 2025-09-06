@@ -2,9 +2,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminDb } from '../firebase/admin';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Expense } from '@/types';
+
+
+// --- Firebase Admin Initialization ---
+if (!getApps().length) {
+  try {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    initializeApp({
+      credential: cert(serviceAccountConfig),
+    });
+  } catch (error: any) {
+    console.error("Firebase admin initialization error", error.stack);
+  }
+}
+const db = getFirestore();
+// --- End Firebase Admin Initialization ---
 
 export type ExpenseFormInput = Omit<Expense, 'id' | 'date'> & {
     date: string;
@@ -30,7 +46,6 @@ const expenseConverter = {
 };
 
 const getExpensesCollection = (userId: string) => {
-    const db = getAdminDb();
     return db.collection('users').doc(userId).collection('expenses');
 }
 
@@ -68,7 +83,6 @@ export async function addExpense(userId: string, data: ExpenseFormInput) {
 export async function updateExpense(userId: string, id: string, data: ExpenseFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const expenseRef = db.collection('users').doc(userId).collection('expenses').doc(id);
         const dataToUpdate = {
             ...data,
@@ -87,7 +101,6 @@ export async function updateExpense(userId: string, id: string, data: ExpenseFor
 export async function deleteExpense(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('expenses').doc(id).delete();
         revalidatePath('/expenses');
         return { success: true };

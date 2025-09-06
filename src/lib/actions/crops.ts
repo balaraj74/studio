@@ -2,11 +2,28 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, Timestamp, query, orderBy, getDoc } from 'firebase-admin/firestore';
-import { getAdminDb } from '../firebase/admin';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Crop, CropTask } from '@/types';
 import { generateCropCalendar, AIGeneratedTask } from '@/ai/flows/generate-crop-calendar';
 import { parse, isValid, getYear } from 'date-fns';
+
+
+// --- Firebase Admin Initialization ---
+if (!getApps().length) {
+  try {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    initializeApp({
+      credential: cert(serviceAccountConfig),
+    });
+  } catch (error: any) {
+    console.error("Firebase admin initialization error", error.stack);
+  }
+}
+const db = getFirestore();
+// --- End Firebase Admin Initialization ---
+
 
 // This is the data shape for client-to-server communication, ensuring dates are strings.
 export type CropFormInput = Omit<Crop, 'id' | 'plantedDate' | 'harvestDate' | 'calendar'> & {
@@ -70,7 +87,6 @@ const docToCrop = (doc: FirebaseFirestore.DocumentSnapshot): Crop => {
 
 
 const getCropsCollection = (userId: string) => {
-    const db = getAdminDb();
     return db.collection('users').doc(userId).collection('crops');
 }
 
@@ -78,7 +94,7 @@ export async function getCrops(userId: string): Promise<Crop[]> {
     if (!userId) return [];
     try {
         const cropsCollection = getCropsCollection(userId);
-        const q = query(cropsCollection, orderBy("plantedDate", "desc"));
+        const q = cropsCollection.orderBy("plantedDate", "desc");
         const querySnapshot = await q.get();
         const crops = querySnapshot.docs.map(docToCrop);
         return crops;
@@ -144,8 +160,7 @@ export async function addCrop(userId: string, data: CropFormInput) {
 export async function updateCrop(userId: string, id: string, data: Partial<CropFormInput & { calendar?: CropTask[] }>) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
-        const cropRef = doc(db, 'users', userId, 'crops', id);
+        const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
 
         const dataToUpdate: { [key: string]: any } = {};
 
@@ -169,7 +184,7 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
             return { success: true, message: "No changes to update." };
         }
 
-        await updateDoc(cropRef, dataToUpdate);
+        await cropRef.update(dataToUpdate);
 
         revalidatePath('/crops');
         return { success: true };
@@ -183,7 +198,6 @@ export async function updateCrop(userId: string, id: string, data: Partial<CropF
 export async function deleteCrop(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const cropRef = db.collection('users').doc(userId).collection('crops').doc(id);
         await cropRef.delete();
         revalidatePath('/crops');

@@ -2,9 +2,25 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase-admin/firestore';
-import { getAdminDb } from '../firebase/admin';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, type App, type ServiceAccount } from 'firebase-admin/app';
+import serviceAccount from '../../../serviceAccountKey.json';
 import type { Harvest } from '@/types';
+
+// --- Firebase Admin Initialization ---
+if (!getApps().length) {
+  try {
+    const serviceAccountConfig = serviceAccount as ServiceAccount;
+    initializeApp({
+      credential: cert(serviceAccountConfig),
+    });
+  } catch (error: any) {
+    console.error("Firebase admin initialization error", error.stack);
+  }
+}
+const db = getFirestore();
+// --- End Firebase Admin Initialization ---
+
 
 export type HarvestFormInput = Omit<Harvest, 'id' | 'harvestDate'> & {
     harvestDate: string;
@@ -31,7 +47,6 @@ const harvestConverter = {
 };
 
 const getHarvestsCollection = (userId: string) => {
-    const db = getAdminDb();
     return db.collection('users').doc(userId).collection('harvests');
 }
 
@@ -69,7 +84,6 @@ export async function addHarvest(userId: string, data: HarvestFormInput) {
 export async function updateHarvest(userId: string, id: string, data: HarvestFormInput) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         const harvestRef = db.collection('users').doc(userId).collection('harvests').doc(id);
         const updatedHarvest: Omit<Harvest, 'id'> = {
             ...data,
@@ -88,7 +102,6 @@ export async function updateHarvest(userId: string, id: string, data: HarvestFor
 export async function deleteHarvest(userId: string, id: string) {
     if (!userId) return { success: false, error: 'User not authenticated.' };
     try {
-        const db = getAdminDb();
         await db.collection('users').doc(userId).collection('harvests').doc(id).delete();
         revalidatePath('/harvest');
         return { success: true };
