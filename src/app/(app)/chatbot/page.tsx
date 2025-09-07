@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, Mic, Bot, User, Volume2, Languages, MessageCircle } from "lucide-react";
+import { Send, Mic, Bot, User, Volume2, Languages, MessageCircle, VolumeX } from "lucide-react";
 import { farmingAdviceChatbot } from "@/ai/flows/farming-advice-chatbot";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/select"
 
 interface Message {
+  id: number;
   sender: "user" | "bot";
   text: string;
 }
@@ -33,11 +35,29 @@ export default function ChatbotPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [speakingMessageId, setSpeakingMessageId] = useState<number | null>(null);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null); // To hold the speech recognition instance
   const [ttsLanguage, setTtsLanguage] = useState('en-IN');
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Effect to manage speech synthesis state
+  useEffect(() => {
+    const handleSpeechEnd = () => setSpeakingMessageId(null);
+    const synth = window.speechSynthesis;
+    if (synth) {
+      synth.addEventListener('end', handleSpeechEnd);
+      synth.addEventListener('error', handleSpeechEnd);
+    }
+    return () => {
+      if (synth) {
+        synth.cancel();
+        synth.removeEventListener('end', handleSpeechEnd);
+        synth.removeEventListener('error', handleSpeechEnd);
+      }
+    };
+  }, []);
 
   // Setup speech recognition
   useEffect(() => {
@@ -99,13 +119,25 @@ export default function ChatbotPage() {
 
   useEffect(scrollToBottom, [messages]);
   
-  const handleSpeak = (text: string) => {
+  const handleSpeak = (message: Message) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+      const synth = window.speechSynthesis;
+
+      if (speakingMessageId === message.id && synth.speaking) {
+        synth.cancel();
+        setSpeakingMessageId(null);
+        return;
+      }
+      
+      if (synth.speaking) {
+        synth.cancel();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(message.text);
       const selectedVoice = voices.find(v => v.lang === ttsLanguage);
       utterance.voice = selectedVoice || null;
       utterance.lang = ttsLanguage;
+      utterance.onstart = () => setSpeakingMessageId(message.id);
       window.speechSynthesis.speak(utterance);
     } else {
         toast({
@@ -138,17 +170,17 @@ export default function ChatbotPage() {
     const currentInput = voiceInput || input;
     if (!currentInput.trim() || isLoading) return;
 
-    const userMessage: Message = { sender: "user", text: currentInput };
+    const userMessage: Message = { id: Date.now(), sender: "user", text: currentInput };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
       const response = await farmingAdviceChatbot({ question: currentInput });
-      const botMessage: Message = { sender: "bot", text: response.answer };
+      const botMessage: Message = { id: Date.now() + 1, sender: "bot", text: response.answer };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      const errorMessage: Message = { sender: "bot", text: "Sorry, I couldn't get a response. Please try again." };
+      const errorMessage: Message = { id: Date.now() + 1, sender: "bot", text: "Sorry, I couldn't get a response. Please try again." };
       setMessages((prev) => [...prev, errorMessage]);
       toast({
         variant: "destructive",
@@ -202,9 +234,9 @@ export default function ChatbotPage() {
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full p-6" ref={scrollAreaRef}>
             <div className="space-y-4">
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <div
-                  key={index}
+                  key={message.id}
                   className={`flex items-end gap-2 ${
                     message.sender === "user" ? "justify-end" : "justify-start"
                   }`}
@@ -224,8 +256,8 @@ export default function ChatbotPage() {
                     <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                   </div>
                    {message.sender === 'bot' && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(message.text)}>
-                            <Volume2 className="h-4 w-4" />
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(message)}>
+                            {speakingMessageId === message.id ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                         </Button>
                     )}
                   {message.sender === "user" && (

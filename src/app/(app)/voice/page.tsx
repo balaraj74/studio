@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -19,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, ShieldCheck, ExternalLink } from "lucide-react";
+import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, ShieldCheck, ExternalLink, VolumeX } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SpeechRecognition =
@@ -30,6 +31,7 @@ type PermissionState = 'idle' | 'prompting' | 'granted' | 'denied';
 export default function VoicePage() {
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,23 @@ export default function VoicePage() {
 
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  
+  // Effect to manage speech synthesis state
+  useEffect(() => {
+    const handleSpeechEnd = () => setIsSpeaking(false);
+    const synth = window.speechSynthesis;
+    if (synth) {
+      synth.addEventListener('end', handleSpeechEnd);
+      synth.addEventListener('error', handleSpeechEnd);
+    }
+    return () => {
+      if (synth) {
+        synth.cancel();
+        synth.removeEventListener('end', handleSpeechEnd);
+        synth.removeEventListener('error', handleSpeechEnd);
+      }
+    };
+  }, []);
 
   // Effect to initialize Speech Recognition and check initial permission status
   useEffect(() => {
@@ -153,12 +172,19 @@ export default function VoicePage() {
   
   const handleSpeak = (text: string, lang: string) => {
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      const synth = window.speechSynthesis;
+      if (synth.speaking) {
+        synth.cancel();
+        // The onend handler will set isSpeaking to false
+        return;
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
       const selectedVoice = voices.find((v) => v.lang === lang);
       utterance.voice = selectedVoice || null;
       utterance.lang = lang;
-      window.speechSynthesis.speak(utterance);
+      utterance.onstart = () => setIsSpeaking(true);
+      synth.speak(utterance);
     }
   };
 
@@ -272,8 +298,8 @@ export default function VoicePage() {
          {response && !isLoading && (
             <CardFooter className="justify-center">
                  <Button variant="outline" onClick={() => handleSpeak(response, selectedLanguage)}>
-                    <Volume2 className="mr-2 h-4 w-4"/>
-                    Listen Again
+                    {isSpeaking ? <VolumeX className="mr-2 h-4 w-4"/> : <Volume2 className="mr-2 h-4 w-4"/>}
+                    {isSpeaking ? 'Stop' : 'Listen Again'}
                 </Button>
             </CardFooter>
         )}
