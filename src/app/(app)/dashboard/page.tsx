@@ -31,7 +31,6 @@ import {
   ChevronRight,
   HeartPulse,
   BarChart,
-  Satellite,
   Handshake,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -63,11 +62,6 @@ const allTools: QuickLink[] = [
     href: '/analytics',
     title: 'Analytics',
     icon: BarChart,
-  },
-   {
-    href: '/field-intelligence',
-    title: 'Satellite',
-    icon: Satellite,
   },
   {
     href: '/medicinal-plants',

@@ -16,7 +16,6 @@ import {
   MapPin,
   ChevronRight,
   HeartPulse,
-  Satellite,
   Landmark,
   Handshake,
 } from 'lucide-react';
@@ -41,12 +40,6 @@ const toolItems: ToolItem[] = [
     title: 'Medicinal Plants',
     description: 'Identify medicinal plants with your camera.',
     icon: HeartPulse,
-  },
-  {
-    href: '/field-intelligence',
-    title: 'Satellite Intelligence',
-    description: 'Monitor crop health and boundaries via satellite.',
-    icon: Satellite,
   },
   {
     href: '/loan-assistant',
