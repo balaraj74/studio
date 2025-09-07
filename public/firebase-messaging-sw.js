@@ -1,36 +1,34 @@
-// Import the Firebase app and messaging modules
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// Get the Firebase config from the query parameters
-const urlParams = new URL(self.location).searchParams;
+// Scripts for firebase and firebase messaging
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+
+// Initialize the Firebase app in the service worker by passing in the messagingSenderId.
 const firebaseConfig = {
-    apiKey: urlParams.get('apiKey'),
-    authDomain: urlParams.get('authDomain'),
-    projectId: urlParams.get('projectId'),
-    storageBucket: urlParams.get('storageBucket'),
-    messagingSenderId: urlParams.get('messagingSenderId'),
-    appId: urlParams.get('appId'),
+  apiKey: "AIzaSyAd8T2SnKYd0lC464LCU8SPloORnCtf2f8",
+  authDomain: "agrisence-1dc30.firebaseapp.com",
+  projectId: "agrisence-1dc30",
+  storageBucket: "agrisence-1dc30.firebasestorage.app",
+  messagingSenderId: "948776556057",
+  appId: "1:948776556057:web:59c34ba4ceffdd5901bc88",
+  measurementId: "G-NZ199RVD5G"
 };
 
-// Initialize the Firebase app in the service worker
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 
-// Retrieve an instance of Firebase Messaging so that it can handle background messages
+
+// Retrieve an instance of Firebase Messaging so that it can handle background messages.
 const messaging = firebase.messaging();
 
-// Optional: You can add a background message handler here if you need to
-// customize the notification that is shown to the user when the web app is in the background.
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
+  // Customize notification here
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/agrisence-logo.png' // Optional: Add a logo to your public folder
+    icon: '/agrisence-logo-192.png' // Ensure you have this icon in your public folder
   };
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  self.registration.showNotification(notificationTitle,
+    notificationOptions);
 });

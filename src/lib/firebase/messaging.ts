@@ -4,30 +4,6 @@
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { app } from './config';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAd8T2SnKYd0lC464LCU8SPloORnCtf2f8",
-  authDomain: "agrisence-1dc30.firebaseapp.com",
-  projectId: "agrisence-1dc30",
-  storageBucket: "agrisence-1dc30.firebasestorage.app",
-  messagingSenderId: "948776556057",
-  appId: "1:948776556057:web:59c34ba4ceffdd5901bc88",
-  measurementId: "G-NZ199RVD5G"
-};
-
-
-// Function to construct the service worker URL with config params
-const getServiceWorkerUrl = () => {
-    const params = new URLSearchParams({
-        apiKey: firebaseConfig.apiKey!,
-        authDomain: firebaseConfig.authDomain!,
-        projectId: firebaseConfig.projectId!,
-        storageBucket: firebaseConfig.storageBucket!,
-        messagingSenderId: firebaseConfig.messagingSenderId!,
-        appId: firebaseConfig.appId!,
-    }).toString();
-    return `/firebase-messaging-sw.js?${params}`;
-};
-
 export const getFcmToken = async () => {
   let fcmToken = null;
   const isFcmSupported = await isSupported();
@@ -45,9 +21,11 @@ export const getFcmToken = async () => {
     
     if (permission === 'granted') {
       console.log('Notification permission granted.');
-      const serviceWorkerUrl = getServiceWorkerUrl();
-      const serviceWorkerRegistration = await navigator.serviceWorker.register(serviceWorkerUrl);
-
+      
+      // Use the standard service worker registration.
+      // The service worker must be in the `public` directory.
+      const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      
       // Wait for the service worker to be active.
       await navigator.serviceWorker.ready;
 
