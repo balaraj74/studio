@@ -38,6 +38,8 @@ const BuyerMatchSchema = z.object({
     pickupOrDelivery: z.enum(["Pickup", "Delivery"]).describe("Whether the buyer will pick up from the farm or if the farmer needs to deliver."),
     summary: z.string().describe("A simple, one-sentence summary of the offer, e.g., 'Good local price, pickup tomorrow.'."),
     rating: z.number().min(1).max(5).describe("A simulated trust rating for the buyer, from 1 to 5."),
+    contactPhone: z.string().describe("A plausible, simulated 10-digit Indian mobile number for the buyer, e.g., '98XXXXXX45'."),
+    contactEmail: z.string().describe("A plausible, simulated email address for the buyer, e.g., 'contact@cityagro.com'."),
 });
 export type BuyerMatch = z.infer<typeof BuyerMatchSchema>;
 
@@ -77,6 +79,8 @@ const marketMatchmakingFlow = ai.defineFlow(
           - Specify if it's pickup or delivery.
           - A simple, helpful one-sentence summary of the offer.
           - A trust rating between 3.5 and 5.
+          - A simulated, plausible 10-digit Indian phone number (e.g., 98XXXXXX45).
+          - A simulated, plausible email address.
 
           Finally, provide a brief, encouraging overall summary.
           `,
@@ -105,4 +109,3 @@ const marketMatchmakingFlow = ai.defineFlow(
     }
   }
 );
-

@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, LocateFixed } from 'lucide-react';
+import { Calendar as CalendarIcon, LocateFixed, Phone, Mail } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 
 const MAP_ID = "AGRISENCE_MATCHMAKING_MAP";
@@ -32,15 +40,14 @@ const MAP_ID = "AGRISENCE_MATCHMAKING_MAP";
 const MapComponent = ({
   center,
   matches,
-  mode
 }: {
   center: google.maps.LatLngLiteral;
   matches: (BuyerMatch | SellerMatch)[];
-  mode: 'sell' | 'buy';
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map>();
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
 
   useEffect(() => {
     if (ref.current && !map) {
@@ -52,6 +59,7 @@ const MapComponent = ({
         zoomControl: true,
       });
       setMap(newMap);
+      infoWindowRef.current = new google.maps.InfoWindow();
       
       new google.maps.Marker({
         position: center,
@@ -71,8 +79,8 @@ const MapComponent = ({
 
   useEffect(() => {
     if (map) {
-      markers.forEach(marker => marker.setMap(null));
-      const newMarkers: google.maps.Marker[] = [];
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
       const bounds = new google.maps.LatLngBounds();
       bounds.extend(center);
       
@@ -83,11 +91,27 @@ const MapComponent = ({
               map,
               title: 'sellerName' in match ? match.sellerName : match.buyerName,
           });
-          newMarkers.push(marker);
+
+          marker.addListener('click', () => {
+             if (infoWindowRef.current) {
+                const name = 'sellerName' in match ? match.sellerName : match.buyerName;
+                const price = 'price' in match ? `₹${match.price}/${match.unit}` : `₹${match.offerPrice}/${match.offerUnit}`;
+                const contentString = `
+                    <div style="font-family: sans-serif; color: black;">
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 4px;">${name}</h4>
+                        <p style="font-size: 0.9rem; margin: 0;"><strong>Offer:</strong> ${price}</p>
+                        <p style="font-size: 0.8rem; margin-top: 4px;">${match.location}</p>
+                    </div>`;
+                infoWindowRef.current.setContent(contentString);
+                infoWindowRef.current.open(map, marker);
+            }
+          });
+
+          markersRef.current.push(marker);
           bounds.extend(match.coordinates);
         }
       });
-      setMarkers(newMarkers);
+      
       if (matches.length > 0) {
         map.fitBounds(bounds);
       } else {
@@ -111,12 +135,38 @@ const sellSchema = z.object({
 });
 
 const buySchema = z.object({
-  cropType: z.string().min(1, "Crop type is required."),
+  cropType: z.string().min(1, "Crop to buy is required."),
   quantity: z.coerce.number().min(0, "Quantity must be a positive number."),
   unit: z.enum(["kg", "quintal", "tonne"]),
   location: z.string().min(1, "Location is required."),
   purchaseByDate: z.string().min(1, "Purchase-by date is required."),
 });
+
+type MatchType = BuyerMatch | SellerMatch;
+
+const ContactDialog = ({ match, children }: { match: MatchType, children: React.ReactNode }) => (
+    <Dialog>
+        <DialogTrigger asChild>{children}</DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+                <DialogTitle>Contact Details</DialogTitle>
+                <DialogDescription>
+                    These are simulated contact details for "{'sellerName' in match ? match.sellerName : match.buyerName}". In a real app, these would be verified.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-3">
+                <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <a href={`tel:${match.contactPhone}`} className="hover:underline">{match.contactPhone}</a>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <a href={`mailto:${match.contactEmail}`} className="hover:underline">{match.contactEmail}</a>
+                </div>
+            </div>
+        </DialogContent>
+    </Dialog>
+);
 
 
 const BuyerResultCard = ({ match }: { match: BuyerMatch }) => {
@@ -150,7 +200,9 @@ const BuyerResultCard = ({ match }: { match: BuyerMatch }) => {
                 </Alert>
             </CardContent>
             <CardFooter>
-                <Button className="w-full">Contact Buyer</Button>
+                <ContactDialog match={match}>
+                    <Button className="w-full">Contact Buyer</Button>
+                </ContactDialog>
             </CardFooter>
         </Card>
     );
@@ -187,7 +239,9 @@ const SellerResultCard = ({ match }: { match: SellerMatch }) => {
                 </Alert>
             </CardContent>
             <CardFooter>
-                <Button className="w-full">Contact Seller</Button>
+                 <ContactDialog match={match}>
+                    <Button className="w-full">Contact Seller</Button>
+                </ContactDialog>
             </CardFooter>
         </Card>
     );
@@ -213,7 +267,6 @@ export default function MarketMatchmakingPage() {
   });
   
   useEffect(() => {
-    // Try to get user's location on component mount for map centering
     navigator.geolocation?.getCurrentPosition(
       (position) => setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude }),
       () => console.warn("Could not get initial user location.")
@@ -323,7 +376,6 @@ export default function MarketMatchmakingPage() {
                                     <FormLabel>Preferred Sell By Date</FormLabel>
                                     <Popover>
                                     <PopoverTrigger asChild>
-                                        <FormControl>
                                         <Button
                                             variant={"outline"}
                                             className={cn(
@@ -338,7 +390,6 @@ export default function MarketMatchmakingPage() {
                                             )}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
-                                        </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <Calendar
@@ -391,7 +442,6 @@ export default function MarketMatchmakingPage() {
                                     <FormLabel>Preferred Purchase By Date</FormLabel>
                                     <Popover>
                                     <PopoverTrigger asChild>
-                                        <FormControl>
                                         <Button
                                             variant={"outline"}
                                             className={cn(
@@ -406,7 +456,6 @@ export default function MarketMatchmakingPage() {
                                             )}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                         </Button>
-                                        </FormControl>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <Calendar
@@ -439,7 +488,7 @@ export default function MarketMatchmakingPage() {
             </Tabs>
         </div>
         <div className="lg:col-span-3 min-h-[400px] lg:h-auto rounded-lg bg-muted flex items-center justify-center">
-             <MapComponent center={userLocation} matches={currentMatches} mode={activeTab} />
+             <MapComponent center={userLocation} matches={currentMatches} />
         </div>
       </div>
       
@@ -463,7 +512,7 @@ export default function MarketMatchmakingPage() {
             </Alert>
             <div className="grid lg:grid-cols-3 gap-6">
                 {result.matches.length > 0 ? (
-                    result.matches.map((match, index) => (
+                    result.matches.map((match) => (
                         activeTab === 'sell'
                           ? <BuyerResultCard key={(match as BuyerMatch).buyerId} match={match as BuyerMatch} />
                           : <SellerResultCard key={(match as SellerMatch).sellerId} match={match as SellerMatch} />

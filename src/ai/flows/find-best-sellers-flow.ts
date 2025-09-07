@@ -40,6 +40,8 @@ const SellerMatchSchema = z.object({
     unit: z.string().describe("The unit for the price, matching the user's unit."),
     summary: z.string().describe("A simple, one-sentence summary of the offer, e.g., 'Fresh harvest, ready for pickup.'."),
     rating: z.number().min(1).max(5).describe("A simulated trust rating for the seller, from 1 to 5."),
+    contactPhone: z.string().describe("A plausible, simulated 10-digit Indian mobile number for the seller, e.g., '98XXXXXX45'."),
+    contactEmail: z.string().describe("A plausible, simulated email address for the seller, e.g., 'ramesh.k@email.com'."),
 });
 export type SellerMatch = z.infer<typeof SellerMatchSchema>;
 
@@ -77,6 +79,8 @@ const findBestSellersFlow = ai.defineFlow(
           - A realistic available quantity and price for the given crop.
           - A simple, helpful one-sentence summary of the offer.
           - A trust rating between 3.5 and 5.
+          - A simulated, plausible 10-digit Indian phone number (e.g., 98XXXXXX45).
+          - A simulated, plausible email address.
 
           Finally, provide a brief, encouraging overall summary.
           `,
