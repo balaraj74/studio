@@ -7,11 +7,14 @@ import { app } from './config';
 export const getFcmToken = async () => {
   let fcmToken = null;
   const isFcmSupported = await isSupported();
-  // IMPORTANT: This is a public key, safe to include here.
-  const vapidKey = "BKy-UaL9-3-sW_Gz5G_wDso9-y_SbYxAqncf27lJ3D-u-Y9j-tA6-i_lR-oGzM-pX_r-A6sB8cZ_eL-4KjY-jJk";
+  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
   if (!isFcmSupported) {
     console.log("Firebase Messaging is not supported in this browser.");
+    return null;
+  }
+  if (!vapidKey) {
+    console.error("VAPID key is missing. Notifications will not work.");
     return null;
   }
   
