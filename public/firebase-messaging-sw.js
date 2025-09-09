@@ -1,4 +1,4 @@
 
-// This service worker file is intentionally left blank.
-// The Firebase SDK will dynamically handle the service worker logic.
-// See: https://firebase.google.com/docs/cloud-messaging/js/client#retrieve-the-current-registration-token
+// This service worker file is intentionally left blank for now.
+// The configuration is handled in the main application logic.
+// See src/lib/firebase/messaging.ts for details.

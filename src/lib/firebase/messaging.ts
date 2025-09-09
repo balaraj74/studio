@@ -22,13 +22,8 @@ export const getFcmToken = async () => {
     if (permission === 'granted') {
       console.log('Notification permission granted.');
       
-      // Use the standard service worker registration.
-      // The service worker must be in the `public` directory.
       const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       
-      // Wait for the service worker to be active.
-      await navigator.serviceWorker.ready;
-
       fcmToken = await getToken(messaging, {
         vapidKey: vapidKey,
         serviceWorkerRegistration
@@ -54,4 +49,3 @@ export const onMessageListener = () =>
       }
     });
   });
-
