@@ -1,7 +1,11 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    // This rule allows any user to read and write to the entire database.
+    // This is useful for rapid prototyping, but you should secure your data
+    // before releasing your app to production.
     match /{document=**} {
       allow read, write: if true;
     }

@@ -1,6 +1,7 @@
-// Import the Firebase app and messaging SDKs
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
+
+// Import the Firebase app and messaging libraries
+importScripts("https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js");
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,14 +18,14 @@ const firebaseConfig = {
 const app = firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging(app);
 
-// Optional: Background message handler
+// Optional: You can add background message handling here if needed
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
+  // Customize notification here
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/agrisence-logo.png' // Ensure you have a logo at this path
+    icon: '/agrisence-logo.png' // Optional: add an icon
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

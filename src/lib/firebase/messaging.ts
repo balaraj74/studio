@@ -25,6 +25,7 @@ export const getFcmToken = async () => {
     if (permission === 'granted') {
       console.log('Notification permission granted.');
       
+      // Register the service worker and get the token
       const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
       
       fcmToken = await getToken(messaging, {
