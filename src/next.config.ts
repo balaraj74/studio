@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-    NEXT_PUBLIC_FIREBASE_VAPID_KEY: 'BKy-UaL9-3-sW_Gz5G_wDso9-y_SbYxAqncf27lJ3D-u-Y9j-tA6-i_lR-oGzM-pX_r-A6sB8cZ_eL-4KjY-jJk',
+    NEXT_PUBLIC_FIREBASE_VAPID_KEY: 'BGnBKRRM_xePdhlIt2OlEj8kdEmQI8y_EQ7UwfyigIJb0xnuHwI_RTWP-UVGBX8aEnd5M5YehQUNQnf6Y01BL94',
   },
 };
 

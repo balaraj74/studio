@@ -1,9 +1,8 @@
+// This file needs to be in the public directory to be accessible by the browser.
 
-// This file needs to be in the public directory.
-
-// Import the Firebase SDKs
+// Import the Firebase app and messaging SDKs
 import { initializeApp } from "firebase/app";
-import { getMessaging } from "firebase/messaging/sw";
+import { getMessaging, onBackgroundMessage } from "firebase/messaging/sw";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -16,13 +15,19 @@ const firebaseConfig = {
   measurementId: "G-NZ199RVD5G"
 };
 
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// Background message handler (optional)
-// self.addEventListener('push', (event) => {
-//   console.log('[firebase-messaging-sw.js] Received background message ', event);
-//   // Customize notification here
-// });
+// (Optional) Handle background messages
+onBackgroundMessage(messaging, (payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  
+  const notificationTitle = payload.notification.title;
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: '/agrisence-logo.png' // Optional: path to an icon
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
