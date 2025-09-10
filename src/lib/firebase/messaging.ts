@@ -5,41 +5,45 @@ import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messagi
 import { app } from './config';
 
 export const getFcmToken = async () => {
-  let fcmToken = null;
   const isFcmSupported = await isSupported();
-  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-
   if (!isFcmSupported) {
     console.log("Firebase Messaging is not supported in this browser.");
     return null;
   }
+  
+  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
   if (!vapidKey) {
     console.error("VAPID key is missing. Notifications will not work.");
     return null;
   }
   
   try {
-    const messaging = getMessaging(app);
     const permission = await Notification.requestPermission();
-    
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-      
-      // Register the service worker and get the token
-      const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-      
-      fcmToken = await getToken(messaging, {
-        vapidKey: vapidKey,
-        serviceWorkerRegistration
-      });
-    } else {
-      console.log('Unable to get permission to notify.');
+    if (permission !== 'granted') {
+      console.log('Notification permission not granted.');
+      return null;
     }
-  } catch (error) {
-    console.error('An error occurred while retrieving token. ', error);
-  }
+    
+    const messaging = getMessaging(app);
+    const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    
+    console.log('Requesting FCM token...');
+    const fcmToken = await getToken(messaging, {
+      vapidKey: vapidKey,
+      serviceWorkerRegistration,
+    });
+    
+    if (fcmToken) {
+        console.log('FCM Token received:', fcmToken);
+    } else {
+        console.log('Could not get FCM token.');
+    }
+    return fcmToken;
 
-  return fcmToken;
+  } catch (error) {
+    console.error('An error occurred while retrieving FCM token:', error);
+    return null;
+  }
 };
 
 export const onMessageListener = () =>
