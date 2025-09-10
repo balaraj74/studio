@@ -3,9 +3,16 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // This rule allows any user to read and write to the entire database.
-    // This is useful for rapid prototyping, but you should secure your data
-    // before releasing your app to production.
+    // This rule allows anyone with your Firestore database reference to view, edit,
+    // and delete all data in your Firestore database. It is useful for getting
+    // started, but it is configured to expire after 30 days because it
+    // leaves your app open to attackers. At that time, all client
+    // requests to your Firestore database will be denied.
+    //
+    // Make sure to write security rules for your app before that time, or else
+    // your app will lose access to Firestore. For more information on securing
+    // your database, see the Firestore documentation:
+    // https://firebase.google.com/docs/firestore/security/get-started
     match /{document=**} {
       allow read, write: if true;
     }

@@ -25,6 +25,7 @@ export const getFcmToken = async () => {
     }
     
     const messaging = getMessaging(app);
+    // Ensure the service worker is registered before getting the token.
     const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     
     console.log('Requesting FCM token...');
