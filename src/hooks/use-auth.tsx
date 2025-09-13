@@ -33,9 +33,8 @@ const AuthGuard = ({ children }: { children: ReactNode }) => {
     }
   }, [isLoading, user, router, pathname]);
 
-  // Immediately render children, but apply AuthGuard logic to prevent flashes of content.
   if ((isLoading || !user) && pathname !== '/') {
-    return null; // Return null for protected routes while loading or if not authenticated
+    return null; // Let the loading.tsx handle the loading state
   }
 
   if (user && pathname === '/') {
