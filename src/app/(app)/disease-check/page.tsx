@@ -571,7 +571,7 @@ export default function DiseaseCheckPage() {
                         </div>
                         <div className="space-y-1">
                             <Label className="flex items-center gap-2 text-muted-foreground"><TestTube2 className="h-4 w-4" /> Severity</Label>
-                            <p className="font-semibold">{finalResult.diseaseDiagnosis.severity}</p>
+                            <div className="font-semibold">{finalResult.diseaseDiagnosis.severity}</div>
                         </div>
                     </div>
                     {finalResult.riskPrediction && (
@@ -581,7 +581,7 @@ export default function DiseaseCheckPage() {
                             </CardHeader>
                             <CardContent className="text-sm space-y-2">
                                 <p><strong>Next Risk:</strong> {finalResult.riskPrediction.nextRisk} {`(${finalResult.riskPrediction.timeline})`}</p>
-                                <p className="text-muted-foreground">{finalResult.riskPrediction.reasoning}</p>
+                                <div className="text-muted-foreground">{finalResult.riskPrediction.reasoning}</div>
                             </CardContent>
                         </Card>
                     )}
