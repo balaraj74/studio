@@ -45,12 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // This ensures the loading animation is visible for a minimum duration
-      // creating a smoother user experience.
-      setTimeout(() => {
-        setUser(user);
-        setIsLoading(false);
-      }, 1500); // Minimum 1.5 second loading time
+      setUser(user);
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
