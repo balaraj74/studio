@@ -224,3 +224,18 @@
   background-repeat: no-repeat;
   animation: image-fade 40s linear infinite;
 }
+
+@keyframes grow-stem {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes grow-leaf-left {
+  from { transform: scale(0) rotate(45deg); }
+  to { transform: scale(1) rotate(45deg); }
+}
+
+@keyframes grow-leaf-right {
+  from { transform: scale(0) rotate(-45deg); }
+  to { transform: scale(1) rotate(-45deg); }
+}
