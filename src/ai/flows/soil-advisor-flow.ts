@@ -48,6 +48,10 @@ export const GetSoilAdviceOutputSchema = z.object({
   chemicalRecommendations: z.array(FertilizerRecommendationSchema).describe("A list of recommended chemical fertilizers and their dosages."),
   organicAlternatives: z.array(OrganicAlternativeSchema).describe("A list of organic alternatives to improve soil health."),
   soilManagementTips: z.string().describe("A bulleted list of general soil management practices to improve fertility and health."),
+  charts: z.object({
+      nutrientPieBase64: z.string().optional().describe("A base64 encoded PNG image of a pie chart showing the relative percentages of N, P, and K."),
+      deficiencyBarBase64: z.string().optional().describe("A base64 encoded PNG image of a bar graph showing nutrient levels compared to recommended levels."),
+  }).describe("Visual charts representing the soil data analysis."),
 });
 export type GetSoilAdviceOutput = z.infer<typeof GetSoilAdviceOutputSchema>;
 
@@ -76,9 +80,12 @@ const getSoilAdviceFlow = ai.defineFlow(
           2.  **Chemical Recommendations**: Recommend a set of common chemical fertilizers (like Urea, DAP, MOP). For each, specify the dosage in 'kg per acre' and the best time to apply it.
           3.  **Organic Alternatives**: Suggest at least two organic options (like FYM, Vermicompost, Neem Cake). Provide a practical application rate (e.g., 'tonnes/acre') and briefly explain the benefits.
           4.  **Soil Management Tips**: Provide a simple, bulleted list of 3-4 practical tips for long-term soil health improvement.
+          5.  **Chart Generation**: Generate two charts as base64 encoded PNG images. The charts should have clear labels and a simple, clean design.
+                - **Pie Chart**: Show the relative percentage balance of N, P, and K.
+                - **Bar Graph**: Show the current levels of N, P, and K compared to a typical 'Recommended' level for the specified crop.
           `,
           prompt: `
-            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health and fertilizer recommendation report.
+            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health and fertilizer recommendation report, including two base64 PNG charts.
 
             - **Planned Crop:** ${input.cropName}
             - **Soil pH:** ${input.soilPh}
