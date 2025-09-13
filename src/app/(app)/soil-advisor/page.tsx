@@ -149,15 +149,16 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
                         ))}
                     </CardContent>
                 </Card>
-                 <Alert>
-                    <Shield className="h-4 w-4" />
-                    <AlertTitle className="font-semibold">Soil Management Tips</AlertTitle>
-                    <AlertDescription>
-                        <ul className="list-disc list-inside space-y-1">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary"/> Soil Management Tips</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                             {result.soilManagementTips.split('*').filter(tip => tip.trim()).map((tip, i) => <li key={i}>{tip.trim()}</li>)}
                         </ul>
-                    </AlertDescription>
-                </Alert>
+                    </CardContent>
+                </Card>
             </div>
         </div>
         
