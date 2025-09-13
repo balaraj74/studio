@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getSoilAdvice } from '@/ai/flows/soil-advisor-flow';
 import { parseSoilReport } from '@/ai/flows/soil-report-parser-flow';
-import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download, Trees } from 'lucide-react';
+import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download, Trees, Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -59,7 +59,7 @@ const ChartDisplayCard = ({ title, base64Image, alt }: { title: string, base64Im
         <div className="text-center p-4 border rounded-lg bg-muted/50">
             <h4 className="font-semibold mb-2 text-sm">{title}</h4>
             <div className="relative h-48 w-full">
-                <Image src={base64Image} alt={alt} fill className="mx-auto object-contain" />
+                <Image src={base64Image} alt={alt} fill sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" className="mx-auto object-contain" />
             </div>
         </div>
     );
@@ -78,9 +78,9 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
                 </Button>
             </CardHeader>
             <CardContent>
-                <Alert>
+                <Alert className="border-primary/20 bg-primary/5">
                     <Trees className="h-4 w-4" />
-                    <AlertTitle>Recommended Crops</AlertTitle>
+                    <AlertTitle className="font-semibold">Recommended Crops</AlertTitle>
                     <AlertDescription>
                         <p className="whitespace-pre-line">{result.recommendedCrops}</p>
                     </AlertDescription>
@@ -106,65 +106,74 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
                         </div>
                     ))}
                 </div>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                    <ChartDisplayCard title="NPK Ratio" base64Image={result.charts.nutrientPieBase64} alt="Nutrient Pie Chart" />
-                    <ChartDisplayCard title="Nutrient Levels vs. Recommended" base64Image={result.charts.deficiencyBarBase64} alt="Nutrient Bar Graph" />
-                    <ChartDisplayCard title="Soil pH Level" base64Image={result.charts.phGaugeBase64} alt="Soil pH Gauge" />
-                    <ChartDisplayCard title="Micronutrients" base64Image={result.charts.micronutrientRadarBase64} alt="Micronutrient Radar Chart" />
-                    <ChartDisplayCard title="Organic Matter" base64Image={result.charts.organicMatterProgressBase64} alt="Organic Matter Progress" />
-                </div>
             </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><TestTube className="h-5 w-5 text-primary"/> Chemical Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Fertilizer</TableHead>
-                            <TableHead>Dosage (per acre)</TableHead>
-                            <TableHead>Application Time</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {result.chemicalRecommendations.map((rec, i) => (
-                            <TableRow key={i}>
-                                <TableCell className="font-medium">{rec.fertilizerName}</TableCell>
-                                <TableCell>{rec.dosage}</TableCell>
-                                <TableCell>{rec.applicationTime}</TableCell>
+        <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><TestTube className="h-5 w-5 text-primary"/> Chemical Recommendations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Fertilizer</TableHead>
+                                <TableHead>Dosage</TableHead>
+                                <TableHead>Time</TableHead>
                             </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {result.chemicalRecommendations.map((rec, i) => (
+                                <TableRow key={i}>
+                                    <TableCell className="font-medium">{rec.fertilizerName}</TableCell>
+                                    <TableCell>{rec.dosage}</TableCell>
+                                    <TableCell>{rec.applicationTime}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+            <div className="space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Leaf className="h-5 w-5 text-primary"/> Organic Alternatives</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {result.organicAlternatives.map((alt, i) => (
+                            <div key={i}>
+                                <h4 className="font-semibold">{alt.name} <span className="text-sm text-muted-foreground font-normal">- {alt.applicationRate}</span></h4>
+                                <p className="text-sm text-muted-foreground">{alt.benefits}</p>
+                            </div>
                         ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-
+                    </CardContent>
+                </Card>
+                 <Alert>
+                    <Shield className="h-4 w-4" />
+                    <AlertTitle className="font-semibold">Soil Management Tips</AlertTitle>
+                    <AlertDescription>
+                        <ul className="list-disc list-inside space-y-1">
+                            {result.soilManagementTips.split('*').filter(tip => tip.trim()).map((tip, i) => <li key={i}>{tip.trim()}</li>)}
+                        </ul>
+                    </AlertDescription>
+                </Alert>
+            </div>
+        </div>
+        
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Leaf className="h-5 w-5 text-primary"/> Organic Alternatives</CardTitle>
+                <CardTitle>Visual Analysis</CardTitle>
+                <CardDescription>AI-generated charts for your soil data.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                {result.organicAlternatives.map((alt, i) => (
-                    <div key={i}>
-                        <h4 className="font-semibold">{alt.name} <span className="text-sm text-muted-foreground font-normal">- {alt.applicationRate}</span></h4>
-                        <p className="text-sm text-muted-foreground">{alt.benefits}</p>
-                    </div>
-                ))}
+            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <ChartDisplayCard title="NPK Ratio" base64Image={result.charts.nutrientPieBase64} alt="Nutrient Pie Chart" />
+                <ChartDisplayCard title="Nutrient Levels vs. Recommended" base64Image={result.charts.deficiencyBarBase64} alt="Nutrient Bar Graph" />
+                <ChartDisplayCard title="Soil pH Level" base64Image={result.charts.phGaugeBase64} alt="Soil pH Gauge" />
+                <ChartDisplayCard title="Micronutrients" base64Image={result.charts.micronutrientRadarBase64} alt="Micronutrient Radar Chart" />
+                <ChartDisplayCard title="Organic Matter" base64Image={result.charts.organicMatterProgressBase64} alt="Organic Matter Progress" />
             </CardContent>
         </Card>
-        
-        <Alert>
-            <Sprout className="h-4 w-4" />
-            <AlertTitle>Soil Management Tips</AlertTitle>
-            <AlertDescription>
-                <ul className="list-disc list-inside space-y-1">
-                    {result.soilManagementTips.split('*').filter(tip => tip.trim()).map((tip, i) => <li key={i}>{tip.trim()}</li>)}
-                </ul>
-            </AlertDescription>
-        </Alert>
     </div>
 );
 
