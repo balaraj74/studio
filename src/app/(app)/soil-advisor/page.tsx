@@ -16,8 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getSoilAdvice, GetSoilAdviceInputSchema, type GetSoilAdviceOutput } from '@/ai/flows/soil-advisor-flow';
-import { parseSoilReport, type ParseSoilReportOutput } from '@/ai/flows/soil-report-parser-flow';
+import { getSoilAdvice } from '@/ai/flows/soil-advisor-flow';
+import { parseSoilReport } from '@/ai/flows/soil-report-parser-flow';
 import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,6 +27,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
+import { GetSoilAdviceInputSchema } from '@/types/soil-advisor';
+import type { GetSoilAdviceOutput, ParseSoilReportOutput, GetSoilAdviceInput } from '@/types/soil-advisor';
 
 
 const statusStyles = {
@@ -255,7 +257,7 @@ export default function SoilAdvisorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof GetSoilAdviceInputSchema>>({
+  const form = useForm<GetSoilAdviceInput>({
     resolver: zodResolver(GetSoilAdviceInputSchema),
     defaultValues: {
       cropName: '',
@@ -267,7 +269,7 @@ export default function SoilAdvisorPage() {
     },
   });
 
-  const onSubmit = async (data: z.infer<typeof GetSoilAdviceInputSchema>) => {
+  const onSubmit = async (data: GetSoilAdviceInput) => {
     setIsLoading(true);
     setResult(null);
     try {

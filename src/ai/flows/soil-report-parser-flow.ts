@@ -5,29 +5,13 @@
  * @fileOverview An AI flow to parse soil test reports.
  * 
  * - parseSoilReport - A function that extracts structured data from a soil report file.
- * - ParseSoilReportInput - The input type for the function.
- * - ParseSoilReportOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
-
-export const ParseSoilReportInputSchema = z.object({
-  reportDataUri: z.string().describe("A soil report file (image or PDF) as a data URI. Format: 'data:<mimetype>;base64,<encoded_data>'."),
-});
-export type ParseSoilReportInput = z.infer<typeof ParseSoilReportInputSchema>;
-
-
-export const ParseSoilReportOutputSchema = z.object({
-  soilPh: z.number().describe("The pH level of the soil, e.g., 6.5."),
-  nitrogen: z.number().describe("Nitrogen (N) level, converted to kg/ha if necessary, e.g., 45."),
-  phosphorus: z.number().describe("Phosphorus (P) level, converted to kg/ha if necessary, e.g., 20."),
-  potassium: z.number().describe("Potassium (K) level, converted to kg/ha if necessary, e.g., 30."),
-  organicCarbon: z.number().optional().describe("Organic Carbon percentage (%), if available."),
-  electricalConductivity: z.number().optional().describe("Electrical Conductivity (EC) in dS/m, if available."),
-});
-export type ParseSoilReportOutput = z.infer<typeof ParseSoilReportOutputSchema>;
+import { ParseSoilReportInputSchema, ParseSoilReportOutputSchema } from '@/types/soil-advisor';
+import type { ParseSoilReportInput, ParseSoilReportOutput } from '@/types/soil-advisor';
 
 
 export async function parseSoilReport(input: ParseSoilReportInput): Promise<ParseSoilReportOutput> {
