@@ -1,12 +1,11 @@
-
-'use client';
-import Link from 'next/link';
+"use client";
+import Link from "next/link";
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Stethoscope,
   CloudSun,
@@ -18,8 +17,9 @@ import {
   HeartPulse,
   Landmark,
   Handshake,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+  Video,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface ToolItem {
   href: string;
@@ -30,57 +30,63 @@ interface ToolItem {
 
 const toolItems: ToolItem[] = [
   {
-    href: '/disease-check',
-    title: 'Crop Diagnosis',
-    description: 'Identify crop diseases from images.',
+    href: "/disease-check",
+    title: "Crop Diagnosis",
+    description: "Identify crop diseases from images.",
     icon: Stethoscope,
   },
   {
-    href: '/medicinal-plants',
-    title: 'Medicinal Plants',
-    description: 'Identify medicinal plants with your camera.',
+    href: "/live-advisor",
+    title: "Live Farm Advisor",
+    description: "Get real-time AI advice via video.",
+    icon: Video,
+  },
+  {
+    href: "/medicinal-plants",
+    title: "Medicinal Plants",
+    description: "Identify medicinal plants with your camera.",
     icon: HeartPulse,
   },
   {
-    href: '/loan-assistant',
-    title: 'Loan & Insurance',
-    description: 'Check eligibility for loans and schemes.',
+    href: "/loan-assistant",
+    title: "Loan & Insurance",
+    description: "Check eligibility for loans and schemes.",
     icon: Landmark,
   },
   {
-    href: '/market-matchmaking',
-    title: 'Market Matchmaking',
-    description: 'Find the best buyers for your crops.',
+    href: "/market-matchmaking",
+    title: "Market Matchmaking",
+    description: "Find the best buyers for your crops.",
     icon: Handshake,
   },
   {
-    href: '/weather',
-    title: 'Weather Forecast',
-    description: 'Get real-time weather information.',
+    href: "/weather",
+    title: "Weather Forecast",
+    description: "Get real-time weather information.",
     icon: CloudSun,
   },
   {
-    href: '/market',
-    title: 'Market Prices',
-    description: 'Track prices of key crops by region.',
+    href: "/market",
+    title: "Market Prices",
+    description: "Track prices of key crops by region.",
     icon: LineChart,
   },
   {
-    href: '/schemes',
-    title: 'Government Schemes',
-    description: 'Find relevant agricultural schemes.',
+    href: "/schemes",
+    title: "Government Schemes",
+    description: "Find relevant agricultural schemes.",
     icon: ScrollText,
   },
   {
-    href: '/land-records',
-    title: 'Land Records',
-    description: 'Access official land record portals.',
+    href: "/land-records",
+    title: "Land Records",
+    description: "Access official land record portals.",
     icon: FileText,
   },
   {
-    href: '/fertilizer-finder',
-    title: 'Fertilizer Finder',
-    description: 'Locate nearby fertilizer shops.',
+    href: "/fertilizer-finder",
+    title: "Fertilizer Finder",
+    description: "Locate nearby fertilizer shops.",
     icon: MapPin,
   },
 ];
