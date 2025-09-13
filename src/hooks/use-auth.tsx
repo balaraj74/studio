@@ -33,25 +33,13 @@ const AuthGuard = ({ children }: { children: ReactNode }) => {
     }
   }, [isLoading, user, router, pathname]);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+  // Immediately render children, but apply AuthGuard logic to prevent flashes of content.
+  if ((isLoading || !user) && pathname !== '/') {
+    return null; // Return null for protected routes while loading or if not authenticated
   }
 
-  // Prevent flash of content on auth pages when logged in
   if (user && pathname === '/') {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-  
-  if (!user && pathname !== '/') {
-    return null; // Don't render protected pages if not logged in
+    return null; // Return null for auth page if logged in
   }
 
   return <>{children}</>;
