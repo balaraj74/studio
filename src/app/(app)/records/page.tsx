@@ -13,6 +13,7 @@ import {
   Package,
   Map,
   ChevronRight,
+  CalendarDays,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -29,6 +30,12 @@ const recordItems: RecordItem[] = [
     title: 'Crop Management',
     description: 'Track your crop planting and growth cycles.',
     icon: Leaf,
+  },
+   {
+    href: '/crops',
+    title: 'Crop Calendar',
+    description: 'View and manage your crop task schedules.',
+    icon: CalendarDays,
   },
   {
     href: '/expenses',
