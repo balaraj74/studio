@@ -1,20 +1,21 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { liveFarmAdvisor, type LiveFarmAdvisorOutput } from "@/ai/flows/live-advisor-flow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, Video, Square, Camera, VolumeX, Eye, Info } from "lucide-react";
+import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, Video, Square, Camera, VolumeX, Eye, Info, CircleDashed } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
 export default function LiveAdvisorPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [hasPermissions, setHasPermissions] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -29,6 +30,7 @@ export default function LiveAdvisorPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
+  const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,11 +59,41 @@ export default function LiveAdvisorPage() {
   useEffect(() => {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.onresult = (event: any) => processTranscript(event.results[0][0].transcript);
-      recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
+      recognition.continuous = true; // Keep listening
+      recognition.interimResults = true; // Get interim results
+      
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            }
+        }
+        if (finalTranscript) {
+            processTranscript(finalTranscript.trim());
+        }
+        // Debounce to detect end of speech
+        if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+        speechTimeoutRef.current = setTimeout(() => {
+           if (isListening && !isLoading) {
+             recognition.stop();
+           }
+        }, 1500); // 1.5 second pause before processing
+      };
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError(null);
+        setLastResponse(null);
+        setLastTranscript(null);
+      };
+      recognition.onend = () => {
+        setIsListening(false);
+        // Automatically restart listening if the session is still active and not processing
+        if (isSessionActive && !isLoading) {
+          setTimeout(() => recognition.start(), 100);
+        }
+      };
       recognition.onerror = (event: any) => {
         setError(event.error === 'no-speech' ? 'No speech detected.' : 'Voice recognition error.');
         setIsListening(false);
@@ -70,7 +102,7 @@ export default function LiveAdvisorPage() {
     } else {
       setError("Voice recognition not supported by your browser.");
     }
-  }, []);
+  }, [isSessionActive, isLoading]);
 
   useEffect(() => {
     if (recognitionRef.current) {
@@ -85,21 +117,21 @@ export default function LiveAdvisorPage() {
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
   }, []);
 
-  const getCameraPermission = async () => {
+  const getPermissions = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setHasCameraPermission(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
+      setHasPermissions(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
       return true;
     } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
+      console.error('Error accessing media devices:', error);
+      setHasPermissions(false);
       toast({
         variant: 'destructive',
-        title: 'Camera Access Denied',
-        description: 'Please enable camera permissions in your browser settings.',
+        title: 'Permissions Denied',
+        description: 'Please enable camera and microphone permissions in your browser settings.',
       });
       return false;
     }
@@ -109,9 +141,12 @@ export default function LiveAdvisorPage() {
     setError(null);
     setLastResponse(null);
     setLastTranscript(null);
-    const permissionGranted = await getCameraPermission();
+    const permissionGranted = await getPermissions();
     if (permissionGranted) {
       setIsSessionActive(true);
+      if (recognitionRef.current) {
+        recognitionRef.current.start();
+      }
     }
   };
 
@@ -121,17 +156,13 @@ export default function LiveAdvisorPage() {
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
+    if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
     setIsSessionActive(false);
     setIsListening(false);
     setIsLoading(false);
-  };
-
-  const handleMicClick = () => {
-    if (!recognitionRef.current || isListening || isLoading) return;
-    setError(null);
-    setLastResponse(null);
-    setLastTranscript(null);
-    recognitionRef.current.start();
   };
 
   const frameToDataUri = (): string | null => {
@@ -149,6 +180,10 @@ export default function LiveAdvisorPage() {
 
   const processTranscript = async (text: string) => {
     if (!text.trim() || !isSessionActive) return;
+    
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
 
     const videoFrameUri = frameToDataUri();
     if (!videoFrameUri) {
@@ -170,6 +205,10 @@ export default function LiveAdvisorPage() {
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      // Restart listening after processing
+      if (isSessionActive && recognitionRef.current && !isListening) {
+         setTimeout(() => recognitionRef.current.start(), 100);
+      }
     }
   };
 
@@ -186,6 +225,12 @@ export default function LiveAdvisorPage() {
       synth.speak(utterance);
     }
   };
+
+  const getStatusText = () => {
+    if (isLoading) return 'AI is thinking...';
+    if (isListening) return 'Listening... speak now';
+    return 'Ready for your question';
+  }
 
   return (
     <div className="space-y-6">
@@ -205,14 +250,14 @@ export default function LiveAdvisorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted />
+            <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
             <canvas ref={canvasRef} className="hidden" />
-            {!(hasCameraPermission && isSessionActive) && (
+            {!(hasPermissions && isSessionActive) && (
                  <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Camera Access Required</AlertTitle>
+                    <AlertTitle>Permissions Required</AlertTitle>
                     <AlertDescription>
-                        Please allow camera access to use this feature.
+                        Please allow camera and microphone access to use this feature.
                     </AlertDescription>
                 </Alert>
             )}
@@ -228,39 +273,33 @@ export default function LiveAdvisorPage() {
 
       {isSessionActive && (
         <Card>
-            <CardHeader>
-                <CardTitle>AI Interaction</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-center">
-                 <div className="flex justify-center items-center gap-2">
+            <CardHeader className="text-center">
+                <div className={cn("mx-auto h-12 w-12 rounded-full flex items-center justify-center transition-colors", 
+                    isListening ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary"
+                )}>
+                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin"/> : <Mic className="h-6 w-6"/>}
+                </div>
+                <CardTitle>{getStatusText()}</CardTitle>
+                 <div className="flex justify-center items-center gap-2 pt-2">
                     <Languages className="h-4 w-4 text-muted-foreground" />
                     <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
-                    <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="en-IN">English (India)</SelectItem>
-                        <SelectItem value="kn-IN">Kannada</SelectItem>
-                    </SelectContent>
+                      <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="en-IN">English (India)</SelectItem>
+                          <SelectItem value="kn-IN">Kannada</SelectItem>
+                      </SelectContent>
                     </Select>
                 </div>
-                <Button
-                    size="lg"
-                    className="h-20 w-20 rounded-full"
-                    onClick={handleMicClick}
-                    disabled={isLoading || isListening}
-                >
-                    {isListening || isLoading ? <Loader2 className="h-8 w-8 animate-spin" /> : <Mic className="h-8 w-8" />}
-                </Button>
-                <p className="text-sm text-muted-foreground">{isListening ? 'Listening...' : isLoading ? 'AI is thinking...' : 'Tap mic to ask a question'}</p>
-                 {error && (
-                    <Alert variant="destructive" className="text-left">
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
-            </CardContent>
-            {(lastTranscript || lastResponse) && (
-                 <CardFooter>
-                    <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50">
+            </CardHeader>
+            {(lastTranscript || lastResponse || error) && (
+                 <CardContent>
+                    <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px]">
+                         {error && (
+                            <Alert variant="destructive" className="text-left">
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                        )}
                         {lastTranscript && (
                             <div className="flex items-start gap-3">
                                 <User className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
@@ -298,8 +337,14 @@ export default function LiveAdvisorPage() {
                                 )}
                             </div>
                         )}
+                         {!lastTranscript && !lastResponse && !error && (
+                            <div className="flex items-center justify-center h-full text-muted-foreground">
+                                <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
+                                <p>Waiting for your question...</p>
+                            </div>
+                         )}
                     </div>
-                </CardFooter>
+                </CardContent>
             )}
         </Card>
       )}
