@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BarChart as BarChartIcon, ChevronRight, LogOut, Shield, HelpCircle, Settings, User as UserIcon, Camera, Save, Loader2 } from "lucide-react";
+import { BarChart as BarChartIcon, ChevronRight, LogOut, Shield, HelpCircle, Settings, User as UserIcon, Camera, Save, Loader2, Palette } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ import type { Harvest, Expense, ExpenseCategory } from "@/types";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileUploadManager } from "@/components/file-upload-manager";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 
 const menuItems = [
@@ -194,6 +195,21 @@ export default function ProfilePage() {
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </Button>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5"/> Appearance</CardTitle>
+                    <CardDescription>Customize the look and feel of the app.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="theme-toggle" className="font-medium">
+                            Theme
+                        </Label>
+                        <ThemeToggle />
+                    </div>
                 </CardContent>
             </Card>
 

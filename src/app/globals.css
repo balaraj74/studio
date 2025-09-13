@@ -5,34 +5,34 @@
 
 @layer base {
   :root {
-    --background: 222 83% 4%;
-    --foreground: 210 40% 98%;
-    
-    --card: 210 40% 98% / 0.1;
-    --card-foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
 
-    --popover: 220 20% 7%;
-    --popover-foreground: 210 40% 98%;
-    
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
     --primary: 88 60% 55%;
     --primary-foreground: 88 95% 10%;
-    
-    --secondary: 210 40% 98% / 0.1;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 210 40% 98% / 0.05;
-    --muted-foreground: 215 20% 65%;
-    
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
     --accent: 44 65% 61%;
     --accent-foreground: 44 95% 10%;
-    
-    --destructive: 0 62.8% 50.6%;
+ 
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    
-    --border: 210 40% 98% / 0.2;
-    --input: 210 40% 98% / 0.1;
-    --ring: 88 60% 55%;
 
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+ 
     --radius: 20px;
   }
  
@@ -79,7 +79,7 @@
     position: relative;
   }
 
-  body::after {
+  .dark body::after {
     content: '';
     position: absolute;
     top: 0;
@@ -106,28 +106,28 @@
   }
 }
 
-.bg-card {
+.dark .bg-card {
   background: hsl(var(--card)) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
   box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
-.bg-muted {
+.dark .bg-muted {
     background-color: var(--muted) !important;
 }
 
-.bg-popover {
+.dark .bg-popover {
     background-color: hsl(var(--popover)) !important;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
 }
 
-.bg-background {
+.dark .bg-background {
     background-color: hsl(var(--background)) !important;
 }
 
-.bg-secondary {
+.dark .bg-secondary {
      background-color: hsl(var(--secondary)) !important;
 }
 
@@ -136,12 +136,12 @@
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-.card-corner-blur {
+.dark .card-corner-blur {
   position: relative;
   overflow: hidden;
 }
 
-.card-corner-blur::before {
+.dark .card-corner-blur::before {
   content: '';
   position: absolute;
   top: 0;
@@ -192,7 +192,7 @@
 }
 
 
-.animated-bg {
+.dark .animated-bg {
   position: fixed;
   top: 0;
   left: 0;
