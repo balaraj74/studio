@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-    NEXT_PUBLIC_FIREBASE_VAPID_KEY: 'BGnBKRRM_xePdhlIt2OlEj8kdEmQI8y_EQ7UwfyigIJb0xnuHwI_RTWP-UVGBX8aEnd5M5YehQUNQnf6Y01BL94',
+    // VAPID key is managed in firebase-messaging-sw.js and messaging.ts directly
   },
 };
 

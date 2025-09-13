@@ -4,16 +4,13 @@
 import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { app } from './config';
 
+// THIS IS THE VAPID KEY FROM YOUR FIREBASE PROJECT SETTINGS
+const VAPID_KEY = "BGnBKRRM_xePdhlIt2OlEj8kdEmQI8y_EQ7UwfyigIJb0xnuHwI_RTWP-UVGBX8aEnd5M5YehQUNQnf6Y01BL94";
+
 export const getFcmToken = async () => {
   const isFcmSupported = await isSupported();
   if (!isFcmSupported) {
     console.log("Firebase Messaging is not supported in this browser.");
-    return null;
-  }
-  
-  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-  if (!vapidKey) {
-    console.error("VAPID key is missing. Notifications will not work.");
     return null;
   }
   
@@ -35,7 +32,7 @@ export const getFcmToken = async () => {
     console.log('Requesting FCM token...');
     // 3. Get the token, passing in the now-active service worker registration.
     const fcmToken = await getToken(messaging, {
-      vapidKey: vapidKey,
+      vapidKey: VAPID_KEY,
       serviceWorkerRegistration,
     });
     
