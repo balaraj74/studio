@@ -9,5 +9,4 @@ import '@/ai/flows/generate-crop-calendar.ts';
 import '@/ai/flows/price-prediction-flow.ts';
 import '@/ai/flows/loan-insurance-assistant-flow.ts';
 import '@/ai/flows/market-matchmaking-flow.ts';
-import '@/ai/flows/translate-text-flow.ts';
     

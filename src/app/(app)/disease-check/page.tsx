@@ -18,7 +18,6 @@ import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
 } from "@/ai/flows/crop-disease-detection";
-import { translateText } from "@/ai/flows/translate-text-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,8 +39,6 @@ const supportedLanguages = [
 
 const ANALYSIS_INTERVAL = 3000; // 3 seconds
 type SpeakingSection = 'remedy' | 'alternative' | 'prevention' | null;
-type TranslatableSections = 'plantName' | 'diseaseName' | 'suggestedRemedy' | 'alternativeRemedies' | 'preventiveMeasures';
-
 
 export default function DiseaseCheckPage() {
   const { user } = useAuth();
@@ -53,16 +50,11 @@ export default function DiseaseCheckPage() {
   const [error, setError] = useState<string | null>(null);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [speakingSection, setSpeakingSection] = useState<SpeakingSection>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-
-  // States for translation
-  const [translatedContent, setTranslatedContent] = useState<Partial<DiagnoseCropDiseaseOutput['diseaseDiagnosis'] & DiagnoseCropDiseaseOutput['plantIdentification']>>({});
-  const [isTranslating, setIsTranslating] = useState<Partial<Record<TranslatableSections, boolean>>>({});
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
-  const originalResultRef = useRef<DiagnoseCropDiseaseOutput | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -107,43 +99,6 @@ export default function DiseaseCheckPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  const setAndStoreFinalResult = (result: DiagnoseCropDiseaseOutput | null) => {
-    setFinalResult(result);
-    originalResultRef.current = result; // Store the original English version
-    setTranslatedContent({}); // Reset translations when a new result comes in
-    setSelectedLanguage('English'); // Reset language to default
-  }
-
-  const handleLanguageChange = async (lang: string) => {
-    setSelectedLanguage(lang);
-    if (lang === 'English' || !originalResultRef.current) {
-        setTranslatedContent({});
-        return;
-    }
-
-    const sectionsToTranslate: { key: TranslatableSections; text: string }[] = [
-        { key: 'plantName', text: originalResultRef.current.plantIdentification.plantName },
-        { key: 'diseaseName', text: originalResultRef.current.diseaseDiagnosis.diseaseName },
-        { key: 'suggestedRemedy', text: originalResultRef.current.diseaseDiagnosis.suggestedRemedy },
-        { key: 'alternativeRemedies', text: originalResultRef.current.diseaseDiagnosis.alternativeRemedies },
-        { key: 'preventiveMeasures', text: originalResultRef.current.diseaseDiagnosis.preventiveMeasures },
-    ];
-
-    for (const { key, text } of sectionsToTranslate) {
-        setIsTranslating(prev => ({ ...prev, [key]: true }));
-        try {
-            const { translatedText } = await translateText({ text, targetLanguage: lang });
-            setTranslatedContent(prev => ({ ...prev, [key]: translatedText }));
-        } catch (err) {
-            console.error(`Failed to translate ${key}:`, err);
-            toast({ variant: 'destructive', title: 'Translation Error', description: `Could not translate ${key}.` });
-            // Revert to original text on error
-            setTranslatedContent(prev => ({ ...prev, [key]: text }));
-        } finally {
-            setIsTranslating(prev => ({ ...prev, [key]: false }));
-        }
-    }
-};
 
   const stopCameraStream = () => {
     if (videoRef.current?.srcObject) {
@@ -195,7 +150,8 @@ export default function DiseaseCheckPage() {
            const diagnosisResult = await diagnoseCropDisease({ 
                 imageUris: imageUris,
                 geolocation: location,
-                userId: user.uid, // Pass userId for history saving
+                userId: user.uid,
+                language: selectedLanguage,
             });
             return diagnosisResult;
        } catch(e) {
@@ -235,7 +191,7 @@ export default function DiseaseCheckPage() {
       }
       setIsAnalyzing(false);
     }, ANALYSIS_INTERVAL);
-  }, [isAnalyzing, location, toast, user]);
+  }, [isAnalyzing, location, toast, user, selectedLanguage]);
 
 
   const stopAnalysisLoop = () => {
@@ -248,7 +204,7 @@ export default function DiseaseCheckPage() {
 
   const handleStartStreaming = async () => {
     setError(null);
-    setAndStoreFinalResult(null);
+    setFinalResult(null);
     setLiveResult(null);
 
     if (!location) {
@@ -275,14 +231,14 @@ export default function DiseaseCheckPage() {
       setIsStreaming(false);
       setIsAnalyzing(false);
       if (liveResult) {
-          setAndStoreFinalResult(liveResult);
+          setFinalResult(liveResult);
       }
   };
 
   const handleReset = () => {
     handleStopStreaming();
     setLocation(null);
-    setAndStoreFinalResult(null);
+    setFinalResult(null);
     setLiveResult(null);
     setError(null);
     setImageFiles([]);
@@ -330,7 +286,7 @@ export default function DiseaseCheckPage() {
     }
     
     setIsUploading(true);
-    setAndStoreFinalResult(null);
+    setFinalResult(null);
     setError(null);
 
     try {
@@ -339,9 +295,9 @@ export default function DiseaseCheckPage() {
         if(diagnosisResult) {
              if (!diagnosisResult.plantIdentification.isPlant) {
                 setError(diagnosisResult.plantIdentification.plantName || "Could not identify a plant. The image may be unclear.");
-                setAndStoreFinalResult(null);
+                setFinalResult(null);
             } else {
-                setAndStoreFinalResult(diagnosisResult);
+                setFinalResult(diagnosisResult);
             }
         }
     } finally {
@@ -383,16 +339,16 @@ export default function DiseaseCheckPage() {
   };
 
 
-  const ResultSection = ({ title, content, icon: Icon, sectionId, isTranslating }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection, isTranslating?: boolean }) => (
+  const ResultSection = ({ title, content, icon: Icon, sectionId }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection }) => (
     <div>
         <div className="flex items-center justify-between">
             <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)} disabled={isTranslating}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)}>
                 {speakingSection === sectionId ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 <span className="sr-only">Read aloud</span>
             </Button>
         </div>
-        {isTranslating ? <Skeleton className="h-20 w-full mt-1" /> : <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>}
+        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>
     </div>
   );
   
@@ -440,7 +396,7 @@ export default function DiseaseCheckPage() {
         <Card className="lg:col-span-2">
             <CardHeader>
             <CardTitle>1. Setup</CardTitle>
-            <CardDescription>Configure your location before starting.</CardDescription>
+            <CardDescription>Configure your location and language before starting.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -449,6 +405,17 @@ export default function DiseaseCheckPage() {
                     <LocateFixed className="mr-2 h-4 w-4" />
                     {location ? `Location Acquired` : "Get Current Location"}
                 </Button>
+              </div>
+               <div className="space-y-2">
+                <Label>Language</Label>
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isStreaming || isUploading}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {supportedLanguages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
+                    </SelectContent>
+                </Select>
               </div>
 
             </CardContent>
@@ -543,20 +510,9 @@ export default function DiseaseCheckPage() {
                         <div>
                             <CardTitle className="flex items-center gap-3">
                               <div className="bg-primary/10 p-2 rounded-lg"><Sprout className="text-primary" /></div>
-                              <span>{isTranslating.plantName ? <Skeleton className="h-6 w-32" /> : translatedContent.plantName || finalResult.plantIdentification.plantName}</span>
+                              <span>{finalResult.plantIdentification.plantName}</span>
                             </CardTitle>
-                            <CardDescription>Disease Diagnosis: {isTranslating.diseaseName ? <Skeleton className="h-5 w-24 mt-1" /> : translatedContent.diseaseName || finalResult.diseaseDiagnosis.diseaseName}</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Languages className="h-4 w-4 text-muted-foreground" />
-                            <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={Object.values(isTranslating).some(v => v)}>
-                                <SelectTrigger className="w-auto sm:w-[150px]">
-                                    <SelectValue placeholder="Language" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {supportedLanguages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
+                            <CardDescription>Disease Diagnosis: {finalResult.diseaseDiagnosis.diseaseName}</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
@@ -585,9 +541,9 @@ export default function DiseaseCheckPage() {
                             </CardContent>
                         </Card>
                     )}
-                    <ResultSection title="Suggested Remedy" content={translatedContent.suggestedRemedy || finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" isTranslating={isTranslating.suggestedRemedy} />
-                    <ResultSection title="Alternative Home Remedies" content={translatedContent.alternativeRemedies || finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" isTranslating={isTranslating.alternativeRemedies} />
-                    <ResultSection title="Preventive Measures" content={translatedContent.preventiveMeasures || finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" isTranslating={isTranslating.preventiveMeasures} />
+                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" />
+                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" />
+                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />
                 </CardContent>
             </Card>
             )}
