@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getSoilAdvice, GetSoilAdviceInputSchema, type GetSoilAdviceOutput } from '@/ai/flows/soil-advisor-flow';
 import { parseSoilReport, type ParseSoilReportOutput } from '@/ai/flows/soil-report-parser-flow';
-import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Upload } from 'lucide-react';
+import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -26,11 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/hooks/use-auth';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { addDoc, collection } from 'firebase/firestore';
-import { db, storage } from '@/lib/firebase/config';
-import { Progress } from '@/components/ui/progress';
+import Image from 'next/image';
 
 
 const statusStyles = {
@@ -58,21 +54,42 @@ const statusIcons = {
 const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
     <div className="space-y-6">
         <Card>
-            <CardHeader>
-                <CardTitle>Nutrient Analysis</CardTitle>
-                <CardDescription>Status of key soil nutrients.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>Nutrient Analysis</CardTitle>
+                    <CardDescription>Status of key soil nutrients.</CardDescription>
+                </div>
+                 <Button variant="outline" disabled>
+                    <Download className="mr-2 h-4 w-4" /> Download Report
+                </Button>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {result.nutrientAnalysis.map(nutrient => (
-                    <div key={nutrient.nutrient} className={cn("p-4 rounded-lg text-center", statusStyles[nutrient.status as keyof typeof statusStyles])}>
-                        <div className="flex items-center justify-center gap-2">
-                           {statusIcons[nutrient.status as keyof typeof statusIcons]}
-                           <p className="font-bold text-lg">{nutrient.nutrient}</p>
+            <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {result.nutrientAnalysis.map(nutrient => (
+                        <div key={nutrient.nutrient} className={cn("p-4 rounded-lg text-center", statusStyles[nutrient.status as keyof typeof statusStyles])}>
+                            <div className="flex items-center justify-center gap-2">
+                            {statusIcons[nutrient.status as keyof typeof statusIcons]}
+                            <p className="font-bold text-lg">{nutrient.nutrient}</p>
+                            </div>
+                            <p className="text-sm font-semibold">{nutrient.status}</p>
+                            <p className="text-xs">{nutrient.comment}</p>
                         </div>
-                        <p className="text-sm font-semibold">{nutrient.status}</p>
-                        <p className="text-xs">{nutrient.comment}</p>
-                    </div>
-                ))}
+                    ))}
+                </div>
+                <div className="grid md:grid-cols-2 gap-6 mt-6">
+                    {result.charts.nutrientPieBase64 && (
+                        <div className="text-center">
+                            <h4 className="font-semibold mb-2">NPK Ratio</h4>
+                            <Image src={result.charts.nutrientPieBase64} alt="Nutrient Pie Chart" width={250} height={250} className="mx-auto" />
+                        </div>
+                    )}
+                     {result.charts.deficiencyBarBase64 && (
+                        <div className="text-center">
+                            <h4 className="font-semibold mb-2">Nutrient Levels vs. Recommended</h4>
+                            <Image src={result.charts.deficiencyBarBase64} alt="Nutrient Bar Graph" width={350} height={250} className="mx-auto" />
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
 
@@ -129,12 +146,10 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
 );
 
 function UploadTab() {
-    const { user } = useAuth();
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
     const [cropName, setCropName] = useState('');
     const [language, setLanguage] = useState('English');
-    const [uploadProgress, setUploadProgress] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [parsedData, setParsedData] = useState<ParseSoilReportOutput | null>(null);
     const [adviceResult, setAdviceResult] = useState<GetSoilAdviceOutput | null>(null);
@@ -145,43 +160,33 @@ function UploadTab() {
         }
     };
 
+    const fileToDataUri = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
     const handleAnalyzeReport = async () => {
-        if (!file || !cropName || !user) {
-            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a file, enter a crop name, and ensure you are logged in.' });
+        if (!file || !cropName) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a file and enter a crop name.' });
             return;
         }
         setIsLoading(true);
         setParsedData(null);
         setAdviceResult(null);
-        setUploadProgress(0);
 
         try {
-            // 1. Upload file to Firebase Storage
-            const storageRef = ref(storage, `soil_reports/${user.uid}/${Date.now()}-${file.name}`);
-            const uploadTask = uploadBytesResumable(storageRef, file);
-
-            uploadTask.on('state_changed', (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-            });
-
-            await uploadTask;
-            const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            // 1. Convert file to data URI
+            const reportDataUri = await fileToDataUri(file);
 
             // 2. Parse the report using AI
-            const parsedResult = await parseSoilReport({ reportDataUri: fileUrl });
+            const parsedResult = await parseSoilReport({ reportDataUri });
             setParsedData(parsedResult);
             toast({ title: 'Report Parsed Successfully', description: 'Now generating fertilizer advice...' });
             
-             // Create a record in Firestore
-            await addDoc(collection(db, `users/${user.uid}/soil_reports`), {
-                fileName: file.name,
-                fileUrl,
-                cropName,
-                parsedData: parsedResult,
-                createdAt: new Date(),
-            });
-
             // 3. Get advice using parsed data
             const advice = await getSoilAdvice({
                 cropName,
@@ -199,7 +204,6 @@ function UploadTab() {
             toast({ variant: 'destructive', title: 'Analysis Failed', description: errorMessage });
         } finally {
             setIsLoading(false);
-            setUploadProgress(0);
         }
     };
     
@@ -229,7 +233,6 @@ function UploadTab() {
                         </SelectContent>
                     </Select>
                 </div>
-                {isLoading && uploadProgress > 0 && <Progress value={uploadProgress} />}
             </CardContent>
             <CardFooter>
                 <Button onClick={handleAnalyzeReport} disabled={isLoading || !file || !cropName}>

@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
 export const ParseSoilReportInputSchema = z.object({
-  reportDataUri: z.string().describe("A URL to the soil report file (image or PDF). It must be a publicly accessible URL."),
+  reportDataUri: z.string().describe("A soil report file (image or PDF) as a data URI. Format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type ParseSoilReportInput = z.infer<typeof ParseSoilReportInputSchema>;
 
@@ -45,7 +45,7 @@ const parseSoilReportFlow = ai.defineFlow(
     try {
       const promptText = `You are an expert AI assistant with OCR capabilities, specialized in analyzing agricultural soil test reports from India. Your task is to extract key soil health parameters from the provided document.
 
-      Analyze the document at the given URL and extract the following values. If a value is not present, omit it from the output. Pay close attention to units and convert them to the required format if necessary (e.g., convert nutrient values to kg/ha).
+      Analyze the document provided as a data URI and extract the following values. If a value is not present, omit it from the output. Pay close attention to units and convert them to the required format if necessary (e.g., convert nutrient values to kg/ha).
       
       Required Parameters:
       - soilPh: The pH level.
