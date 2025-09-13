@@ -61,7 +61,7 @@ export default function RecordsPage() {
   return (
     <div className="space-y-4">
       {recordItems.map((item) => (
-        <Link href={item.href} key={item.href} className="block group">
+        <Link href={item.href} key={item.title} className="block group">
           <Card className="interactive-element group-hover:border-primary/50">
             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
               <div className="p-3 bg-primary/10 rounded-lg">
