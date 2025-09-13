@@ -80,9 +80,8 @@ const weatherTool = ai.defineTool(
     let locationName = "Your Location";
     if (geocodeData?.address) {
         const { village, town, city, county, state, state_district } = geocodeData.address;
-        const place = village || town || city || "Unknown Place";
-        const district = county || state_district || "";
-        locationName = [place, district].filter(Boolean).join(', ');
+        locationName = [village, town, city, county, state_district, state].filter(Boolean).slice(0, 2).join(', ');
+        if (!locationName) locationName = "Your Location";
     }
 
     const dailyForecasts = weatherData.daily.time.slice(0, 5).map((time: string, index: number) => ({
@@ -133,7 +132,7 @@ const weatherFlow = ai.defineFlow(
       // 1. Call the tool to get structured weather data.
       const structuredData = await weatherTool(input);
 
-      let summary = 'Enjoy the weather!';
+      let summary = 'The weather forecast is available below.'; // Default summary
       try {
         // 2. Call the AI to generate a summary from the structured data.
         const { output } = await weatherPrompt(structuredData);

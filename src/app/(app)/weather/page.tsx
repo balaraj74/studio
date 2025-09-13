@@ -14,14 +14,15 @@ import { format } from 'date-fns';
 
 export default function WeatherPage() {
   const [weatherData, setWeatherData] = useState<GetWeatherInfoOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState('idle'); // idle, locating, fetching, done, error
+  const [status, setStatus] = useState<'idle' | 'locating' | 'fetching' | 'done' | 'error'>('idle');
   const { toast } = useToast();
 
   useEffect(() => {
     // Automatically fetch weather on page load
     handleGetWeatherForLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGetWeatherForLocation = async () => {
@@ -30,10 +31,12 @@ export default function WeatherPage() {
     setStatus('locating');
     setError(null);
     setWeatherData(null);
+    setIsLoading(true);
 
     if (!navigator.geolocation) {
         setError("Geolocation is not supported by your browser.");
         setStatus('error');
+        setIsLoading(false);
         return;
     }
 
@@ -41,19 +44,19 @@ export default function WeatherPage() {
         async (position) => {
             const { latitude, longitude } = position.coords;
             setStatus('fetching');
-            setIsLoading(true);
             try {
                 const result = await getWeatherInfo({ lat: latitude, lon: longitude });
                 setWeatherData(result);
                 setStatus('done');
             } catch (err) {
                 console.error('AI weather error:', err);
-                setError('Could not get a response from the weather service. Please try again.');
+                const errorMessage = err instanceof Error ? err.message : 'Could not get a response from the weather service.';
+                setError(errorMessage);
                 setStatus('error');
                 toast({
                     variant: 'destructive',
                     title: 'Weather Service Failed',
-                    description: 'There was a problem contacting the weather service.',
+                    description: errorMessage,
                 });
             } finally {
                 setIsLoading(false);
@@ -62,6 +65,7 @@ export default function WeatherPage() {
         () => {
             setError("Permission to access location was denied. Please enable location services in your browser settings.");
             setStatus('error');
+            setIsLoading(false);
         }
     );
   };
@@ -135,7 +139,7 @@ export default function WeatherPage() {
         </div>
       </div>
       
-      {error && (
+      {error && !isLoading && (
         <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
@@ -148,7 +152,7 @@ export default function WeatherPage() {
 
       {isLoading && renderSkeleton()}
 
-      {weatherData && (
+      {weatherData && !isLoading && (
         <div className="space-y-6 animate-in fade-in-50">
             <Card className="bg-card/50">
                 <CardHeader>
