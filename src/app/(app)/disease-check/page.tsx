@@ -18,6 +18,7 @@ import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
 } from "@/ai/flows/crop-disease-detection";
+import { translateText } from "@/ai/flows/translate-text-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,12 +40,12 @@ const supportedLanguages = [
 
 const ANALYSIS_INTERVAL = 3000; // 3 seconds
 type SpeakingSection = 'remedy' | 'alternative' | 'prevention' | null;
+type TranslatableSections = 'plantName' | 'diseaseName' | 'suggestedRemedy' | 'alternativeRemedies' | 'preventiveMeasures';
 
 
 export default function DiseaseCheckPage() {
   const { user } = useAuth();
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const [language, setLanguage] = useState<string>('English');
   const [finalResult, setFinalResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [liveResult, setLiveResult] = useState<DiagnoseCropDiseaseOutput | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -56,6 +57,12 @@ export default function DiseaseCheckPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+
+  // States for translation
+  const [translatedContent, setTranslatedContent] = useState<Partial<DiagnoseCropDiseaseOutput['diseaseDiagnosis'] & DiagnoseCropDiseaseOutput['plantIdentification']>>({});
+  const [isTranslating, setIsTranslating] = useState<Partial<Record<TranslatableSections, boolean>>>({});
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const originalResultRef = useRef<DiagnoseCropDiseaseOutput | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -99,6 +106,44 @@ export default function DiseaseCheckPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  const setAndStoreFinalResult = (result: DiagnoseCropDiseaseOutput | null) => {
+    setFinalResult(result);
+    originalResultRef.current = result; // Store the original English version
+    setTranslatedContent({}); // Reset translations when a new result comes in
+    setSelectedLanguage('English'); // Reset language to default
+  }
+
+  const handleLanguageChange = async (lang: string) => {
+    setSelectedLanguage(lang);
+    if (lang === 'English' || !originalResultRef.current) {
+        setTranslatedContent({});
+        return;
+    }
+
+    const sectionsToTranslate: { key: TranslatableSections; text: string }[] = [
+        { key: 'plantName', text: originalResultRef.current.plantIdentification.plantName },
+        { key: 'diseaseName', text: originalResultRef.current.diseaseDiagnosis.diseaseName },
+        { key: 'suggestedRemedy', text: originalResultRef.current.diseaseDiagnosis.suggestedRemedy },
+        { key: 'alternativeRemedies', text: originalResultRef.current.diseaseDiagnosis.alternativeRemedies },
+        { key: 'preventiveMeasures', text: originalResultRef.current.diseaseDiagnosis.preventiveMeasures },
+    ];
+
+    for (const { key, text } of sectionsToTranslate) {
+        setIsTranslating(prev => ({ ...prev, [key]: true }));
+        try {
+            const { translatedText } = await translateText({ text, targetLanguage: lang });
+            setTranslatedContent(prev => ({ ...prev, [key]: translatedText }));
+        } catch (err) {
+            console.error(`Failed to translate ${key}:`, err);
+            toast({ variant: 'destructive', title: 'Translation Error', description: `Could not translate ${key}.` });
+            // Revert to original text on error
+            setTranslatedContent(prev => ({ ...prev, [key]: text }));
+        } finally {
+            setIsTranslating(prev => ({ ...prev, [key]: false }));
+        }
+    }
+};
 
   const stopCameraStream = () => {
     if (videoRef.current?.srcObject) {
@@ -150,7 +195,6 @@ export default function DiseaseCheckPage() {
            const diagnosisResult = await diagnoseCropDisease({ 
                 imageUris: imageUris,
                 geolocation: location,
-                language: language,
                 userId: user.uid, // Pass userId for history saving
             });
             return diagnosisResult;
@@ -191,7 +235,7 @@ export default function DiseaseCheckPage() {
       }
       setIsAnalyzing(false);
     }, ANALYSIS_INTERVAL);
-  }, [isAnalyzing, location, language, toast, user]);
+  }, [isAnalyzing, location, toast, user]);
 
 
   const stopAnalysisLoop = () => {
@@ -204,7 +248,7 @@ export default function DiseaseCheckPage() {
 
   const handleStartStreaming = async () => {
     setError(null);
-    setFinalResult(null);
+    setAndStoreFinalResult(null);
     setLiveResult(null);
 
     if (!location) {
@@ -231,17 +275,16 @@ export default function DiseaseCheckPage() {
       setIsStreaming(false);
       setIsAnalyzing(false);
       if (liveResult) {
-          setFinalResult(liveResult);
+          setAndStoreFinalResult(liveResult);
       }
   };
 
   const handleReset = () => {
     handleStopStreaming();
     setLocation(null);
-    setFinalResult(null);
+    setAndStoreFinalResult(null);
     setLiveResult(null);
     setError(null);
-    setLanguage('English');
     setImageFiles([]);
     previewUrls.forEach(URL.revokeObjectURL);
     setPreviewUrls([]);
@@ -287,7 +330,7 @@ export default function DiseaseCheckPage() {
     }
     
     setIsUploading(true);
-    setFinalResult(null);
+    setAndStoreFinalResult(null);
     setError(null);
 
     try {
@@ -296,9 +339,9 @@ export default function DiseaseCheckPage() {
         if(diagnosisResult) {
              if (!diagnosisResult.plantIdentification.isPlant) {
                 setError(diagnosisResult.plantIdentification.plantName || "Could not identify a plant. The image may be unclear.");
-                setFinalResult(null);
+                setAndStoreFinalResult(null);
             } else {
-                setFinalResult(diagnosisResult);
+                setAndStoreFinalResult(diagnosisResult);
             }
         }
     } finally {
@@ -325,7 +368,7 @@ export default function DiseaseCheckPage() {
       
       const cleanedText = cleanTextForSpeech(text);
       const utterance = new SpeechSynthesisUtterance(cleanedText);
-      const langInfo = supportedLanguages.find(l => l.value === language);
+      const langInfo = supportedLanguages.find(l => l.value === selectedLanguage);
       if (langInfo) {
         utterance.lang = langInfo.langCode;
         const voice = voices.find(v => v.lang === langInfo.langCode);
@@ -340,16 +383,16 @@ export default function DiseaseCheckPage() {
   };
 
 
-  const ResultSection = ({ title, content, icon: Icon, sectionId }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection }) => (
+  const ResultSection = ({ title, content, icon: Icon, sectionId, isTranslating }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection, isTranslating?: boolean }) => (
     <div>
         <div className="flex items-center justify-between">
             <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)} disabled={isTranslating}>
                 {speakingSection === sectionId ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 <span className="sr-only">Read aloud</span>
             </Button>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>
+        {isTranslating ? <Skeleton className="h-20 w-full mt-1" /> : <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>}
     </div>
   );
   
@@ -397,19 +440,9 @@ export default function DiseaseCheckPage() {
         <Card className="lg:col-span-2">
             <CardHeader>
             <CardTitle>1. Setup</CardTitle>
-            <CardDescription>Configure your location and language before starting.</CardDescription>
+            <CardDescription>Configure your location before starting.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="language">Response Language</Label>
-                 <Select value={language} onValueChange={setLanguage} disabled={isStreaming || isUploading}>
-                    <SelectTrigger id="language"><SelectValue placeholder="Select Language" /></SelectTrigger>
-                    <SelectContent>
-                        {supportedLanguages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
-                    </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label>Location</Label>
                 <Button variant="outline" className="w-full" onClick={handleGetLocation} disabled={isStreaming || !!location || isUploading}>
@@ -506,11 +539,26 @@ export default function DiseaseCheckPage() {
             {finalResult && finalResult.plantIdentification.isPlant && (
             <Card className="animate-in fade-in-50 mt-6">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-3">
-                      <div className="bg-primary/10 p-2 rounded-lg"><Sprout className="text-primary" /></div>
-                      <span>{finalResult.plantIdentification.plantName}</span>
-                    </CardTitle>
-                    <CardDescription>Disease Diagnosis: {finalResult.diseaseDiagnosis.diseaseName}</CardDescription>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle className="flex items-center gap-3">
+                              <div className="bg-primary/10 p-2 rounded-lg"><Sprout className="text-primary" /></div>
+                              <span>{isTranslating.plantName ? <Skeleton className="h-6 w-32" /> : translatedContent.plantName || finalResult.plantIdentification.plantName}</span>
+                            </CardTitle>
+                            <CardDescription>Disease Diagnosis: {isTranslating.diseaseName ? <Skeleton className="h-5 w-24 mt-1" /> : translatedContent.diseaseName || finalResult.diseaseDiagnosis.diseaseName}</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Languages className="h-4 w-4 text-muted-foreground" />
+                            <Select value={selectedLanguage} onValueChange={handleLanguageChange} disabled={Object.values(isTranslating).some(v => v)}>
+                                <SelectTrigger className="w-auto sm:w-[150px]">
+                                    <SelectValue placeholder="Language" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {supportedLanguages.map(lang => (<SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
@@ -537,9 +585,9 @@ export default function DiseaseCheckPage() {
                             </CardContent>
                         </Card>
                     )}
-                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" />
-                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" />
-                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />
+                    <ResultSection title="Suggested Remedy" content={translatedContent.suggestedRemedy || finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" isTranslating={isTranslating.suggestedRemedy} />
+                    <ResultSection title="Alternative Home Remedies" content={translatedContent.alternativeRemedies || finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" isTranslating={isTranslating.alternativeRemedies} />
+                    <ResultSection title="Preventive Measures" content={translatedContent.preventiveMeasures || finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" isTranslating={isTranslating.preventiveMeasures} />
                 </CardContent>
             </Card>
             )}

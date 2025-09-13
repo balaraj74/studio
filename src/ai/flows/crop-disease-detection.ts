@@ -24,7 +24,6 @@ const DiagnoseCropDiseaseInputSchema = z.object({
     latitude: z.number(),
     longitude: z.number(),
   }).describe("The geolocation where the images were taken."),
-  language: z.string().default('English').describe("The language for the output, e.g., 'English', 'Kannada', 'Hindi'."),
   userId: z.string().describe("The ID of the user requesting the diagnosis for history tracking."),
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
@@ -32,16 +31,16 @@ export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSc
 const DiagnoseCropDiseaseOutputSchema = z.object({
   plantIdentification: z.object({
       isPlant: z.boolean().describe("Confirms if the image contains a plant. Set to false if the image quality is too poor (e.g., blurry, dark, partial view) to make a reliable identification."),
-      plantName: z.string().describe("The common name of the identified plant in the requested language. If not identifiable or if image quality is poor, provide a reason (e.g., 'Image too blurry', 'Not a plant')."),
+      plantName: z.string().describe("The common name of the identified plant in English. If not identifiable or if image quality is poor, provide a reason (e.g., 'Image too blurry', 'Not a plant')."),
       confidence: z.number().min(0).max(1).describe("The AI's confidence in the plant identification, from 0.0 to 1.0."),
   }),
   diseaseDiagnosis: z.object({
-    diseaseName: z.string().describe("Name of the detected disease in the requested language. 'Healthy' if no issue is found. 'Uncertain' if confidence is too low."),
+    diseaseName: z.string().describe("Name of the detected disease in English. 'Healthy' if no issue is found. 'Uncertain' if confidence is too low."),
     severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
-    affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit') in the requested language."),
-    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan, written in the requested language."),
-    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future, written in the requested language."),
-    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried, written in the requested language."),
+    affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit') in English."),
+    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan, written in English."),
+    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future, written in English."),
+    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried, written in English."),
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
   riskPrediction: z.object({
@@ -102,7 +101,7 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
       // 3. Build the final text prompt with weather data, history, and language instruction
       const weatherInfo = weatherData ? JSON.stringify(weatherData, null, 2) : "Not available";
       const promptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
-IMPORTANT: Generate the entire response, including all names and descriptions, in the following language: ${input.language}.
+IMPORTANT: Generate the entire response, including all names and descriptions, in English.
 
 1.  First, analyze the image quality. If the image is too blurry, dark, or shows only a partial leaf, set 'isPlant' to false and use 'plantName' to explain the issue (e.g., 'Image is too blurry'). Do not proceed with diagnosis.
 2.  If the image is clear, identify the plant. Determine if it is a plant, its common name, and your confidence.
