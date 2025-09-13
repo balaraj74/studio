@@ -19,6 +19,7 @@ import {
   Landmark,
   Handshake,
   Video,
+  TestTube,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -41,6 +42,12 @@ const toolItems: ToolItem[] = [
     title: "Live Farm Advisor",
     description: "Get real-time AI advice via video.",
     icon: Video,
+  },
+   {
+    href: "/soil-advisor",
+    title: "Soil Advisor",
+    description: "Get fertilizer advice from soil data.",
+    icon: TestTube,
   },
   {
     href: "/medicinal-plants",
