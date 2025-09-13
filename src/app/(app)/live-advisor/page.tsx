@@ -35,7 +35,8 @@ export default function LiveAdvisorPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-      return () => { // Cleanup on unmount
+      // Cleanup on unmount
+      return () => { 
           stopSession();
           if (responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
       };
@@ -57,6 +58,45 @@ export default function LiveAdvisorPage() {
       }
     };
   }, []);
+
+  const processTranscript = useCallback(async (text: string) => {
+    if (!text.trim() || !isSessionActive) return;
+    
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    const videoFrameUri = frameToDataUri();
+    if (!videoFrameUri) {
+        setError("Could not capture video frame.");
+        return;
+    }
+    
+    setLastTranscript(text);
+    setIsLoading(true);
+    if(responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
+    setLastResponse(null);
+
+    try {
+      const langInfo = selectedLanguage === 'en-IN' ? 'English' : 'Kannada';
+      const result = await liveFarmAdvisor({ videoFrameUri, farmerQuery: text, language: langInfo });
+      setLastResponse(result);
+      handleSpeak(result.responseToQuery, selectedLanguage);
+      if (!isResponsePinned) {
+          responseClearTimeoutRef.current = setTimeout(() => {
+              setLastResponse(null);
+          }, 8000);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Sorry, I couldn't get a response.";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+      setLastTranscript(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isResponsePinned, isSessionActive, selectedLanguage]);
+
 
   const setupRecognition = useCallback(() => {
     if (SpeechRecognition) {
@@ -104,7 +144,7 @@ export default function LiveAdvisorPage() {
     } else {
       setError("Voice recognition not supported by your browser.");
     }
-  }, [isSessionActive, isLoading]);
+  }, [isSessionActive, isLoading, processTranscript]);
 
 
   useEffect(() => {
@@ -186,43 +226,6 @@ export default function LiveAdvisorPage() {
         return canvas.toDataURL('image/jpeg', 0.8);
     }
     return null;
-  };
-
-  const processTranscript = async (text: string) => {
-    if (!text.trim() || !isSessionActive) return;
-    
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-
-    const videoFrameUri = frameToDataUri();
-    if (!videoFrameUri) {
-        setError("Could not capture video frame.");
-        return;
-    }
-    
-    setLastTranscript(text);
-    setIsLoading(true);
-    if(responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
-    setLastResponse(null);
-
-    try {
-      const langInfo = selectedLanguage === 'en-IN' ? 'English' : 'Kannada';
-      const result = await liveFarmAdvisor({ videoFrameUri, farmerQuery: text, language: langInfo });
-      setLastResponse(result);
-      handleSpeak(result.responseToQuery, selectedLanguage);
-      if (!isResponsePinned) {
-          responseClearTimeoutRef.current = setTimeout(() => {
-              setLastResponse(null);
-          }, 8000);
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Sorry, I couldn't get a response.";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-      setLastTranscript(null);
-    }
   };
 
   const handleSpeak = (text: string, lang: string) => {
@@ -351,5 +354,3 @@ export default function LiveAdvisorPage() {
     </div>
   );
 }
-
-    
