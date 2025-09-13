@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Providers } from '@/components/providers';
 import { Inter } from 'next/font/google';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ 
   subsets: ['latin'], 
@@ -34,10 +34,15 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <div className="animated-bg" />
-        <Providers>
+         <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+        >
           {children}
-        </Providers>
-        <Toaster />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

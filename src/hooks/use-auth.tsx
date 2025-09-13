@@ -23,22 +23,15 @@ const AuthGuard = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!isLoading) {
-      const isAuthPage = pathname === '/';
-      if (!user && !isAuthPage) {
+      if (!user) {
         router.push('/');
-      }
-      if (user && isAuthPage) {
-        router.push('/dashboard');
       }
     }
   }, [isLoading, user, router, pathname]);
 
-  if ((isLoading || !user) && pathname !== '/') {
-    return null; // Let the loading.tsx handle the loading state
-  }
-
-  if (user && pathname === '/') {
-    return null; // Return null for auth page if logged in
+  if (isLoading || !user) {
+    // The loading.tsx file in the (app) group will be rendered
+    return null; 
   }
 
   return <>{children}</>;
