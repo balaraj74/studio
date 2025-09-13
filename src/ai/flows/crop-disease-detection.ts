@@ -42,16 +42,16 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
   remedies: z.object({
-    chemicalRemedy: z.string().describe("A detailed, step-by-step suggested chemical treatment plan, including common safe pesticide/fungicide names and recommended dosage."),
-    organicRemedy: z.string().describe("A detailed, step-by-step guide to organic or home-based remedies that can be tried."),
-    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future (e.g., soil treatment, irrigation adjustments)."),
+    chemicalRemedy: z.string().describe("Provide a very detailed, step-by-step suggested chemical treatment plan. Include common safe pesticide/fungicide names, recommended dosage (e.g., ml per liter of water), application timing, and safety precautions. The explanation should be easy for a farmer to understand and act upon."),
+    organicRemedy: z.string().describe("Provide a very detailed, step-by-step guide to organic or home-based remedies. Explain how to prepare and apply the remedy, the frequency of application, and what results to expect. Make it practical for a farmer."),
+    preventiveMeasures: z.string().describe("Provide a comprehensive and detailed list of preventive measures to avoid this issue in the future. Explain each measure clearly, covering topics like soil treatment, irrigation adjustments, crop rotation, and sanitation practices."),
   }),
-  historicalInsight: z.string().describe("A plausible, simulated historical insight based on the location and season (e.g., 'Last year in your region, X% of crops faced fungal rust in September')."),
+  historicalInsight: z.string().describe("Provide a plausible, simulated historical insight based on the location and season. This should be a full sentence, e.g., 'In recent years, farmers in your district have reported a rise in downy mildew cases during the late monsoon season due to high humidity.'"),
   farmingRecommendations: z.object({
-      alternativeCrops: z.string().describe("Suggestions for alternative crops or crop rotation practices that can reduce the chances of this disease recurring."),
-      preservationTips: z.string().describe("Recommendations and tips for preserving the unaffected produce from the harvest."),
+      alternativeCrops: z.string().describe("Suggest alternative crops or specific crop rotation practices in detail. Explain why these alternatives are beneficial for reducing the recurrence of the diagnosed disease."),
+      preservationTips: z.string().describe("Provide detailed recommendations and practical tips for preserving the unaffected produce from the harvest to minimize losses."),
   }),
-  nextDiseaseRisk: z.string().describe("Based on the current diagnosis and forecast, predict the next most likely disease or pest risk for this crop in the coming weeks and suggest one key preventive action.")
+  nextDiseaseRisk: z.string().describe("Based on the current diagnosis and forecast, predict the next most likely disease or pest risk for this crop in the coming weeks. Provide a detailed explanation and suggest at least one key preventive action the farmer can take now.")
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -102,26 +102,26 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
       }
 
       const weatherInfo = weatherData ? JSON.stringify(weatherData, null, 2) : "Not available";
-      const promptText = `You are an expert agronomist and plant pathologist AI. Your task is to provide a comprehensive crop health report.
+      const promptText = `You are an expert agronomist and plant pathologist AI. Your task is to provide a comprehensive and highly detailed crop health report for a farmer. The explanations must be clear, thorough, and easy to understand.
 IMPORTANT: Generate the entire response, including all names and descriptions, in the following language: ${input.language}.
 
 1.  **Image Quality Check**: First, analyze the image quality. If it's too blurry, dark, or partial, set 'isPlant' to false and explain the issue in 'plantName'. Do not proceed with diagnosis.
 2.  **Plant Identification**: If the image is clear, identify the plant, its common name, and your confidence.
 3.  **Disease Diagnosis**: Analyze the plant for any signs of disease, stress, or deficiency. Determine the disease name, severity, affected parts, and your confidence score.
-4.  **Generate Comprehensive Report**: Based on your analysis and the context below, provide a full report in the required JSON format.
+4.  **Generate Comprehensive Report**: Based on your analysis and the context below, provide a full, detailed report in the required JSON format. Ensure every section provides a deep, practical explanation.
 
 The final output must be structured into these sections:
 -   **Plant Identification**: { isPlant, plantName, confidence }
 -   **Disease Diagnosis**: { diseaseName, severity, affectedParts, confidenceScore }
 -   **Remedies**:
-    -   \`chemicalRemedy\`: Provide a detailed, step-by-step chemical solution, including common safe pesticide/fungicide names and specific dosage instructions.
-    -   \`organicRemedy\`: Provide a detailed, step-by-step guide to an effective organic or home-based remedy.
-    -   \`preventiveMeasures\`: List comprehensive preventive actions for the future, like soil treatment or irrigation adjustments.
+    -   \`chemicalRemedy\`: Provide a highly detailed, step-by-step chemical solution. Include common safe pesticide/fungicide names and specific dosage instructions (e.g., 'mix 2ml of BrandName per 1 liter of water'). Explain the best time to apply it and any safety measures.
+    -   \`organicRemedy\`: Provide a highly detailed, step-by-step guide to an effective organic or home-based remedy. Explain the preparation process, application method, and frequency in simple terms.
+    -   \`preventiveMeasures\`: List and explain in detail comprehensive preventive actions for the future. Go beyond simple lists; explain *why* each action (like soil treatment or irrigation adjustments) is important.
 -   **Historical Insight**: Generate a plausible, simulated historical insight based on the location and season (e.g., "Last year in your district, there was a noticeable increase in fungal blight cases during the monsoon season.").
 -   **Farming Recommendations**:
-    -   \`alternativeCrops\`: Suggest alternative crops or specific crop rotation practices to reduce the recurrence of this disease.
-    -   \`preservationTips\`: Provide practical tips for preserving the currently unaffected produce from the harvest.
--   **Next Disease Risk**: Based on the current diagnosis, weather forecast, and history, predict the next most likely disease or pest risk for this crop in the coming weeks and suggest one key preventive action.
+    -   \`alternativeCrops\`: Suggest alternative crops or specific crop rotation practices in detail. Explain why these are effective.
+    -   \`preservationTips\`: Provide practical and detailed tips for preserving the currently unaffected produce from the harvest.
+-   **Next Disease Risk**: Based on the current diagnosis, weather forecast, and history, predict the next most likely disease or pest risk for this crop in the coming weeks. Provide a detailed explanation for this prediction and suggest one key, well-explained preventive action.
 
 Use the following contextual information to refine your analysis. Pay close attention to the user's past diagnosis history to identify recurring issues.
 
