@@ -1,8 +1,9 @@
+
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/components/theme-provider';
+import { AppProviders } from '@/components/app-providers';
 
 const inter = Inter({ 
   subsets: ['latin'], 
@@ -33,16 +34,10 @@ export default function RootLayout({
          <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
-        <div className="animated-bg" />
-         <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <AppProviders>
+            {children}
+            <Toaster />
+        </AppProviders>
       </body>
     </html>
   );

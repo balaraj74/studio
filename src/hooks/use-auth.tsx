@@ -22,17 +22,13 @@ const AuthGuard = ({ children }: { children: ReactNode }) => {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!user) {
-        // If not loading and no user, redirect to login
-        router.push('/');
-      }
+    if (!isLoading && !user) {
+      router.push('/');
     }
   }, [isLoading, user, router, pathname]);
 
   if (isLoading || !user) {
-    // While loading or if there's no user, we let the suspense boundary (loading.tsx) show.
-    // By returning null, we prevent the children (the actual page) from rendering.
+    // Let the main layout's loading animation handle the visual state
     return null; 
   }
 
