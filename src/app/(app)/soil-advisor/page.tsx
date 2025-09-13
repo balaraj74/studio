@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getSoilAdvice } from '@/ai/flows/soil-advisor-flow';
 import { parseSoilReport } from '@/ai/flows/soil-report-parser-flow';
@@ -29,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Image from 'next/image';
 import { GetSoilAdviceInputSchema } from '@/types/soil-advisor';
 import type { GetSoilAdviceOutput, ParseSoilReportOutput, GetSoilAdviceInput } from '@/types/soil-advisor';
+import { Label } from '@/components/ui/label';
 
 
 const statusStyles = {
@@ -59,7 +59,7 @@ const ChartDisplayCard = ({ title, base64Image, alt }: { title: string, base64Im
         <div className="text-center p-4 border rounded-lg bg-muted/50">
             <h4 className="font-semibold mb-2 text-sm">{title}</h4>
             <div className="relative h-48 w-full">
-                <Image src={base64Image} alt={alt} fill className="mx-auto" objectFit="contain" />
+                <Image src={base64Image} alt={alt} fill className="mx-auto object-contain" />
             </div>
         </div>
     );
