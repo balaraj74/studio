@@ -20,11 +20,11 @@ export type ParseSoilReportOutput = z.infer<typeof ParseSoilReportOutputSchema>;
 
 // Schema for getting soil advice
 export const GetSoilAdviceInputSchema = z.object({
-  cropName: z.string().describe("The name of the crop the farmer plans to grow, e.g., 'Maize', 'Paddy'."),
   soilPh: z.coerce.number().describe("The pH level of the soil, e.g., 6.5."),
   nitrogen: z.coerce.number().describe("Nitrogen (N) level in kg/ha, e.g., 45."),
   phosphorus: z.coerce.number().describe("Phosphorus (P) level in kg/ha, e.g., 20."),
   potassium: z.coerce.number().describe("Potassium (K) level in kg/ha, e.g., 30."),
+  location: z.string().describe("The farmer's location for regional crop recommendations, e.g., 'Kolar, Karnataka'."),
   language: z.string().describe("The language for the response, e.g., 'English', 'Kannada'."),
 });
 export type GetSoilAdviceInput = z.infer<typeof GetSoilAdviceInputSchema>;
@@ -48,6 +48,7 @@ const OrganicAlternativeSchema = z.object({
 });
 
 export const GetSoilAdviceOutputSchema = z.object({
+  recommendedCrops: z.string().describe("A detailed, new-line separated list of suitable crops for the given soil data and location, with brief reasoning for each."),
   nutrientAnalysis: z.array(NutrientStatusSchema).describe("An analysis of each key nutrient's status."),
   chemicalRecommendations: z.array(FertilizerRecommendationSchema).describe("A list of recommended chemical fertilizers and their dosages."),
   organicAlternatives: z.array(OrganicAlternativeSchema).describe("A list of organic alternatives to improve soil health."),

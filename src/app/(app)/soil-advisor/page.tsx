@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { getSoilAdvice } from '@/ai/flows/soil-advisor-flow';
 import { parseSoilReport } from '@/ai/flows/soil-report-parser-flow';
-import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download } from 'lucide-react';
+import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Download, Trees } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -59,7 +59,7 @@ const ChartDisplayCard = ({ title, base64Image, alt }: { title: string, base64Im
         <div className="text-center p-4 border rounded-lg bg-muted/50">
             <h4 className="font-semibold mb-2 text-sm">{title}</h4>
             <div className="relative h-48 w-full">
-                <Image src={base64Image} alt={alt} fill objectFit="contain" className="mx-auto" />
+                <Image src={base64Image} alt={alt} fill className="mx-auto" objectFit="contain" />
             </div>
         </div>
     );
@@ -70,12 +70,28 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Nutrient Analysis</CardTitle>
-                    <CardDescription>Status of key soil nutrients.</CardDescription>
+                    <CardTitle>AI-Powered Soil Analysis</CardTitle>
+                    <CardDescription>Recommendations based on your soil data.</CardDescription>
                 </div>
                  <Button variant="outline" disabled>
                     <Download className="mr-2 h-4 w-4" /> Download Report
                 </Button>
+            </CardHeader>
+            <CardContent>
+                <Alert>
+                    <Trees className="h-4 w-4" />
+                    <AlertTitle>Recommended Crops</AlertTitle>
+                    <AlertDescription>
+                        <p className="whitespace-pre-line">{result.recommendedCrops}</p>
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Nutrient Analysis</CardTitle>
+                <CardDescription>Status of key soil nutrients.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -155,7 +171,7 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
 function UploadTab() {
     const { toast } = useToast();
     const [file, setFile] = useState<File | null>(null);
-    const [cropName, setCropName] = useState('');
+    const [location, setLocation] = useState('');
     const [language, setLanguage] = useState('English');
     const [isLoading, setIsLoading] = useState(false);
     const [parsedData, setParsedData] = useState<ParseSoilReportOutput | null>(null);
@@ -177,8 +193,8 @@ function UploadTab() {
     };
 
     const handleAnalyzeReport = async () => {
-        if (!file || !cropName) {
-            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a file and enter a crop name.' });
+        if (!file || !location) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a file and enter your location.' });
             return;
         }
         setIsLoading(true);
@@ -192,12 +208,12 @@ function UploadTab() {
             toast({ title: 'Report Parsed Successfully', description: 'Now generating fertilizer advice...' });
             
             const advice = await getSoilAdvice({
-                cropName,
                 soilPh: parsedResult.soilPh,
                 nitrogen: parsedResult.nitrogen,
                 phosphorus: parsedResult.phosphorus,
                 potassium: parsedResult.potassium,
-                language,
+                location: location,
+                language: language,
             });
             setAdviceResult(advice);
 
@@ -218,8 +234,8 @@ function UploadTab() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="crop-name-upload">Planned Crop</Label>
-                    <Input id="crop-name-upload" placeholder="e.g., 'Maize'" value={cropName} onChange={e => setCropName(e.target.value)} disabled={isLoading} />
+                    <Label htmlFor="location-upload">Farm Location (District, State)</Label>
+                    <Input id="location-upload" placeholder="e.g., 'Belgaum, Karnataka'" value={location} onChange={e => setLocation(e.target.value)} disabled={isLoading} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="file-upload">Soil Report File</Label>
@@ -238,7 +254,7 @@ function UploadTab() {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleAnalyzeReport} disabled={isLoading || !file || !cropName}>
+                <Button onClick={handleAnalyzeReport} disabled={isLoading || !file || !location}>
                     {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                     {isLoading ? (parsedData ? 'Getting Advice...' : 'Parsing Report...') : 'Analyze Report'}
                 </Button>
@@ -261,11 +277,11 @@ export default function SoilAdvisorPage() {
   const form = useForm<GetSoilAdviceInput>({
     resolver: zodResolver(GetSoilAdviceInputSchema),
     defaultValues: {
-      cropName: '',
       soilPh: 7.0,
       nitrogen: 0,
       phosphorus: 0,
       potassium: 0,
+      location: '',
       language: 'English',
     },
   });
@@ -296,7 +312,7 @@ export default function SoilAdvisorPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold font-headline">AI Soil Advisor</h1>
-          <p className="text-muted-foreground">Get fertilizer and soil health recommendations.</p>
+          <p className="text-muted-foreground">Get crop recommendations and fertilizer advice.</p>
         </div>
       </div>
 
@@ -312,12 +328,12 @@ export default function SoilAdvisorPage() {
                         <CardHeader>
                         <CardTitle>Enter Your Soil Data</CardTitle>
                         <CardDescription>
-                            Provide your soil test results and planned crop to get advice.
+                            Provide your soil test results to get crop and fertilizer advice.
                         </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="cropName" render={({ field }) => ( <FormItem> <FormLabel>Planned Crop</FormLabel> <FormControl><Input placeholder="e.g., 'Paddy'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                                <FormField control={form.control} name="location" render={({ field }) => ( <FormItem> <FormLabel>Farm Location (District, State)</FormLabel> <FormControl><Input placeholder="e.g., 'Kolar, Karnataka'" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                                 <FormField control={form.control} name="soilPh" render={({ field }) => ( <FormItem> <FormLabel>Soil pH</FormLabel> <FormControl><Input type="number" step="0.1" placeholder="e.g., 6.8" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                                 <FormField control={form.control} name="nitrogen" render={({ field }) => ( <FormItem> <FormLabel>Nitrogen (N) in kg/ha</FormLabel> <FormControl><Input type="number" placeholder="e.g., 40" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
                                 <FormField control={form.control} name="phosphorus" render={({ field }) => ( <FormItem> <FormLabel>Phosphorus (P) in kg/ha</FormLabel> <FormControl><Input type="number" placeholder="e.g., 25" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>

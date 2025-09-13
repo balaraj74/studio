@@ -30,24 +30,25 @@ const getSoilAdviceFlow = ai.defineFlow(
           model: googleAI.model('gemini-1.5-flash'),
           system: `You are an expert agronomist AI specializing in Indian soil conditions. Your task is to provide a detailed and farmer-friendly soil health report.
           
-          You will analyze the provided soil data and generate recommendations for the specified crop. The entire response, including all names and descriptions, must be in the requested language: ${input.language}.
+          You will analyze the provided soil data and generate recommendations. The entire response, including all names and descriptions, must be in the requested language: ${input.language}.
           
           Instructions:
-          1.  **Nutrient Analysis**: For each nutrient (pH, Nitrogen, Phosphorus, Potassium), determine its status (e.g., Low, Sufficient, High) and provide a simple one-sentence comment.
-          2.  **Chemical Recommendations**: Recommend a set of common chemical fertilizers (like Urea, DAP, MOP). For each, specify the dosage in 'kg per acre' and the best time to apply it.
-          3.  **Organic Alternatives**: Suggest at least two organic options (like FYM, Vermicompost, Neem Cake). Provide a practical application rate (e.g., 'tonnes/acre') and briefly explain the benefits.
-          4.  **Soil Management Tips**: Provide a simple, bulleted list of 3-4 practical tips for long-term soil health improvement.
-          5.  **Chart Generation**: Generate multiple charts as base64 encoded PNG images. The charts should have clear labels and a simple, clean design.
+          1.  **Crop Recommendation**: Based on the soil nutrient data and the provided farm location, suggest 2-3 crops that are well-suited for these conditions. Provide a brief, one-sentence reason for each suggestion.
+          2.  **Nutrient Analysis**: For each nutrient (pH, Nitrogen, Phosphorus, Potassium), determine its status (e.g., Low, Sufficient, High) and provide a simple one-sentence comment.
+          3.  **Chemical Recommendations**: Recommend a set of common chemical fertilizers (like Urea, DAP, MOP). For each, specify the dosage in 'kg per acre' and the best time to apply it. These recommendations should be generally applicable to the suggested crops.
+          4.  **Organic Alternatives**: Suggest at least two organic options (like FYM, Vermicompost, Neem Cake). Provide a practical application rate (e.g., 'tonnes/acre') and briefly explain the benefits.
+          5.  **Soil Management Tips**: Provide a simple, bulleted list of 3-4 practical tips for long-term soil health improvement.
+          6.  **Chart Generation**: Generate multiple charts as base64 encoded PNG images. The charts should have clear labels and a simple, clean design.
                 - **Pie Chart**: Show the relative percentage balance of N, P, and K.
-                - **Bar Graph**: Show the current levels of N, P, and K compared to a typical 'Recommended' level for the specified crop.
+                - **Bar Graph**: Show the current levels of N, P, and K compared to a typical 'Recommended' level for crops suitable to the region.
                 - **pH Gauge**: Create a simple gauge indicating if the pH is acidic, neutral, or alkaline.
                 - **Organic Matter Progress**: Create a simple progress bar showing the organic matter status.
                 - **Micronutrient Radar**: If micronutrient data is available (assume typical values if not), create a simple radar chart.
           `,
           prompt: `
-            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health and fertilizer recommendation report, including all requested base64 PNG charts.
+            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health report, including crop recommendations and all requested base64 PNG charts.
 
-            - **Planned Crop:** ${input.cropName}
+            - **Farm Location:** ${input.location}
             - **Soil pH:** ${input.soilPh}
             - **Nitrogen (N):** ${input.nitrogen} kg/ha
             - **Phosphorus (P):** ${input.phosphorus} kg/ha
