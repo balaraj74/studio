@@ -32,7 +32,7 @@ const recordItems: RecordItem[] = [
     icon: Leaf,
   },
    {
-    href: '/crops',
+    href: '/crop-calendar',
     title: 'Crop Calendar',
     description: 'View and manage your crop task schedules.',
     icon: CalendarDays,
