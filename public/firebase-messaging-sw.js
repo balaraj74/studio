@@ -1,7 +1,9 @@
 
-// Import and initialize the Firebase SDK
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
+// This file needs to be in the public folder.
+
+// Import the Firebase app and messaging packages
+import { initializeApp } from "firebase/app";
+import { getMessaging } from "firebase/messaging/sw";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -14,19 +16,11 @@ const firebaseConfig = {
   measurementId: "G-NZ199RVD5G"
 };
 
+
 // Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging(app);
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 
-// Optional: To handle background notifications
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/agrisence-logo.png' // Optional: Add a logo
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+// This service worker is intentionally kept simple to ensure it initializes correctly.
+// Background message handling can be added here if needed in the future.
+console.log("Firebase Messaging Service Worker initialized.");
