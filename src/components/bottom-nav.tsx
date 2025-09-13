@@ -19,7 +19,10 @@ export function BottomNav() {
 
   return (
     <div className="fixed bottom-0 left-0 w-full z-50 md:hidden p-4">
-      <nav className="h-16 border border-white/20 bg-black/30 backdrop-blur-lg shadow-2xl shadow-black/40 rounded-full">
+      <nav className={cn(
+        "h-16 border backdrop-blur-lg shadow-2xl shadow-black/40 rounded-full",
+        "border-border bg-background/30 dark:bg-black/30"
+      )}>
         <div className="grid h-full grid-cols-5 mx-auto">
           {navItems.map((item) => {
               const isActive =
@@ -32,7 +35,7 @@ export function BottomNav() {
                       key={item.href}
                       className={cn(
                           "group inline-flex flex-col items-center justify-center p-2 rounded-full transition-colors",
-                          isActive ? "text-primary" : "text-muted-foreground hover:text-white"
+                          isActive ? "text-primary" : "text-muted-foreground hover:text-foreground dark:hover:text-white"
                       )}
                   >
                       <item.icon className={cn("h-5 w-5 mb-0.5 transition-all", isActive && "text-primary scale-110")} />

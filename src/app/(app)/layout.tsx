@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <FcmInitializer />
       <header className={cn(
         "sticky top-0 z-40 hidden h-16 items-center justify-between border-b px-4 backdrop-blur-lg sm:px-6 md:flex",
-        "border-white/20 bg-black/30"
+        "border-border bg-background/30 dark:bg-black/30"
       )}>
         <Link href="/dashboard" className="flex items-center gap-2">
             <AgrisenceLogo className="h-8 w-auto" />

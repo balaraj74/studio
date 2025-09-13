@@ -107,10 +107,14 @@
 }
 
 .bg-card {
-  background: hsl(var(--card) / 0.6) !important;
+  background: hsl(var(--card)) !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
   box-shadow: 0 6px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+:root .bg-card {
+  background: hsl(0 0% 100% / 0.6) !important;
 }
 
 .dark .bg-card {
