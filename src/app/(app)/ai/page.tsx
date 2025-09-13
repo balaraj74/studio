@@ -94,8 +94,8 @@ export default function AiPage() {
     <div className="space-y-6">
       <div className="space-y-4">
         {aiItems.map((item) => (
-            <Link href={item.href} key={item.href} className="block">
-            <Card className="hover:bg-muted/50 active:scale-[0.98] transition-all">
+            <Link href={item.href} key={item.href} className="block group">
+            <Card className="hover:bg-muted/50 active:scale-[0.98] transition-all group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10">
                 <CardHeader className="flex flex-row items-center gap-4 space-y-0 p-4">
                 <div className="p-3 bg-primary/10 rounded-lg">
                     <item.icon className="h-6 w-6 text-primary" />
@@ -104,7 +104,7 @@ export default function AiPage() {
                     <CardTitle>{item.title}</CardTitle>
                     <CardDescription>{item.description}</CardDescription>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
                 </CardHeader>
             </Card>
             </Link>

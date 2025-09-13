@@ -87,7 +87,7 @@ export default function LoginPage() {
   return (
     <main className="flex flex-col items-center justify-center min-h-dvh p-4 bg-transparent">
         <div className="w-full max-w-sm space-y-4">
-            <Card>
+            <Card className="rounded-3xl">
                <CardHeader className="text-center">
                  <div className="w-24 h-24 mx-auto">
                     <AgrisenceLogo />
@@ -152,7 +152,7 @@ export default function LoginPage() {
                </CardContent>
             </Card>
 
-            <Card>
+            <Card className="rounded-3xl">
                 <CardFooter className="justify-center p-4">
                      <p className="text-sm text-muted-foreground">
                         {authMode === 'signin' ? "Don't have an account?" : "Already have an account?"}

@@ -112,24 +112,24 @@ const AiToolsCard = () => (
             <CardDescription>Your intelligent farming assistants.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-            <Link href="/chatbot" className="block">
-                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted">
+            <Link href="/chatbot" className="block group">
+                <div className="flex items-center gap-4 p-3 rounded-2xl hover:bg-muted">
                     <MessageCircle className="h-6 w-6 text-primary" />
                     <div className="flex-1">
                         <p className="font-semibold">AI Farming Chatbot</p>
                         <p className="text-sm text-muted-foreground">Get text-based advice.</p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
                 </div>
             </Link>
-             <Link href="/voice" className="block">
-                <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted">
+             <Link href="/voice" className="block group">
+                <div className="flex items-center gap-4 p-3 rounded-2xl hover:bg-muted">
                     <Mic className="h-6 w-6 text-primary" />
                     <div className="flex-1">
                         <p className="font-semibold">Voice Assistant</p>
                         <p className="text-sm text-muted-foreground">Ask questions with your voice.</p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
                 </div>
             </Link>
         </CardContent>
@@ -194,8 +194,8 @@ export default function DashboardPage() {
             <CarouselContent className="-ml-2">
               {allTools.map((link) => (
                 <CarouselItem key={link.href} className="pl-3 basis-1/4 md:basis-1/5 lg:basis-1/6">
-                  <Link href={link.href} className="block h-full">
-                    <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-3 bg-muted/50 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]">
+                  <Link href={link.href} className="block h-full group">
+                    <div className="h-full flex flex-col items-center justify-center text-center gap-2 p-3 bg-muted/50 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98] group-hover:shadow-lg group-hover:shadow-primary/10">
                         <div className="p-3 bg-primary/10 rounded-full">
                           <link.icon className="h-7 w-7 text-primary transition-transform group-hover:scale-105" />
                         </div>
