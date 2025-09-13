@@ -4,18 +4,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { liveFarmAdvisor, type LiveFarmAdvisorOutput } from "@/ai/flows/live-advisor-flow";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Languages, Mic, Bot, User, Volume2, Loader2, AlertTriangle, Video, Square, Camera, VolumeX, Eye, Info, CircleDashed } from "lucide-react";
+import { Languages, Mic, Bot, User, Volume2, Loader2, Video, Square, Camera, VolumeX, Eye, Info, Pin, PinOff } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 
 export default function LiveAdvisorPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
-  const [hasPermissions, setHasPermissions] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -26,18 +25,21 @@ export default function LiveAdvisorPage() {
 
   const [selectedLanguage, setSelectedLanguage] = useState("en-IN");
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [isResponsePinned, setIsResponsePinned] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const recognitionRef = useRef<any>(null);
   const speechTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const responseClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    return () => { // Cleanup on unmount
-        stopSession();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      return () => { // Cleanup on unmount
+          stopSession();
+          if (responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -126,14 +128,12 @@ export default function LiveAdvisorPage() {
   const getPermissionsAndStartStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
-      setHasPermissions(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
       return true;
     } catch (error) {
       console.error('Error accessing media devices:', error);
-      setHasPermissions(false);
       toast({
         variant: 'destructive',
         title: 'Permissions Denied',
@@ -166,10 +166,13 @@ export default function LiveAdvisorPage() {
       recognitionRef.current.abort();
     }
     if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+    if(responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
     window.speechSynthesis?.cancel();
     setIsSessionActive(false);
     setIsListening(false);
     setIsLoading(false);
+    setLastResponse(null);
+    setLastTranscript(null);
   };
 
   const frameToDataUri = (): string | null => {
@@ -200,6 +203,7 @@ export default function LiveAdvisorPage() {
     
     setLastTranscript(text);
     setIsLoading(true);
+    if(responseClearTimeoutRef.current) clearTimeout(responseClearTimeoutRef.current);
     setLastResponse(null);
 
     try {
@@ -207,11 +211,17 @@ export default function LiveAdvisorPage() {
       const result = await liveFarmAdvisor({ videoFrameUri, farmerQuery: text, language: langInfo });
       setLastResponse(result);
       handleSpeak(result.responseToQuery, selectedLanguage);
+      if (!isResponsePinned) {
+          responseClearTimeoutRef.current = setTimeout(() => {
+              setLastResponse(null);
+          }, 8000);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Sorry, I couldn't get a response.";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      setLastTranscript(null);
     }
   };
 
@@ -231,105 +241,115 @@ export default function LiveAdvisorPage() {
 
   const getStatusText = () => {
     if (isLoading) return 'AI is thinking...';
-    if (isListening) return 'Listening... speak now';
+    if (isListening) return 'Listening...';
     return 'Ready for your question';
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="bg-primary/10 p-3 rounded-lg"><Video className="h-8 w-8 text-primary" /></div>
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Live Farm Advisor</h1>
-          <p className="text-muted-foreground">Get real-time AI advice via video and voice.</p>
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="p-4 md:p-6">
-           <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
-           <canvas ref={canvasRef} className="hidden" />
-           {(lastResponse || error || isSessionActive) && (
-                <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px] mt-4">
-                     {error && (
-                        <Alert variant="destructive" className="text-left">
-                            <AlertTitle>Error</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-                    {lastResponse && (
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                                <Eye className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
+    <div className="h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] w-full flex flex-col items-center justify-center relative">
+      <div className="w-full h-full relative flex items-center justify-center">
+        {/* Video Player */}
+        <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover rounded-3xl bg-muted border shadow-2xl shadow-black/30" autoPlay muted playsInline />
+        <canvas ref={canvasRef} className="hidden" />
+        
+        {/* UI overlays */}
+        <div className="absolute inset-0 w-full h-full flex flex-col justify-between p-4">
+            
+            {/* Top Bar - AI Response */}
+            <AnimatePresence>
+                {lastResponse && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="w-full max-w-2xl mx-auto"
+                    >
+                        <div className="rounded-2xl border bg-card/80 p-4 text-card-foreground backdrop-blur-lg shadow-lg space-y-3">
+                            <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="font-semibold">Visual Analysis:</p>
-                                    <p className="text-muted-foreground">{lastResponse.visualAnalysis}</p>
+                                    <div className="flex items-center gap-2 text-sm font-semibold">
+                                        <Eye className="h-4 w-4 text-primary" />
+                                        <span>Visual Analysis</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">{lastResponse.visualAnalysis}</p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleSpeak(lastResponse.responseToQuery, selectedLanguage)}>
+                                        {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                    </Button>
+                                    <Button variant={isResponsePinned ? "secondary" : "ghost"} size="icon" className="h-7 w-7" onClick={() => setIsResponsePinned(!isResponsePinned)}>
+                                        {isResponsePinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                                    </Button>
                                 </div>
                             </div>
-                             <div className="flex items-start gap-3">
-                                <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
-                                <div>
-                                    <p className="font-semibold">AgriSence says:</p>
-                                    <p className="text-muted-foreground">{lastResponse.responseToQuery}</p>
-                                </div>
-                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(lastResponse.responseToQuery, selectedLanguage)}>
-                                    {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                                </Button>
+                            <div className="flex items-start gap-2">
+                                <Bot className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                                <p className="text-sm">{lastResponse.responseToQuery}</p>
                             </div>
                             {lastResponse.proactiveAlert !== 'None' && (
-                                <Alert>
+                                <Alert className="text-xs">
                                     <Info className="h-4 w-4" />
                                     <AlertTitle>Proactive Alert</AlertTitle>
                                     <AlertDescription>{lastResponse.proactiveAlert}</AlertDescription>
                                 </Alert>
                             )}
                         </div>
-                    )}
-                     {isSessionActive && !lastResponse && !error && (
-                        <div className="flex items-center justify-center h-full text-muted-foreground">
-                            {lastTranscript ? (
-                                <>
-                                 <User className="h-5 w-5 mr-2" />
-                                 <p className="italic">"{lastTranscript}"</p>
-                                </>
-                            ): (
-                                <>
-                                <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
-                                <p>Waiting for your question...</p>
-                                </>
-                            )}
-                        </div>
-                     )}
-                </div>
-            )}
-        </CardContent>
-        <CardFooter className="flex-col sm:flex-row items-center gap-4 bg-muted/50 p-4 rounded-b-2xl">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-1">
-                <div className={cn("transition-colors", isListening ? "text-red-500" : "text-primary")}>
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Mic className="h-5 w-5"/>}
-                </div>
-                <span className="flex-1">{getStatusText()}</span>
-                 <div className="flex items-center gap-1">
-                    <Languages className="h-4 w-4" />
-                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
-                    <SelectTrigger className="w-auto h-8 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="en-IN">English</SelectItem>
-                        <SelectItem value="kn-IN">Kannada</SelectItem>
-                    </SelectContent>
-                    </Select>
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-             {!isSessionActive ? (
-                <Button className="w-full sm:w-auto" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Session</Button>
+            {/* Middle - User transcript */}
+            <AnimatePresence>
+                {lastTranscript && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                    >
+                        <div className="flex items-center gap-2 bg-card/80 backdrop-blur-md text-card-foreground p-3 rounded-full shadow-lg">
+                            <User className="h-5 w-5" />
+                            <p className="italic text-sm">"{lastTranscript}"</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Bottom Controls */}
+            {isSessionActive ? (
+                <div className="w-full max-w-md mx-auto rounded-full border bg-card/80 p-2 text-card-foreground backdrop-blur-lg shadow-lg">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground flex-1 pl-2">
+                            <div className={cn("transition-colors", isListening ? "text-red-500" : "text-primary")}>
+                                {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Mic className="h-5 w-5"/>}
+                            </div>
+                            <span className="flex-1 text-xs font-medium">{getStatusText()}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
+                                <SelectTrigger className="w-auto h-8 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
+                                    <Languages className="h-4 w-4" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="en-IN">English</SelectItem>
+                                    <SelectItem value="kn-IN">Kannada</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button className="h-8 rounded-full" variant="destructive" onClick={stopSession}><Square className="mr-2 h-4 w-4"/> End</Button>
+                        </div>
+                    </div>
+                </div>
             ) : (
-                <Button className="w-full sm:w-auto" variant="destructive" onClick={stopSession}><Square className="mr-2 h-4 w-4"/> End Session</Button>
+                <div className="w-full flex justify-center">
+                    <Button size="lg" className="rounded-full shadow-2xl shadow-black/40" onClick={startSession}>
+                        <Camera className="mr-2 h-5 w-5"/> Start Live Session
+                    </Button>
+                </div>
             )}
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
+
+    
