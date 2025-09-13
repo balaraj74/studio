@@ -51,6 +51,7 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
       alternativeCrops: z.string().describe("Suggestions for alternative crops or crop rotation practices that can reduce the chances of this disease recurring."),
       preservationTips: z.string().describe("Recommendations and tips for preserving the unaffected produce from the harvest."),
   }),
+  nextDiseaseRisk: z.string().describe("Based on the current diagnosis and forecast, predict the next most likely disease or pest risk for this crop in the coming weeks and suggest one key preventive action.")
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -113,13 +114,14 @@ The final output must be structured into these sections:
 -   **Plant Identification**: { isPlant, plantName, confidence }
 -   **Disease Diagnosis**: { diseaseName, severity, affectedParts, confidenceScore }
 -   **Remedies**:
-    -   `chemicalRemedy`: Provide a detailed, step-by-step chemical solution, including common safe pesticide/fungicide names and specific dosage instructions.
-    -   `organicRemedy`: Provide a detailed, step-by-step guide to an effective organic or home-based remedy.
-    -   `preventiveMeasures`: List comprehensive preventive actions for the future, like soil treatment or irrigation adjustments.
+    -   \`chemicalRemedy\`: Provide a detailed, step-by-step chemical solution, including common safe pesticide/fungicide names and specific dosage instructions.
+    -   \`organicRemedy\`: Provide a detailed, step-by-step guide to an effective organic or home-based remedy.
+    -   \`preventiveMeasures\`: List comprehensive preventive actions for the future, like soil treatment or irrigation adjustments.
 -   **Historical Insight**: Generate a plausible, simulated historical insight based on the location and season (e.g., "Last year in your district, there was a noticeable increase in fungal blight cases during the monsoon season.").
 -   **Farming Recommendations**:
-    -   `alternativeCrops`: Suggest alternative crops or specific crop rotation practices to reduce the recurrence of this disease.
-    -   `preservationTips`: Provide practical tips for preserving the currently unaffected produce from the harvest.
+    -   \`alternativeCrops\`: Suggest alternative crops or specific crop rotation practices to reduce the recurrence of this disease.
+    -   \`preservationTips\`: Provide practical tips for preserving the currently unaffected produce from the harvest.
+-   **Next Disease Risk**: Based on the current diagnosis, weather forecast, and history, predict the next most likely disease or pest risk for this crop in the coming weeks and suggest one key preventive action.
 
 Use the following contextual information to refine your analysis. Pay close attention to the user's past diagnosis history to identify recurring issues.
 
