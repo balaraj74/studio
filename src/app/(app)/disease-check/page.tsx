@@ -519,6 +519,13 @@ export default function DiseaseCheckPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                    <Alert>
+                        <TrendingUp className="h-4 w-4" />
+                        <AlertTitle>Next Disease Risk Forecast</AlertTitle>
+                        <AlertDescription>
+                            {finalResult.nextDiseaseRisk}
+                        </AlertDescription>
+                    </Alert>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label className="flex items-center gap-2 text-muted-foreground"><BadgePercent className="h-4 w-4" /> Diagnosis Confidence</Label>
