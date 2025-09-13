@@ -348,7 +348,7 @@ export default function DiseaseCheckPage() {
                 <span className="sr-only">Read aloud</span>
             </Button>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</p>
+        <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</div>
     </div>
   );
   
