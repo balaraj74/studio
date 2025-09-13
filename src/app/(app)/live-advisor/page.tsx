@@ -220,7 +220,7 @@ export default function LiveAdvisorPage() {
       const synth = window.speechSynthesis;
       if (synth.speaking) synth.cancel();
       
-      const utterance = new SpeechSynthesisUtterterance(text);
+      const utterance = new SpeechSynthesisUtterance(text);
       const voice = voices.find((v) => v.lang === lang);
       if (voice) utterance.voice = voice;
       utterance.lang = lang;
@@ -246,41 +246,16 @@ export default function LiveAdvisorPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Live Session</CardTitle>
-          <CardDescription>
-            {isSessionActive ? "Your live session is active." : "Start a session to get live advice."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
-            <canvas ref={canvasRef} className="hidden" />
-            {isSessionActive && !(hasPermissions) && (
-                 <Alert variant="destructive" className="mt-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Permissions Required</AlertTitle>
-                    <AlertDescription>
-                        There might be an issue with camera or microphone access.
-                    </AlertDescription>
-                </Alert>
-            )}
-
-            {(lastTranscript || lastResponse || error || isSessionActive) && (
-                 <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px]">
+        <CardContent className="p-4 md:p-6">
+           <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
+           <canvas ref={canvasRef} className="hidden" />
+           {(lastResponse || error || isSessionActive) && (
+                <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px] mt-4">
                      {error && (
                         <Alert variant="destructive" className="text-left">
                             <AlertTitle>Error</AlertTitle>
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
-                    )}
-                    {lastTranscript && (
-                        <div className="flex items-start gap-3">
-                            <User className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
-                            <div>
-                                <p className="font-semibold">You asked:</p>
-                                <p className="text-muted-foreground">{lastTranscript}</p>
-                            </div>
-                        </div>
                     )}
                     {lastResponse && (
                         <div className="space-y-4">
@@ -310,45 +285,51 @@ export default function LiveAdvisorPage() {
                             )}
                         </div>
                     )}
-                     {isSessionActive && !lastTranscript && !lastResponse && !error && (
+                     {isSessionActive && !lastResponse && !error && (
                         <div className="flex items-center justify-center h-full text-muted-foreground">
-                            <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
-                            <p>Waiting for your question...</p>
+                            {lastTranscript ? (
+                                <>
+                                 <User className="h-5 w-5 mr-2" />
+                                 <p className="italic">"{lastTranscript}"</p>
+                                </>
+                            ): (
+                                <>
+                                <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
+                                <p>Waiting for your question...</p>
+                                </>
+                            )}
                         </div>
                      )}
                 </div>
             )}
         </CardContent>
-        <CardFooter className="flex-col sm:flex-row items-center gap-4">
+        <CardFooter className="flex-col sm:flex-row items-center gap-4 bg-muted/50 p-4 rounded-b-2xl">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground flex-1">
+                <div className={cn("transition-colors", isListening ? "text-red-500" : "text-primary")}>
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Mic className="h-5 w-5"/>}
+                </div>
+                <span className="flex-1">{getStatusText()}</span>
+                 <div className="flex items-center gap-1">
+                    <Languages className="h-4 w-4" />
+                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
+                    <SelectTrigger className="w-auto h-8 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="en-IN">English</SelectItem>
+                        <SelectItem value="kn-IN">Kannada</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </div>
+            </div>
+
              {!isSessionActive ? (
-                <Button className="w-full sm:w-auto" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Live Session</Button>
+                <Button className="w-full sm:w-auto" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Session</Button>
             ) : (
                 <Button className="w-full sm:w-auto" variant="destructive" onClick={stopSession}><Square className="mr-2 h-4 w-4"/> End Session</Button>
             )}
-
-            {isSessionActive && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground w-full sm:w-auto justify-center sm:justify-start">
-                    <div className={cn("transition-colors", isListening ? "text-red-500" : "text-primary")}>
-                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Mic className="h-5 w-5"/>}
-                    </div>
-                    <span className="flex-1">{getStatusText()}</span>
-                    <div className="flex items-center gap-1">
-                        <Languages className="h-4 w-4" />
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
-                        <SelectTrigger className="w-auto h-8 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="en-IN">English</SelectItem>
-                            <SelectItem value="kn-IN">Kannada</SelectItem>
-                        </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-            )}
         </CardFooter>
       </Card>
-
     </div>
   );
 }
