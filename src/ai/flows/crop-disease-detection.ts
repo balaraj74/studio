@@ -39,15 +39,17 @@ const DiagnoseCropDiseaseOutputSchema = z.object({
     diseaseName: z.string().describe("Name of the detected disease. 'Healthy' if no issue is found. 'Uncertain' if confidence is too low."),
     severity: z.enum(["Low", "Medium", "High", "Unknown"]).describe("The severity level of the issue."),
     affectedParts: z.array(z.string()).describe("The plant parts that are affected (e.g., 'Leaves', 'Stem', 'Fruit')."),
-    suggestedRemedy: z.string().describe("A very detailed, step-by-step suggested chemical or organic treatment or remedy plan."),
-    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future."),
-    alternativeRemedies: z.string().describe("A detailed, step-by-step guide to alternative or home-based remedies that can be tried."),
     confidenceScore: z.number().min(0).max(1).describe("The AI's confidence in the diagnosis, from 0.0 to 1.0."),
   }),
-  riskPrediction: z.object({
-    nextRisk: z.string().describe("The name of the most likely next disease or pest risk, e.g., 'Aphid Infestation' or 'Downy Mildew'."),
-    timeline: z.string().describe("The predicted timeline for this risk, e.g., 'In the next 7-10 days'."),
-    reasoning: z.string().describe("A brief explanation for the prediction, linking current conditions, diagnosis, and weather."),
+  remedies: z.object({
+    chemicalRemedy: z.string().describe("A detailed, step-by-step suggested chemical treatment plan, including common safe pesticide/fungicide names and recommended dosage."),
+    organicRemedy: z.string().describe("A detailed, step-by-step guide to organic or home-based remedies that can be tried."),
+    preventiveMeasures: z.string().describe("A comprehensive list of detailed preventive measures to avoid this issue in the future (e.g., soil treatment, irrigation adjustments)."),
+  }),
+  historicalInsight: z.string().describe("A plausible, simulated historical insight based on the location and season (e.g., 'Last year in your region, X% of crops faced fungal rust in September')."),
+  farmingRecommendations: z.object({
+      alternativeCrops: z.string().describe("Suggestions for alternative crops or crop rotation practices that can reduce the chances of this disease recurring."),
+      preservationTips: z.string().describe("Recommendations and tips for preserving the unaffected produce from the harvest."),
   }),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
@@ -90,7 +92,6 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
       try {
           const historyRecords = await getDiagnosisHistory(input.userId);
           if (historyRecords.length > 0) {
-              // Format the last 5 records for the prompt
               historyData = historyRecords.slice(0, 5).map(record => 
                   `- Date: ${record.timestamp.toLocaleDateString()}, Plant: ${record.plantName}, Disease: ${record.diseaseName}, Severity: ${record.severity}`
               ).join('\n');
@@ -99,24 +100,28 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
           console.warn("Could not fetch diagnosis history.", historyError);
       }
 
-      // 3. Build the final text prompt with weather data, history, and language instruction
       const weatherInfo = weatherData ? JSON.stringify(weatherData, null, 2) : "Not available";
-      const promptText = `You are an expert agronomist and plant pathologist AI. Your task is two-fold:
+      const promptText = `You are an expert agronomist and plant pathologist AI. Your task is to provide a comprehensive crop health report.
 IMPORTANT: Generate the entire response, including all names and descriptions, in the following language: ${input.language}.
 
-1.  First, analyze the image quality. If the image is too blurry, dark, or shows only a partial leaf, set 'isPlant' to false and use 'plantName' to explain the issue (e.g., 'Image is too blurry'). Do not proceed with diagnosis.
-2.  If the image is clear, identify the plant. Determine if it is a plant, its common name, and your confidence.
-3.  Second, analyze the identified plant for any visible signs of disease, stress, or nutrient deficiency. If your confidence in a specific disease is low (below 0.7), set diseaseName to 'Uncertain' and confidenceScore to your low score.
-4.  Third, based on the current diagnosis, weather forecast, and past history, predict the most likely upcoming risk (disease or pest) and provide a timeline and reasoning.
+1.  **Image Quality Check**: First, analyze the image quality. If it's too blurry, dark, or partial, set 'isPlant' to false and explain the issue in 'plantName'. Do not proceed with diagnosis.
+2.  **Plant Identification**: If the image is clear, identify the plant, its common name, and your confidence.
+3.  **Disease Diagnosis**: Analyze the plant for any signs of disease, stress, or deficiency. Determine the disease name, severity, affected parts, and your confidence score.
+4.  **Generate Comprehensive Report**: Based on your analysis and the context below, provide a full report in the required JSON format.
 
-Return a detailed diagnosis with:
-  - Plant Identification: { isPlant, plantName, confidence }
-  - Disease Diagnosis: { diseaseName, severity, affectedParts, suggestedRemedy, preventiveMeasures, alternativeRemedies, confidenceScore }
-  - Risk Prediction: { nextRisk, timeline, reasoning }
+The final output must be structured into these sections:
+-   **Plant Identification**: { isPlant, plantName, confidence }
+-   **Disease Diagnosis**: { diseaseName, severity, affectedParts, confidenceScore }
+-   **Remedies**:
+    -   `chemicalRemedy`: Provide a detailed, step-by-step chemical solution, including common safe pesticide/fungicide names and specific dosage instructions.
+    -   `organicRemedy`: Provide a detailed, step-by-step guide to an effective organic or home-based remedy.
+    -   `preventiveMeasures`: List comprehensive preventive actions for the future, like soil treatment or irrigation adjustments.
+-   **Historical Insight**: Generate a plausible, simulated historical insight based on the location and season (e.g., "Last year in your district, there was a noticeable increase in fungal blight cases during the monsoon season.").
+-   **Farming Recommendations**:
+    -   `alternativeCrops`: Suggest alternative crops or specific crop rotation practices to reduce the recurrence of this disease.
+    -   `preservationTips`: Provide practical tips for preserving the currently unaffected produce from the harvest.
 
-IMPORTANT: For 'suggestedRemedy', 'preventiveMeasures', and 'alternativeRemedies', provide very detailed, comprehensive, and step-by-step instructions. The advice should be practical and easy for a farmer to follow.
-
-Use the following contextual information to refine your analysis. Pay close attention to the user's past diagnosis history to identify recurring issues. If the current diagnosis matches a past issue, mention this and consider increasing the confidence score.
+Use the following contextual information to refine your analysis. Pay close attention to the user's past diagnosis history to identify recurring issues.
 
 CONTEXT:
 - Geolocation: Latitude ${input.geolocation.latitude}, Longitude ${input.geolocation.longitude}
@@ -140,12 +145,10 @@ ${historyData}
         throw new Error("No output was generated by the AI model.");
       }
 
-      // 4. After successful diagnosis, upload image and save history
       if (output.plantIdentification.isPlant && input.imageUris.length > 0) {
           try {
               const imageUrl = await uploadImageToStorage(input.imageUris[0], input.userId);
               await addDiagnosisRecord(input.userId, {
-                  // Save the English names for consistent history records
                   plantName: output.plantIdentification.plantName,
                   diseaseName: output.diseaseDiagnosis.diseaseName,
                   severity: output.diseaseDiagnosis.severity,
@@ -155,7 +158,6 @@ ${historyData}
               });
           } catch (historyError) {
               console.error("Failed to save diagnosis history:", historyError);
-              // Do not block the main response if history saving fails
           }
       }
 

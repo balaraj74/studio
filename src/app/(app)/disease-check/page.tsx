@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX, History, CalendarDays, TrendingUp } from "lucide-react";
+import { Wand2, RefreshCw, Stethoscope, LocateFixed, BadgePercent, ShieldCheck, ListOrdered, TestTube2, Sprout, Leaf, Languages, Volume2, Video, Square, Loader2, Upload, X, VolumeX, History, CalendarDays, TrendingUp, Info, RotateCcw, Box } from "lucide-react";
 import {
   diagnoseCropDisease,
   type DiagnoseCropDiseaseOutput,
@@ -38,7 +38,7 @@ const supportedLanguages = [
 ];
 
 const ANALYSIS_INTERVAL = 3000; // 3 seconds
-type SpeakingSection = 'remedy' | 'alternative' | 'prevention' | null;
+type SpeakingSection = 'chemical' | 'organic' | 'prevention' | null;
 
 export default function DiseaseCheckPage() {
   const { user } = useAuth();
@@ -339,14 +339,16 @@ export default function DiseaseCheckPage() {
   };
 
 
-  const ResultSection = ({ title, content, icon: Icon, sectionId }: { title: string, content: string, icon: React.ElementType, sectionId: SpeakingSection }) => (
+  const ResultSection = ({ title, content, icon: Icon, sectionId }: { title: string, content: string, icon: React.ElementType, sectionId?: SpeakingSection }) => (
     <div>
         <div className="flex items-center justify-between">
             <Label className="text-lg font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" /> {title}</Label>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)}>
-                {speakingSection === sectionId ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                <span className="sr-only">Read aloud</span>
-            </Button>
+            {sectionId && (
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(content, sectionId)}>
+                  {speakingSection === sectionId ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                  <span className="sr-only">Read aloud</span>
+              </Button>
+            )}
         </div>
         <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap prose prose-sm max-w-none">{content}</div>
     </div>
@@ -530,20 +532,22 @@ export default function DiseaseCheckPage() {
                             <div className="font-semibold">{finalResult.diseaseDiagnosis.severity}</div>
                         </div>
                     </div>
-                    {finalResult.riskPrediction && (
-                        <Card className="bg-muted/50">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base"><TrendingUp className="h-5 w-5"/> Future Risk Prediction</CardTitle>
-                            </CardHeader>
-                            <CardContent className="text-sm space-y-2">
-                                <p><strong>Next Risk:</strong> {finalResult.riskPrediction.nextRisk} {`(${finalResult.riskPrediction.timeline})`}</p>
-                                <div className="text-muted-foreground">{finalResult.riskPrediction.reasoning}</div>
-                            </CardContent>
-                        </Card>
-                    )}
-                    <ResultSection title="Suggested Remedy" content={finalResult.diseaseDiagnosis.suggestedRemedy} icon={ListOrdered} sectionId="remedy" />
-                    <ResultSection title="Alternative Home Remedies" content={finalResult.diseaseDiagnosis.alternativeRemedies} icon={Leaf} sectionId="alternative" />
-                    <ResultSection title="Preventive Measures" content={finalResult.diseaseDiagnosis.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />
+                    
+                    <ResultSection title="Chemical Remedy" content={finalResult.remedies.chemicalRemedy} icon={ListOrdered} sectionId="chemical" />
+                    <ResultSection title="Organic Remedy" content={finalResult.remedies.organicRemedy} icon={Leaf} sectionId="organic" />
+                    <ResultSection title="Preventive Measures" content={finalResult.remedies.preventiveMeasures} icon={ShieldCheck} sectionId="prevention" />
+                    
+                    <Card className="bg-muted/50">
+                        <CardHeader className="pb-4">
+                            <CardTitle className="flex items-center gap-2 text-base"><Info className="h-5 w-5"/> Additional Insights</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <ResultSection title="Historical Insight" content={finalResult.historicalInsight} icon={History} />
+                            <ResultSection title="Alternative Crops / Rotation" content={finalResult.farmingRecommendations.alternativeCrops} icon={RotateCcw} />
+                            <ResultSection title="Preservation Tips" content={finalResult.farmingRecommendations.preservationTips} icon={Box} />
+                        </CardContent>
+                    </Card>
+
                 </CardContent>
             </Card>
             )}
