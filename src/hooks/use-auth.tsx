@@ -24,14 +24,15 @@ const AuthGuard = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
+        // If not loading and no user, redirect to login
         router.push('/');
       }
     }
   }, [isLoading, user, router, pathname]);
 
   if (isLoading || !user) {
-    // The loading.tsx file in the (app) group will be rendered.
-    // By returning null, we let Next.js's Suspense boundary handle showing the loading UI.
+    // While loading or if there's no user, we let the suspense boundary (loading.tsx) show.
+    // By returning null, we prevent the children (the actual page) from rendering.
     return null; 
   }
 
@@ -44,11 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // Introduce a minimum loading time to ensure the animation is visible
+      // This ensures the loading animation is visible for a minimum duration
+      // creating a smoother user experience.
       setTimeout(() => {
         setUser(user);
         setIsLoading(false);
-      }, 1500); // 1.5 second minimum loading time
+      }, 1500); // Minimum 1.5 second loading time
     });
 
     return () => unsubscribe();
