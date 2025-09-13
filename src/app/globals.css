@@ -104,6 +104,17 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .interactive-element {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  .interactive-element:hover {
+    @apply transform -translate-y-[2px] shadow-lg shadow-primary/10;
+  }
+  .interactive-element:active {
+    @apply transform scale-[0.98] translate-y-0 shadow-sm shadow-primary/5;
+    filter: brightness(0.95);
+  }
 }
 
 .bg-card {

@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import {
@@ -54,7 +55,7 @@ export default function RecordsPage() {
     <div className="space-y-4">
       {recordItems.map((item) => (
         <Link href={item.href} key={item.href} className="block group">
-          <Card className="hover:bg-muted/50 active:scale-[0.98] transition-all group-hover:border-primary/50 group-hover:shadow-lg group-hover:shadow-primary/10">
+          <Card className="interactive-element group-hover:border-primary/50">
             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
               <div className="p-3 bg-primary/10 rounded-lg">
                 <item.icon className="h-6 w-6 text-primary" />
