@@ -8,7 +8,6 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 import { GetSoilAdviceInputSchema, GetSoilAdviceOutputSchema } from '@/types/soil-advisor';
 import type { GetSoilAdviceInput, GetSoilAdviceOutput } from '@/types/soil-advisor';
@@ -38,12 +37,15 @@ const getSoilAdviceFlow = ai.defineFlow(
           2.  **Chemical Recommendations**: Recommend a set of common chemical fertilizers (like Urea, DAP, MOP). For each, specify the dosage in 'kg per acre' and the best time to apply it.
           3.  **Organic Alternatives**: Suggest at least two organic options (like FYM, Vermicompost, Neem Cake). Provide a practical application rate (e.g., 'tonnes/acre') and briefly explain the benefits.
           4.  **Soil Management Tips**: Provide a simple, bulleted list of 3-4 practical tips for long-term soil health improvement.
-          5.  **Chart Generation**: Generate two charts as base64 encoded PNG images. The charts should have clear labels and a simple, clean design.
+          5.  **Chart Generation**: Generate multiple charts as base64 encoded PNG images. The charts should have clear labels and a simple, clean design.
                 - **Pie Chart**: Show the relative percentage balance of N, P, and K.
                 - **Bar Graph**: Show the current levels of N, P, and K compared to a typical 'Recommended' level for the specified crop.
+                - **pH Gauge**: Create a simple gauge indicating if the pH is acidic, neutral, or alkaline.
+                - **Organic Matter Progress**: Create a simple progress bar showing the organic matter status.
+                - **Micronutrient Radar**: If micronutrient data is available (assume typical values if not), create a simple radar chart.
           `,
           prompt: `
-            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health and fertilizer recommendation report, including two base64 PNG charts.
+            A farmer has provided the following soil data for their field. Please generate a comprehensive soil health and fertilizer recommendation report, including all requested base64 PNG charts.
 
             - **Planned Crop:** ${input.cropName}
             - **Soil pH:** ${input.soilPh}

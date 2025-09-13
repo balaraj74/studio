@@ -53,6 +53,18 @@ const statusIcons = {
     "Very High": <XCircle className="h-5 w-5 text-red-400" />,
 };
 
+const ChartDisplayCard = ({ title, base64Image, alt }: { title: string, base64Image?: string, alt: string }) => {
+    if (!base64Image) return null;
+    return (
+        <div className="text-center p-4 border rounded-lg bg-muted/50">
+            <h4 className="font-semibold mb-2 text-sm">{title}</h4>
+            <div className="relative h-48 w-full">
+                <Image src={base64Image} alt={alt} layout="fill" objectFit="contain" className="mx-auto" />
+            </div>
+        </div>
+    );
+};
+
 const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
     <div className="space-y-6">
         <Card>
@@ -78,19 +90,12 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
                         </div>
                     ))}
                 </div>
-                <div className="grid md:grid-cols-2 gap-6 mt-6">
-                    {result.charts.nutrientPieBase64 && (
-                        <div className="text-center">
-                            <h4 className="font-semibold mb-2">NPK Ratio</h4>
-                            <Image src={result.charts.nutrientPieBase64} alt="Nutrient Pie Chart" width={250} height={250} className="mx-auto" />
-                        </div>
-                    )}
-                     {result.charts.deficiencyBarBase64 && (
-                        <div className="text-center">
-                            <h4 className="font-semibold mb-2">Nutrient Levels vs. Recommended</h4>
-                            <Image src={result.charts.deficiencyBarBase64} alt="Nutrient Bar Graph" width={350} height={250} className="mx-auto" />
-                        </div>
-                    )}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    <ChartDisplayCard title="NPK Ratio" base64Image={result.charts.nutrientPieBase64} alt="Nutrient Pie Chart" />
+                    <ChartDisplayCard title="Nutrient Levels vs. Recommended" base64Image={result.charts.deficiencyBarBase64} alt="Nutrient Bar Graph" />
+                    <ChartDisplayCard title="Soil pH Level" base64Image={result.charts.phGaugeBase64} alt="Soil pH Gauge" />
+                    <ChartDisplayCard title="Micronutrients" base64Image={result.charts.micronutrientRadarBase64} alt="Micronutrient Radar Chart" />
+                    <ChartDisplayCard title="Organic Matter" base64Image={result.charts.organicMatterProgressBase64} alt="Organic Matter Progress" />
                 </div>
             </CardContent>
         </Card>
@@ -181,15 +186,11 @@ function UploadTab() {
         setAdviceResult(null);
 
         try {
-            // 1. Convert file to data URI
             const reportDataUri = await fileToDataUri(file);
-
-            // 2. Parse the report using AI
             const parsedResult = await parseSoilReport({ reportDataUri });
             setParsedData(parsedResult);
             toast({ title: 'Report Parsed Successfully', description: 'Now generating fertilizer advice...' });
             
-            // 3. Get advice using parsed data
             const advice = await getSoilAdvice({
                 cropName,
                 soilPh: parsedResult.soilPh,

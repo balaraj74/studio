@@ -55,6 +55,9 @@ export const GetSoilAdviceOutputSchema = z.object({
   charts: z.object({
       nutrientPieBase64: z.string().optional().describe("A base64 encoded PNG image of a pie chart showing the relative percentages of N, P, and K."),
       deficiencyBarBase64: z.string().optional().describe("A base64 encoded PNG image of a bar graph showing nutrient levels compared to recommended levels."),
+      phGaugeBase64: z.string().optional().describe("A base64 encoded PNG image of a gauge chart showing the soil pH level (acidic, neutral, alkaline)."),
+      micronutrientRadarBase64: z.string().optional().describe("A base64 encoded PNG image of a radar chart for micronutrients like Zn, Fe, etc."),
+      organicMatterProgressBase64: z.string().optional().describe("A base64 encoded PNG image of a progress bar showing organic matter percentage."),
   }).describe("Visual charts representing the soil data analysis."),
 });
 export type GetSoilAdviceOutput = z.infer<typeof GetSoilAdviceOutputSchema>;
