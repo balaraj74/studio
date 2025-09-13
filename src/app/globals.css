@@ -131,29 +131,31 @@
      background-color: hsl(var(--secondary)) !important;
 }
 
-.neon-glow {
-  position: relative;
-  overflow: hidden; 
+@keyframes corner-blur-glow {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
-.neon-glow::before {
+
+.card-corner-blur {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-corner-blur::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: inherit; 
-  padding: 2px; 
-  background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)));
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  z-index: -1;
-  filter: blur(5px);
-  opacity: 0.8;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%);
+  filter: blur(40px);
+  transform-origin: center center;
+  animation: corner-blur-glow 15s linear infinite;
+  z-index: 0;
+  pointer-events: none;
 }
+
 
 .gradient-button {
     background-image: linear-gradient(to right, hsl(var(--primary) / 0.9), hsl(var(--accent) / 0.9));
