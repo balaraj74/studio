@@ -59,7 +59,7 @@ const ChartDisplayCard = ({ title, base64Image, alt }: { title: string, base64Im
         <div className="text-center p-4 border rounded-lg bg-muted/50">
             <h4 className="font-semibold mb-2 text-sm">{title}</h4>
             <div className="relative h-48 w-full">
-                <Image src={base64Image} alt={alt} layout="fill" objectFit="contain" className="mx-auto" />
+                <Image src={base64Image} alt={alt} fill objectFit="contain" className="mx-auto" />
             </div>
         </div>
     );
