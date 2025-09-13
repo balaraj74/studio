@@ -16,7 +16,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getSoilAdvice, GetSoilAdviceInputSchema, type GetSoilAdviceOutput } from '@/ai/flows/soil-advisor-flow';
-import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, ArrowRight } from 'lucide-react';
+import { parseSoilReport, type ParseSoilReportOutput } from '@/ai/flows/soil-report-parser-flow';
+import { Loader2, Bot, TestTube, Leaf, Sprout, CheckCircle, AlertTriangle, XCircle, Upload } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -24,6 +25,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/hooks/use-auth';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { addDoc, collection } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase/config';
+import { Progress } from '@/components/ui/progress';
+
 
 const statusStyles = {
     "Very Low": "bg-red-700/20 text-red-400",
@@ -120,6 +127,124 @@ const ResultCard = ({ result }: { result: GetSoilAdviceOutput }) => (
     </div>
 );
 
+function UploadTab() {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [file, setFile] = useState<File | null>(null);
+    const [cropName, setCropName] = useState('');
+    const [language, setLanguage] = useState('English');
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [parsedData, setParsedData] = useState<ParseSoilReportOutput | null>(null);
+    const [adviceResult, setAdviceResult] = useState<GetSoilAdviceOutput | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    const handleAnalyzeReport = async () => {
+        if (!file || !cropName || !user) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a file, enter a crop name, and ensure you are logged in.' });
+            return;
+        }
+        setIsLoading(true);
+        setParsedData(null);
+        setAdviceResult(null);
+        setUploadProgress(0);
+
+        try {
+            // 1. Upload file to Firebase Storage
+            const storageRef = ref(storage, `soil_reports/${user.uid}/${Date.now()}-${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on('state_changed', (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                setUploadProgress(progress);
+            });
+
+            await uploadTask;
+            const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+            // 2. Parse the report using AI
+            const parsedResult = await parseSoilReport({ reportDataUri: fileUrl });
+            setParsedData(parsedResult);
+            toast({ title: 'Report Parsed Successfully', description: 'Now generating fertilizer advice...' });
+            
+             // Create a record in Firestore
+            await addDoc(collection(db, `users/${user.uid}/soil_reports`), {
+                fileName: file.name,
+                fileUrl,
+                cropName,
+                parsedData: parsedResult,
+                createdAt: new Date(),
+            });
+
+            // 3. Get advice using parsed data
+            const advice = await getSoilAdvice({
+                cropName,
+                soilPh: parsedResult.soilPh,
+                nitrogen: parsedResult.nitrogen,
+                phosphorus: parsedResult.phosphorus,
+                potassium: parsedResult.potassium,
+                language,
+            });
+            setAdviceResult(advice);
+
+        } catch (error) {
+            console.error('Analysis failed:', error);
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+            toast({ variant: 'destructive', title: 'Analysis Failed', description: errorMessage });
+        } finally {
+            setIsLoading(false);
+            setUploadProgress(0);
+        }
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Upload Soil Test Report</CardTitle>
+                <CardDescription>Upload a PDF or image of your soil report for automated analysis.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="crop-name-upload">Planned Crop</Label>
+                    <Input id="crop-name-upload" placeholder="e.g., 'Maize'" value={cropName} onChange={e => setCropName(e.target.value)} disabled={isLoading} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="file-upload">Soil Report File</Label>
+                    <Input id="file-upload" type="file" accept="image/*,application/pdf" onChange={handleFileChange} disabled={isLoading} />
+                </div>
+                 <div className="space-y-2">
+                    <Label>Response Language</Label>
+                    <Select value={language} onValueChange={setLanguage} disabled={isLoading}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="English">English</SelectItem>
+                            <SelectItem value="Kannada">Kannada</SelectItem>
+                            <SelectItem value="Hindi">Hindi</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                {isLoading && uploadProgress > 0 && <Progress value={uploadProgress} />}
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleAnalyzeReport} disabled={isLoading || !file || !cropName}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                    {isLoading ? (parsedData ? 'Getting Advice...' : 'Parsing Report...') : 'Analyze Report'}
+                </Button>
+            </CardFooter>
+            {adviceResult && (
+                 <div className="p-6 pt-0 animate-in fade-in-50">
+                    <ResultCard result={adviceResult} />
+                </div>
+            )}
+        </Card>
+    );
+}
+
 
 export default function SoilAdvisorPage() {
   const [result, setResult] = useState<GetSoilAdviceOutput | null>(null);
@@ -171,7 +296,7 @@ export default function SoilAdvisorPage() {
         <Tabs defaultValue="manual" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="manual">Enter Data Manually</TabsTrigger>
-                <TabsTrigger value="upload" disabled>Upload Report (Coming Soon)</TabsTrigger>
+                <TabsTrigger value="upload">Upload Report</TabsTrigger>
             </TabsList>
             <TabsContent value="manual">
                 <Card>
@@ -201,28 +326,31 @@ export default function SoilAdvisorPage() {
                         </CardFooter>
                     </form>
                     </Form>
+                     {isLoading && (
+                        <CardContent>
+                            <div className="space-y-6">
+                                <div className="grid md:grid-cols-4 gap-4">
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                    <Skeleton className="h-24 w-full" />
+                                </div>
+                                <Skeleton className="h-48 w-full" />
+                                <Skeleton className="h-48 w-full" />
+                            </div>
+                        </CardContent>
+                    )}
+                    {result && !isLoading && (
+                        <CardContent className="animate-in fade-in-50">
+                            <ResultCard result={result} />
+                        </CardContent>
+                    )}
                 </Card>
             </TabsContent>
+            <TabsContent value="upload">
+                <UploadTab />
+            </TabsContent>
         </Tabs>
-
-      {isLoading && (
-        <div className="space-y-6">
-            <div className="grid md:grid-cols-4 gap-4">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-24 w-full" />
-            </div>
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-48 w-full" />
-        </div>
-      )}
-
-      {result && (
-        <div className="animate-in fade-in-50">
-            <ResultCard result={result} />
-        </div>
-      )}
     </div>
   );
 }

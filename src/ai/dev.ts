@@ -11,4 +11,5 @@ import '@/ai/flows/loan-insurance-assistant-flow.ts';
 import '@/ai/flows/market-matchmaking-flow.ts';
 import '@/ai/flows/live-advisor-flow.ts';
 import '@/ai/flows/soil-advisor-flow.ts';
+import '@/ai/flows/soil-report-parser-flow.ts';
     
