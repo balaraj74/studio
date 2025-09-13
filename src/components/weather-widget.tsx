@@ -71,13 +71,13 @@ export function WeatherWidget() {
         <Link href="/weather" className="block h-full">
             <CardContent className="flex flex-row items-center justify-between p-4">
                 <div className="flex items-center gap-3">
-                    <WeatherIcon code={weatherData.current.weatherCode} className="h-10 w-10 text-primary" />
+                    <WeatherIcon code={weatherData.current.weatherCode} className="h-10 w-10 text-primary flex-shrink-0" />
                     <div>
-                        <p className="font-medium text-muted-foreground">{weatherData.location.name}</p>
+                        <p className="font-medium text-muted-foreground truncate">{weatherData.location.name}</p>
                         <p className="text-2xl font-bold">{weatherData.current.temperature}°C</p>
                     </div>
                 </div>
-                 <div className="grid grid-cols-3 gap-x-4 text-center text-xs">
+                 <div className="grid grid-cols-3 gap-x-2 sm:gap-x-4 text-center text-xs flex-shrink-0">
                     <div>
                       <p className="font-bold">{weatherData.current.humidity}%</p>
                       <p className="text-muted-foreground">Humidity</p>
