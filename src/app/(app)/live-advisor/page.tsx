@@ -59,8 +59,8 @@ export default function LiveAdvisorPage() {
   useEffect(() => {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = true; // Keep listening
-      recognition.interimResults = true; // Get interim results
+      recognition.continuous = true;
+      recognition.interimResults = true;
       
       recognition.onresult = (event: any) => {
         let finalTranscript = '';
@@ -72,13 +72,12 @@ export default function LiveAdvisorPage() {
         if (finalTranscript) {
             processTranscript(finalTranscript.trim());
         }
-        // Debounce to detect end of speech
         if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
         speechTimeoutRef.current = setTimeout(() => {
            if (isListening && !isLoading) {
              recognition.stop();
            }
-        }, 1500); // 1.5 second pause before processing
+        }, 1500);
       };
       
       recognition.onstart = () => {
@@ -89,7 +88,6 @@ export default function LiveAdvisorPage() {
       };
       recognition.onend = () => {
         setIsListening(false);
-        // Automatically restart listening if the session is still active and not processing
         if (isSessionActive && !isLoading) {
           setTimeout(() => recognition.start(), 100);
         }
@@ -117,7 +115,7 @@ export default function LiveAdvisorPage() {
     return () => window.speechSynthesis?.removeEventListener('voiceschanged', loadVoices);
   }, []);
 
-  const getPermissions = async () => {
+  const getPermissionsAndStartStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
       setHasPermissions(true);
@@ -141,7 +139,7 @@ export default function LiveAdvisorPage() {
     setError(null);
     setLastResponse(null);
     setLastTranscript(null);
-    const permissionGranted = await getPermissions();
+    const permissionGranted = await getPermissionsAndStartStream();
     if (permissionGranted) {
       setIsSessionActive(true);
       if (recognitionRef.current) {
@@ -205,10 +203,6 @@ export default function LiveAdvisorPage() {
       setError(errorMessage);
     } finally {
       setIsLoading(false);
-      // Restart listening after processing
-      if (isSessionActive && recognitionRef.current && !isListening) {
-         setTimeout(() => recognitionRef.current.start(), 100);
-      }
     }
   };
 
@@ -249,20 +243,20 @@ export default function LiveAdvisorPage() {
             {isSessionActive ? "Your live session is active." : "Start a session to get live advice."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
             <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
             <canvas ref={canvasRef} className="hidden" />
-            {!(hasPermissions && isSessionActive) && (
-                 <Alert variant="destructive">
+            {isSessionActive && !(hasPermissions) && (
+                 <Alert variant="destructive" className="mt-4">
                     <AlertTriangle className="h-4 w-4" />
                     <AlertTitle>Permissions Required</AlertTitle>
                     <AlertDescription>
-                        Please allow camera and microphone access to use this feature.
+                        There might be an issue with camera or microphone access.
                     </AlertDescription>
                 </Alert>
             )}
         </CardContent>
-        <CardFooter className="flex flex-col sm:flex-row gap-2">
+        <CardFooter>
             {!isSessionActive ? (
                 <Button className="w-full" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Live Session</Button>
             ) : (
@@ -274,10 +268,10 @@ export default function LiveAdvisorPage() {
       {isSessionActive && (
         <Card>
             <CardHeader className="text-center">
-                <div className={cn("mx-auto h-12 w-12 rounded-full flex items-center justify-center transition-colors", 
+                <div className={cn("mx-auto h-16 w-16 rounded-full flex items-center justify-center transition-colors", 
                     isListening ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary"
                 )}>
-                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin"/> : <Mic className="h-6 w-6"/>}
+                    {isLoading ? <Loader2 className="h-8 w-8 animate-spin"/> : <Mic className="h-8 w-8"/>}
                 </div>
                 <CardTitle>{getStatusText()}</CardTitle>
                  <div className="flex justify-center items-center gap-2 pt-2">
