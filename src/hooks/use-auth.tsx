@@ -1,10 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { useRouter, usePathname } from 'next/navigation';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type AuthContextType = {
   user: User | null;
@@ -16,25 +16,14 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
 });
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const AuthGuard = ({ children }: { children: ReactNode }) => {
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     if (!isLoading) {
       const isAuthPage = pathname === '/';
-
       if (!user && !isAuthPage) {
         router.push('/');
       }
@@ -44,27 +33,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isLoading, user, router, pathname]);
 
-
   if (isLoading) {
     return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
     );
   }
 
-  // Avoid rendering children on auth pages if user is logged in to prevent flash of content
+  // Prevent flash of content on auth pages when logged in
   if (user && pathname === '/') {
-      return (
-        <div className="flex h-screen w-full items-center justify-center bg-background">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
     );
   }
+  
+  if (!user && pathname !== '/') {
+    return null; // Don't render protected pages if not logged in
+  }
+
+  return <>{children}</>;
+};
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading }}>
-      {children}
+      <AuthGuard>{children}</AuthGuard>
     </AuthContext.Provider>
   );
 };
