@@ -25,13 +25,12 @@ export const getFcmToken = async () => {
     }
     
     const messaging = getMessaging(app);
-    // Ensure the service worker is registered before getting the token.
-    const serviceWorkerRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
     
     console.log('Requesting FCM token...');
     const fcmToken = await getToken(messaging, {
       vapidKey: vapidKey,
-      serviceWorkerRegistration,
+      // The service worker is registered automatically by getToken.
+      // No need for navigator.serviceWorker.register.
     });
     
     if (fcmToken) {
