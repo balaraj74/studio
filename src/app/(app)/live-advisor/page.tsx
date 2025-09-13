@@ -56,7 +56,7 @@ export default function LiveAdvisorPage() {
     };
   }, []);
 
-  useEffect(() => {
+  const setupRecognition = useCallback(() => {
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
@@ -74,7 +74,7 @@ export default function LiveAdvisorPage() {
         }
         if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
         speechTimeoutRef.current = setTimeout(() => {
-           if (isListening && !isLoading) {
+           if (recognitionRef.current && recognitionRef.current.listening) {
              recognition.stop();
            }
         }, 1500);
@@ -89,7 +89,9 @@ export default function LiveAdvisorPage() {
       recognition.onend = () => {
         setIsListening(false);
         if (isSessionActive && !isLoading) {
-          setTimeout(() => recognition.start(), 100);
+          setTimeout(() => {
+            try { recognition.start(); } catch(e) { /* ignore */ }
+          }, 100);
         }
       };
       recognition.onerror = (event: any) => {
@@ -101,6 +103,12 @@ export default function LiveAdvisorPage() {
       setError("Voice recognition not supported by your browser.");
     }
   }, [isSessionActive, isLoading]);
+
+
+  useEffect(() => {
+    setupRecognition();
+  }, [setupRecognition]);
+
 
   useEffect(() => {
     if (recognitionRef.current) {
@@ -143,7 +151,7 @@ export default function LiveAdvisorPage() {
     if (permissionGranted) {
       setIsSessionActive(true);
       if (recognitionRef.current) {
-        recognitionRef.current.start();
+        try { recognitionRef.current.start(); } catch(e) { console.error("Recognition start failed", e)}
       }
     }
   };
@@ -154,10 +162,11 @@ export default function LiveAdvisorPage() {
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
     }
     if(speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+    window.speechSynthesis?.cancel();
     setIsSessionActive(false);
     setIsListening(false);
     setIsLoading(false);
@@ -179,7 +188,7 @@ export default function LiveAdvisorPage() {
   const processTranscript = async (text: string) => {
     if (!text.trim() || !isSessionActive) return;
     
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
 
@@ -211,7 +220,7 @@ export default function LiveAdvisorPage() {
       const synth = window.speechSynthesis;
       if (synth.speaking) synth.cancel();
       
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterterance(text);
       const voice = voices.find((v) => v.lang === lang);
       if (voice) utterance.voice = voice;
       utterance.lang = lang;
@@ -243,7 +252,7 @@ export default function LiveAdvisorPage() {
             {isSessionActive ? "Your live session is active." : "Start a session to get live advice."}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
             <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted border" autoPlay muted playsInline />
             <canvas ref={canvasRef} className="hidden" />
             {isSessionActive && !(hasPermissions) && (
@@ -255,93 +264,91 @@ export default function LiveAdvisorPage() {
                     </AlertDescription>
                 </Alert>
             )}
+
+            {(lastTranscript || lastResponse || error || isSessionActive) && (
+                 <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px]">
+                     {error && (
+                        <Alert variant="destructive" className="text-left">
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
+                    {lastTranscript && (
+                        <div className="flex items-start gap-3">
+                            <User className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
+                            <div>
+                                <p className="font-semibold">You asked:</p>
+                                <p className="text-muted-foreground">{lastTranscript}</p>
+                            </div>
+                        </div>
+                    )}
+                    {lastResponse && (
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-3">
+                                <Eye className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
+                                <div>
+                                    <p className="font-semibold">Visual Analysis:</p>
+                                    <p className="text-muted-foreground">{lastResponse.visualAnalysis}</p>
+                                </div>
+                            </div>
+                             <div className="flex items-start gap-3">
+                                <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
+                                <div>
+                                    <p className="font-semibold">AgriSence says:</p>
+                                    <p className="text-muted-foreground">{lastResponse.responseToQuery}</p>
+                                </div>
+                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(lastResponse.responseToQuery, selectedLanguage)}>
+                                    {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                            {lastResponse.proactiveAlert !== 'None' && (
+                                <Alert>
+                                    <Info className="h-4 w-4" />
+                                    <AlertTitle>Proactive Alert</AlertTitle>
+                                    <AlertDescription>{lastResponse.proactiveAlert}</AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
+                     {isSessionActive && !lastTranscript && !lastResponse && !error && (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                            <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
+                            <p>Waiting for your question...</p>
+                        </div>
+                     )}
+                </div>
+            )}
         </CardContent>
-        <CardFooter>
-            {!isSessionActive ? (
-                <Button className="w-full" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Live Session</Button>
+        <CardFooter className="flex-col sm:flex-row items-center gap-4">
+             {!isSessionActive ? (
+                <Button className="w-full sm:w-auto" onClick={startSession}><Camera className="mr-2 h-4 w-4"/> Start Live Session</Button>
             ) : (
-                <Button className="w-full" variant="destructive" onClick={stopSession}><Square className="mr-2 h-4 w-4"/> End Session</Button>
+                <Button className="w-full sm:w-auto" variant="destructive" onClick={stopSession}><Square className="mr-2 h-4 w-4"/> End Session</Button>
+            )}
+
+            {isSessionActive && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground w-full sm:w-auto justify-center sm:justify-start">
+                    <div className={cn("transition-colors", isListening ? "text-red-500" : "text-primary")}>
+                        {isLoading ? <Loader2 className="h-5 w-5 animate-spin"/> : <Mic className="h-5 w-5"/>}
+                    </div>
+                    <span className="flex-1">{getStatusText()}</span>
+                    <div className="flex items-center gap-1">
+                        <Languages className="h-4 w-4" />
+                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
+                        <SelectTrigger className="w-auto h-8 text-xs border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="en-IN">English</SelectItem>
+                            <SelectItem value="kn-IN">Kannada</SelectItem>
+                        </SelectContent>
+                        </Select>
+                    </div>
+                </div>
             )}
         </CardFooter>
       </Card>
 
-      {isSessionActive && (
-        <Card>
-            <CardHeader className="text-center">
-                <div className={cn("mx-auto h-16 w-16 rounded-full flex items-center justify-center transition-colors", 
-                    isListening ? "bg-red-500/20 text-red-500" : "bg-primary/10 text-primary"
-                )}>
-                    {isLoading ? <Loader2 className="h-8 w-8 animate-spin"/> : <Mic className="h-8 w-8"/>}
-                </div>
-                <CardTitle>{getStatusText()}</CardTitle>
-                 <div className="flex justify-center items-center gap-2 pt-2">
-                    <Languages className="h-4 w-4 text-muted-foreground" />
-                    <Select value={selectedLanguage} onValueChange={setSelectedLanguage} disabled={isListening || isLoading}>
-                      <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="en-IN">English (India)</SelectItem>
-                          <SelectItem value="kn-IN">Kannada</SelectItem>
-                      </SelectContent>
-                    </Select>
-                </div>
-            </CardHeader>
-            {(lastTranscript || lastResponse || error) && (
-                 <CardContent>
-                    <div className="w-full text-left space-y-4 p-4 border rounded-lg bg-muted/50 min-h-[100px]">
-                         {error && (
-                            <Alert variant="destructive" className="text-left">
-                                <AlertTitle>Error</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        {lastTranscript && (
-                            <div className="flex items-start gap-3">
-                                <User className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
-                                <div>
-                                    <p className="font-semibold">You asked:</p>
-                                    <p className="text-muted-foreground">{lastTranscript}</p>
-                                </div>
-                            </div>
-                        )}
-                        {lastResponse && (
-                            <div className="space-y-4">
-                                <div className="flex items-start gap-3">
-                                    <Eye className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
-                                    <div>
-                                        <p className="font-semibold">Visual Analysis:</p>
-                                        <p className="text-muted-foreground">{lastResponse.visualAnalysis}</p>
-                                    </div>
-                                </div>
-                                 <div className="flex items-start gap-3">
-                                    <Bot className="h-5 w-5 text-primary flex-shrink-0 mt-1"/>
-                                    <div>
-                                        <p className="font-semibold">AgriSence says:</p>
-                                        <p className="text-muted-foreground">{lastResponse.responseToQuery}</p>
-                                    </div>
-                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleSpeak(lastResponse.responseToQuery, selectedLanguage)}>
-                                        {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                                    </Button>
-                                </div>
-                                {lastResponse.proactiveAlert !== 'None' && (
-                                    <Alert>
-                                        <Info className="h-4 w-4" />
-                                        <AlertTitle>Proactive Alert</AlertTitle>
-                                        <AlertDescription>{lastResponse.proactiveAlert}</AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        )}
-                         {!lastTranscript && !lastResponse && !error && (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">
-                                <CircleDashed className="h-5 w-5 mr-2 animate-spin" />
-                                <p>Waiting for your question...</p>
-                            </div>
-                         )}
-                    </div>
-                </CardContent>
-            )}
-        </Card>
-      )}
     </div>
   );
 }
