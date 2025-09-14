@@ -11,6 +11,7 @@ const inter = Inter({
   variable: '--font-inter' 
 });
 
+// Metadata and viewport can be exported from a server component
 export const metadata: Metadata = {
   title: 'AgriSence - AI Farming Assistant',
   description: 'AI-powered agriculture assistant for Indian farmers',

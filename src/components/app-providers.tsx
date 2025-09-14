@@ -15,6 +15,21 @@ export function AppProviders({
   useEffect(() => {
     // This timer ensures the loading animation is shown for a bit.
     const timer = setTimeout(() => setLoading(false), 2000); 
+    
+    // Register the service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(err => {
+            console.error('Service Worker registration failed:', err);
+          });
+      });
+    }
+
     return () => clearTimeout(timer);
   }, []);
 
